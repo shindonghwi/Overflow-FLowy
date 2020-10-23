@@ -14,7 +14,7 @@
         android:id="@+id/flowyZoomBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Zoom"
+        android:text="Zoom OFF"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@+id/glSurfaceView"
         app:layout_constraintTop_toTopOf="parent" />

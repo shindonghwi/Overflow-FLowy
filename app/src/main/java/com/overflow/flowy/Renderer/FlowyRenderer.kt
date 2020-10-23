@@ -84,10 +84,10 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         if (cameraMode == "default"){
             varNDC = NDC_VERTICE
         }
-        else if (cameraMode == "flowy") {
+        else if (cameraSubMode == "longClick") {
             modeFlowy()
         }
-        else if (cameraMode == "doubleTap"){
+        else if (cameraSubMode == "flowyDoubleTap"){
             varNDC = floatArrayOf(
                 -5f, -5f, // left, bottom
                 5f, -5f, // right, bottom
