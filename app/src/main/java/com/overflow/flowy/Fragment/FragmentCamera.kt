@@ -70,12 +70,12 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
                     override fun onDoubleTap(e: MotionEvent): Boolean {
 
-                        if (cameraSubMode == "default") {
+                        if (cameraSubMode == "longClick") {
                             cameraSubMode = "flowyDoubleTap"
                             setDoubleTapTouchPoint(e.x.toDouble(), e.y.toDouble())
                             Log.d("doubleTapPoint", "${e.x} : ${e.y} ")
                         } else {
-                            cameraSubMode = "default"
+                            cameraSubMode = "longClick"
                         }
                         return super.onDoubleTap(e)
                     }
@@ -120,11 +120,18 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         when (v.id) {
             // 플로위 줌을 사용 여부를 변경한다.
             R.id.flowyZoomBtn -> {
+
+                // 플로위 줌 버튼을 눌렀을때 카메라 모드가 기본값이면, 카메라 모드는 flowy로 카메라 서브 모드는 longClick으로 변경한다.
                 if (cameraMode == "default") {
                     cameraMode = "flowy"
+                    cameraSubMode = "longClick"
                     flowyZoomBtn.text = "Zoom ON"
-                } else {
+                }
+
+                // 카메라 모드가 플로위 모드라면, 카메라모드를 기본값으로, 카메라 서브값도 기본값으로 변경한다.
+                else if (cameraMode == "flowy") {
                     cameraMode = "default"
+                    cameraSubMode = "longClick"
                     flowyZoomBtn.text = "Zoom OFF"
                 }
             }
