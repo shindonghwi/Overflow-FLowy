@@ -40,4 +40,4 @@ import java.util.ArrayList
 @JvmField var textureArray = IntArray(5)
 @JvmField var cameraLensMode : Int = CameraSelector.LENS_FACING_BACK // 카메라의 렌즈방향 - 전면, 후면
 @JvmField var cameraMode : String = "default" // 카메라 모드 - default, flowy 등
-@JvmField var cameraSubMode : String = "default" // 카메라 서브 모드 - flowyDoubleTap 등
+@JvmField var cameraSubMode : String = "longClick" // 카메라 서브 모드 - 기본은 longClick 모드 , flowyDoubleTap 등
