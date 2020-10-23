@@ -13,12 +13,10 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
-import com.overflow.flowy.Fragment.FlowyCameraFragment.Companion.isTouching
-import com.overflow.flowy.Fragment.FlowyCameraFragment.Companion.touchFirstX
-import com.overflow.flowy.Fragment.FlowyCameraFragment.Companion.touchFirstY
-import com.overflow.flowy.Fragment.FlowyCameraFragment.Companion.touchPointX
-import com.overflow.flowy.Fragment.FlowyCameraFragment.Companion.touchPointY
-import com.overflow.flowy.MainActivity
+import com.overflow.flowy.Fragment.FragmentCamera.Companion.isTouching
+import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchFirstY
+import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointX
+import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointY
 import com.overflow.flowy.MainActivity.Companion.initImage
 import com.overflow.flowy.MainActivity.Companion.iv
 import com.overflow.flowy.Provider.SurfaceTextureProvider

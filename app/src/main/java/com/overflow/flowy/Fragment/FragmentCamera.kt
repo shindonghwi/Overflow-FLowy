@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.widget.Button
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.overflow.flowy.R
 import com.overflow.flowy.Util.THIS_CONTEXT
@@ -12,7 +13,8 @@ import com.overflow.flowy.Util.cameraMode
 import com.overflow.flowy.Util.flowyMode
 import com.overflow.flowy.View.FlowyGLSurfaceView
 
-class FlowyCameraFragment : Fragment(), View.OnClickListener {
+
+class FragmentCamera : Fragment(), View.OnClickListener {
 
     private lateinit var glSurfaceView: FlowyGLSurfaceView
     private lateinit var flowyZoomBtn: Button
@@ -54,32 +56,46 @@ class FlowyCameraFragment : Fragment(), View.OnClickListener {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun screenTouchListener() {
-        glSurfaceView.setOnTouchListener { v, event ->
 
-            // 플로위 모드일때
-            if (flowyMode && event.action == MotionEvent.ACTION_MOVE) {
+        glSurfaceView.setOnTouchListener(object: View.OnTouchListener {
+            private val gestureDetector = GestureDetector(context, object:GestureDetector.SimpleOnGestureListener() {
+                override fun onDoubleTap(e:MotionEvent):Boolean {
 
-                // 첫번째로 터치한 좌표를 받아 firstTouchX , Y 에 할당한다. 화면 여백을 클릭하는걸 방지 하기 위함.
-                if ( touchFirstX == 0.0 && touchFirstY == 0.0 )
-                    setFirstTouchPoint(event.x.toDouble(), event.y.toDouble())
-                // 터치한 포인트를 기록한다.
-                setTouchPoint(event.x.toDouble(), event.y.toDouble())
-                // 현재 상태를 터치중으로 변경한다.
-                isTouching = true
+                    if (cameraMode == "default"){
+                        Log.d("TEST", "onDoubleTap")
+                    }
+                    return super.onDoubleTap(e)
+                }
+                // 여기에 필요한 콜백 메서드를 추가 할 수 있다. override...
+
+            })
+            override fun onTouch(v:View, event:MotionEvent):Boolean {
+
+                // 플로위 모드일때
+                if (flowyMode && event.action == MotionEvent.ACTION_MOVE) {
+
+                    // 첫번째로 터치한 좌표를 받아 firstTouchX , Y 에 할당한다. 화면 여백을 클릭하는걸 방지 하기 위함.
+                    if ( touchFirstX == 0.0 && touchFirstY == 0.0 )
+                        setFirstTouchPoint(event.x.toDouble(), event.y.toDouble())
+                    // 터치한 포인트를 기록한다.
+                    setTouchPoint(event.x.toDouble(), event.y.toDouble())
+                    // 현재 상태를 터치중으로 변경한다.
+                    isTouching = true
+                }
+
+                // 플로위 모드가 아닐때
+                else {
+                    // 터치한 포인트를 0,0 으로 초기화한다.
+                    setTouchPoint(0.0, 0.0)
+                    // 첫번째로 터치한 포인트를 0,0으로 초기화한다.
+                    setFirstTouchPoint(0.0, 0.0)
+                    // 현재 상태를 터치중 아님으로 변경한다.
+                    isTouching = false
+                }
+                gestureDetector.onTouchEvent(event)
+                return true
             }
-
-            // 플로위 모드가 아닐때
-            else {
-
-                // 터치한 포인트를 0,0 으로 초기화한다.
-                setTouchPoint(0.0, 0.0)
-                // 첫번째로 터치한 포인트를 0,0으로 초기화한다.
-                setFirstTouchPoint(0.0, 0.0)
-                // 현재 상태를 터치중 아님으로 변경한다.
-                isTouching = false
-            }
-            true
-        }
+        })
     }
 
     /** 클릭 이벤트 처리 */

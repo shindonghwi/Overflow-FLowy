@@ -9,18 +9,12 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
-import com.overflow.flowy.Fragment.FlowyCameraFragment
+import com.overflow.flowy.Fragment.FragmentCamera
 import com.overflow.flowy.Util.MY_LOG
 import com.overflow.flowy.Util.REQUEST_PERMISSION_CODE
 
@@ -41,7 +35,7 @@ class MainActivity : AppCompatActivity() {
 
         savedInstanceState ?: supportFragmentManager.beginTransaction()
                 .replace(R.id.container,
-                    FlowyCameraFragment()
+                    FragmentCamera()
                 ,"FlowyCameraFragment"
                 )
                 .commit()
