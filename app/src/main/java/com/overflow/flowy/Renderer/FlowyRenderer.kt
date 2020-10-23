@@ -80,8 +80,20 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
             initImage.x = (screenWidth / 2).toFloat()
             initImage.y = (screenHeight / 2).toFloat()
         }
-        if (cameraMode == "flowy") {
+
+        if (cameraMode == "default"){
+            varNDC = NDC_VERTICE
+        }
+        else if (cameraMode == "flowy") {
             modeFlowy()
+        }
+        else if (cameraMode == "doubleTap"){
+            varNDC = floatArrayOf(
+                -5f, -5f, // left, bottom
+                5f, -5f, // right, bottom
+                -5f, 5f, // left, top
+                5f, 5f // right, top
+            )
         }
 
 
@@ -212,16 +224,16 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
 
     /** 텍스처가 업데이트 가능 할 때 업데이트 한다. */
     private fun textureUpdate() {
-        synchronized(this) {
-            if (mUpdateST) {
-                try {
-                    sfTexture?.updateTexImage()
-                } catch (e: Exception) {
-                    sfTexture?.attachToGLContext(textureArray[0])
-                }
-                mUpdateST = false
-            }
+//        synchronized(this) {
+//            if (mUpdateST) {
+        try {
+            sfTexture?.updateTexImage()
+        } catch (e: Exception) {
+            sfTexture?.attachToGLContext(textureArray[0])
         }
+        mUpdateST = false
+//            }
+//        }
     }
 
     /** 셰이더 프로그램 타입 설정 */
