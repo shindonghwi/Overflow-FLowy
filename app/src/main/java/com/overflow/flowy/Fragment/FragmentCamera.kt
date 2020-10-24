@@ -157,14 +157,14 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 if (cameraMode == "default") {
                     cameraMode = "flowy"
                     cameraSubMode = "longClick"
-                    flowyZoomBtn.text = "Zoom ON"
+                    flowyZoomBtn.text = "FLowy ON"
                 }
 
                 // 카메라 모드가 플로위 모드라면, 카메라모드를 기본값으로, 카메라 서브값도 기본값으로 변경한다.
                 else if (cameraMode == "flowy") {
                     cameraMode = "default"
                     cameraSubMode = "longClick"
-                    flowyZoomBtn.text = "Zoom OFF"
+                    flowyZoomBtn.text = "FLowy OFF"
                 }
             }
         }
