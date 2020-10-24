@@ -13,7 +13,11 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import com.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointX
+import com.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointY
+import com.overflow.flowy.Fragment.FragmentCamera.Companion.isDoubleTapFirstTouched
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.isTouching
+import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchFirstX
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchFirstY
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointX
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointY
@@ -71,6 +75,13 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         else if (cameraLensMode == 1) OPENGL_VERTICE = BACK_OPENGL_VERTICE // 카메라 렌즈 후면
     }
 
+    var x = 0.0
+    var y = 0.0
+    var screenLeft = 0.0f
+    var screenRight = 0.0f
+    var screenBottom = 0.0f
+    var screenTop = 0.0f
+
     /** NDC 및 OPENGL 좌표계 설정 */
     private fun setNDCandOPENGL(cameraMode: String) {
 
@@ -88,12 +99,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
             modeFlowy()
         }
         else if (cameraSubMode == "flowyDoubleTap"){
-            varNDC = floatArrayOf(
-                -5f, -5f, // left, bottom
-                5f, -5f, // right, bottom
-                -5f, 5f, // left, top
-                5f, 5f // right, top
-            )
+            modeDoubleTap()
         }
 
 
@@ -136,7 +142,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         initTex()
-        GLES20.glClearColor(1.0f, 0.0f, 0.0f, 1.0f)
+        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
 
         cameraLensMode = 1 // 카메라 렌즈 모드 설정 ( 전면 : 0, 후면 : 1)
 
@@ -371,31 +377,30 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
             // x의 좌표값을 뒤집는다.
             x *= -1
 
-            var left = (x.toFloat() - scale + scale / 2.0).toFloat()
-            var right = (x.toFloat() + scale - scale / 2.0).toFloat()
-            var bottom = (y.toFloat() - scale + scale / 2.0).toFloat()
-            var top = (y.toFloat() + scale - scale / 2.0).toFloat()
+            screenLeft = (x.toFloat() - scale + scale / 2.0).toFloat()
+            screenRight = (x.toFloat() + scale - scale / 2.0).toFloat()
+            screenBottom = (y.toFloat() - scale + scale / 2.0).toFloat()
+            screenTop = (y.toFloat() + scale - scale / 2.0).toFloat()
 
             // 화면 바깥으로 안나가게 막는다.
-            if (right <= 1) {
-                right = 1f; left = -scale + right
+            if (screenRight <= 1) {
+                screenRight = 1f; screenLeft = -scale + screenRight
             }
-            if (left >= -1) {
-                left = -1f; right = scale + left
+            if (screenLeft >= -1) {
+                screenLeft = -1f; screenRight = scale + screenLeft
             }
-            if (top <= 1) {
-                top = 1f; bottom = -scale + top
+            if (screenTop <= 1) {
+                screenTop = 1f; screenBottom = -scale + screenTop
             }
-            if (bottom >= -1) {
-                bottom = -1f; top = scale + bottom
+            if (screenBottom >= -1) {
+                screenBottom = -1f; screenTop = scale + screenBottom
             }
 
-            // 새로운 NDK 좌표 할당
             varNDC = floatArrayOf(
-                left, bottom, // left, bottom
-                right, bottom, // right, bottom
-                left, top, // left, top
-                right, top // right, top
+                screenLeft, screenBottom, // left, bottom
+                screenRight, screenBottom, // right, bottom
+                screenLeft, screenTop, // left, top
+                screenRight, screenTop // right, top
             )
 
             // 사용자가 터치한 부분을 점 찍는다.
@@ -405,6 +410,104 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                 iv.y = touchPointY.toFloat()
                 Log.d("userTouchPoint", iv.x.toString() + " :: " + iv.y.toString())
             }
+            GLES20.glViewport(0, 0, screenWidth, screenHeight)
+        }
+    }
+
+    private fun modeDoubleTap(){
+        val yMin = ((screenHeight - adjustHeight) / 2).toDouble()
+        val yMax = (((screenHeight - adjustHeight) / 2) + adjustHeight).toDouble()
+
+        // 화면 바깥을 터치했을때는, FLowy Zoom 모드가 아니라 기본모드로 보여준다.
+        if (doubleTapPointY <= yMin || doubleTapPointY >= yMax) {
+            varNDC = NDC_VERTICE // 기본 모드로 설정한다.
+        }
+        else{
+            // 스케일 설정 : 2f -> 1배, 4f -> 2배, 6f -> 3배
+            val scale = 6.0f
+
+            // 화면 비율 : 조정된 크기에 대한 전체 화면의 크기 : 1이상의 값이 나온다.
+            var ratio = (screenHeight.toDouble() / adjustHeight.toDouble())
+            Log.d("ratio", "ratio : $ratio // ")
+
+            /** 더블 탭을 처음 클릭한 경우에, 클릭한 지점을 확대해준다. */
+            if ( isDoubleTapFirstTouched ){
+                isDoubleTapFirstTouched = false // 더블탭 터치가 끝났다는걸 알린다.
+
+                // 사용자가 터치한곳의 NDK 좌표를 구한다. ( -1 ~ 1 사이값임 )
+                x = (doubleTapPointX / screenWidth) * scale - (scale / 2.0)
+                y = ((doubleTapPointY / screenHeight) * scale - (scale / 2.0)) * ratio
+
+                x *= -1
+
+                // 설정한 scale만큼 이미지를 확대한다.
+                screenLeft = (x.toFloat() - scale + scale / 2.0).toFloat()
+                screenRight = (x.toFloat() + scale - scale / 2.0).toFloat()
+                screenBottom = (y.toFloat() - scale + scale / 2.0).toFloat()
+                screenTop = (y.toFloat() + scale - scale / 2.0).toFloat()
+
+                // 화면 바깥으로 안나가게 막는다.
+                if (screenRight <= 1) {
+                    screenRight = 1f; screenLeft = -scale + screenRight
+                }
+                if (screenLeft >= -1) {
+                    screenLeft = -1f; screenRight = scale + screenLeft
+                }
+                if (screenTop <= 1) {
+                    screenTop = 1f; screenBottom = -scale + screenTop
+                }
+                if (screenBottom >= -1) {
+                    screenBottom = -1f; screenTop = scale + screenBottom
+                }
+
+            }
+            /** 더블 탭을 하여, 확대된 이미지가 보이는 상태이다.
+             * 여기서는 사용자의 터치포인터를 인식하여 사용자가 움직이는 곳으로 화면을 이동시켜줘야한다. */
+            else{
+                val scrollSpeed = 20 // 값을 올릴수록 스크롤 속도가 느려진다.
+
+                if (touchPointX != 0.0 && touchPointY != 0.0 && touchFirstX != 0.0 && touchFirstY != 0.0){
+
+                    // 사용자가 손가락으로 화면을 이동하는데, 얼마나 이동했는지 구하는 식이다.
+                    var moveX = touchPointX - touchFirstX
+                    moveX = (moveX / screenWidth) * scale / scrollSpeed
+                    var moveY = touchPointY - touchFirstY
+                    moveY = (moveY / screenHeight) * scale / scrollSpeed
+
+                    Log.d("touchPointXY",   "c : $touchPointX : $touchFirstX")
+
+                    // 설정한 scale만큼 이미지를 확대한다.
+                    screenLeft = (x.toFloat() - scale + scale / 2.0).toFloat() - moveX.toFloat()
+                    screenRight = (x.toFloat() + scale - scale / 2.0).toFloat() - moveX.toFloat()
+                    screenBottom = (y.toFloat() - scale + scale / 2.0).toFloat() + moveY.toFloat()
+                    screenTop = (y.toFloat() + scale - scale / 2.0).toFloat() + moveY.toFloat()
+
+                    // 화면 바깥으로 안나가게 막는다.
+                    if (screenRight <= 1) {
+                        screenRight = 1f; screenLeft = -scale + screenRight
+                    }
+                    if (screenLeft >= -1) {
+                        screenLeft = -1f; screenRight = scale + screenLeft
+                    }
+                    if (screenTop <= 1) {
+                        screenTop = 1f; screenBottom = -scale + screenTop
+                    }
+                    if (screenBottom >= -1) {
+                        screenBottom = -1f; screenTop = scale + screenBottom
+                    }
+
+                    // 사용자가 움직인 곳으로 화면을 이동시켜준다.
+                    x = ((screenLeft + screenRight) / 2).toDouble()
+                    y = ((screenBottom + screenTop) / 2).toDouble()
+                }
+            }
+
+            varNDC = floatArrayOf(
+                screenLeft, screenBottom, // left, bottom
+                screenRight, screenBottom, // right, bottom
+                screenLeft, screenTop, // left, top
+                screenRight, screenTop // right, top
+            )
             GLES20.glViewport(0, 0, screenWidth, screenHeight)
         }
     }

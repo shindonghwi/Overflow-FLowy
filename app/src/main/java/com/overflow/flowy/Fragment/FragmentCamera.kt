@@ -38,24 +38,36 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     }
 
-    /** 사용자가 터치한 좌표값 설정 - FLowy Zoom 기능에 활용 */
+    /** 사용자가 화면을 터치했을때 좌표를 항상 기록한다. */
+    fun setAlwaysTouchPoint(x: Double, y: Double) {
+        touchAlwaysTouchPointX = x
+        touchAlwaysTouchPointY = y
+    }
+
+    /** ------------ 플로위 - 롱 클릭 모드-------------- */
+
+    /** 사용자가 롱 클릭 모드에서 터치한 좌표값 설정 - FLowy Zoom 기능에 활용 */
     fun setTouchPoint(x: Double, y: Double) {
         touchPointX = x
         touchPointY = y
         Log.d("touch", "onViewCreated: $touchPointX , $touchPointY")
     }
 
-    /** 사용자가 처음 터치한 좌표값 설정 - 화면 여백을 클릭하는걸 방지하기 위함 */
+    /** 사용자가 롱 클릭 모드에서 처음 터치한 좌표값 설정 - 화면 여백을 클릭하는걸 방지하기 위함 */
     fun setFirstTouchPoint(x: Double, y: Double) {
         touchFirstX = x
         touchFirstY = y
     }
+
+    /** ------------ 플로위 - 더블탭 모드 -------------- */
 
     /** camera mode 가 default 이고, 더블탭했을때 좌표값 설정 */
     fun setDoubleTapTouchPoint(x: Double, y: Double) {
         doubleTapPointX = x
         doubleTapPointY = y
     }
+
+    /** -------------------------------------------------- */
 
     /** 클릭 리스너 관리 */
     private fun setClickListener() {
@@ -70,12 +82,19 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
                     override fun onDoubleTap(e: MotionEvent): Boolean {
 
+                        // 더블 탭 모드로 변경
                         if (cameraSubMode == "longClick") {
                             cameraSubMode = "flowyDoubleTap"
                             setDoubleTapTouchPoint(e.x.toDouble(), e.y.toDouble())
                             Log.d("doubleTapPoint", "${e.x} : ${e.y} ")
-                        } else {
+                            isDoubleTapFirstTouched = true
+                        }
+
+                        // 롱 클릭 모드로 변경
+                        else {
                             cameraSubMode = "longClick"
+                            setDoubleTapTouchPoint(0.0,0.0)
+                            isDoubleTapFirstTouched = false
                         }
                         return super.onDoubleTap(e)
                     }
@@ -89,7 +108,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             override fun onTouch(v: View, event: MotionEvent): Boolean {
                 Log.d("onTouch", "${event.x} : ${event.y} ")
 
-                // 롱클릭 이벤트를 받아, 플로위 모드를 들어갔을때
+                // 사용자가 찎은 좌표를 항상 기록한다.
+                setAlwaysTouchPoint(event.x.toDouble(), event.y.toDouble())
+
+                // 롱클릭 이벤트를 받아, 플로위 롱클릭 모드에서 움직이는 경우
                 if (flowyZoomLongClickEvent && cameraMode == "flowy" && event.action == MotionEvent.ACTION_MOVE) {
                     // 첫번째로 터치한 좌표를 받아 firstTouchX , Y 에 할당한다. 화면 여백을 클릭하는걸 방지 하기 위함.
                     if (touchFirstX == 0.0 && touchFirstY == 0.0)
@@ -99,6 +121,16 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     // 현재 상태를 터치중으로 변경한다.
                     isTouching = true
                 }
+                else if (cameraSubMode == "flowyDoubleTap"){
+
+                    if (touchFirstX == 0.0 && touchFirstY == 0.0 && event.action == MotionEvent.ACTION_DOWN){
+                        setFirstTouchPoint(event.x.toDouble(), event.y.toDouble())
+                    }
+                    else{
+                        setTouchPoint(event.x.toDouble(), event.y.toDouble())
+                    }
+                }
+
                 // 사용자가 화면에서 손을 땠을때
                 if (event.action == MotionEvent.ACTION_UP) {
                     setTouchPoint(0.0, 0.0) // 터치한 포인트를 0,0 으로 초기화한다.
@@ -140,19 +172,29 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     companion object {
 
-        /** 사용자가 터치한 좌표 값 ( 지속적으로 바뀜 ) */
-        var touchPointX: Double = 0.0
-        var touchPointY: Double = 0.0
+        /** 사용자가 찍은 좌표값 (항상 갱신됨) */
+        var touchAlwaysTouchPointX = 0.0
+        var touchAlwaysTouchPointY = 0.0
+
+        /** --------------------- 플로위 롱 클릭 모드 --------------------- */
 
         /** 사용자가 터치중인지 여부 판단함 */
         var isTouching: Boolean = false
+        var isDoubleTapFirstTouched: Boolean = false // 더블탭을 처음 클릭했는가?
 
-        /** 사용자가 처음으로 터치한 좌표 값 ( 화면 여백을 클릭하는걸 방지하기 위함 ) */
+        /** 사용자가 플로위 롱 클릭 모드에서 터치한 좌표 값 ( 지속적으로 바뀜 ) */
+        var touchPointX: Double = 0.0
+        var touchPointY: Double = 0.0
+
+        /** 사용자가 플로위 롱 클릭 모드에서 처음으로 터치한 좌표 값 ( 화면 여백을 클릭하는걸 방지하기 위함 ) */
         var touchFirstX: Double = 0.0
         var touchFirstY: Double = 0.0
 
-        /** 사용자가 더블 탭한 위치의 좌표 값 */
+        /** --------------------- 플로위 더블 탭 모드 --------------------- */
+
+        /** 사용자가 더블 탭모드에서 찍은 위치의 좌표 값 */
         var doubleTapPointX: Double = 0.0
         var doubleTapPointY: Double = 0.0
+
     }
 }
