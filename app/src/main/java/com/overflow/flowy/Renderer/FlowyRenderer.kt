@@ -75,8 +75,9 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         else if (cameraLensMode == 1) OPENGL_VERTICE = BACK_OPENGL_VERTICE // 카메라 렌즈 후면
     }
 
-    var x = 0.0
-    var y = 0.0
+    /** 화면의 중심점 및 왼, 오, 위, 아래 값 : 중심점 기준으로 사각형이 생긴다고 생각하면됨. */
+    var centerPointX = 0.0
+    var centerPointY = 0.0
     var screenLeft = 0.0f
     var screenRight = 0.0f
     var screenBottom = 0.0f
@@ -101,7 +102,6 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         else if (cameraSubMode == "flowyDoubleTap"){
             modeDoubleTap()
         }
-
 
         /** NDC 좌표계 설정 */
         pVertex.put(varNDC)
@@ -369,18 +369,18 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
             Log.d("ratio", "ratio : $ratio // ")
 
             // 사용자가 터치한곳의 NDK 좌표를 구한다. ( -1 ~ 1 사이값임 )
-            var x = (touchPointX / screenWidth) * scale - (scale / 2.0)
-            var y = ((touchPointY / screenHeight) * scale - (scale / 2.0)) * ratio
+            centerPointX = (touchPointX / screenWidth) * scale - (scale / 2.0)
+            centerPointY = ((touchPointY / screenHeight) * scale - (scale / 2.0)) * ratio
 
-            Log.d("ndkPoint", "ndkPoint : x : $x // y : $y // ")
+            Log.d("ndkPoint", "ndkPoint : centerPointX : $centerPointX // centerPointY : $centerPointY // ")
 
             // x의 좌표값을 뒤집는다.
-            x *= -1
+            centerPointX *= -1
 
-            screenLeft = (x.toFloat() - scale + scale / 2.0).toFloat()
-            screenRight = (x.toFloat() + scale - scale / 2.0).toFloat()
-            screenBottom = (y.toFloat() - scale + scale / 2.0).toFloat()
-            screenTop = (y.toFloat() + scale - scale / 2.0).toFloat()
+            screenLeft = (centerPointX.toFloat() - scale + scale / 2.0).toFloat()
+            screenRight = (centerPointX.toFloat() + scale - scale / 2.0).toFloat()
+            screenBottom = (centerPointY.toFloat() - scale + scale / 2.0).toFloat()
+            screenTop = (centerPointY.toFloat() + scale - scale / 2.0).toFloat()
 
             // 화면 바깥으로 안나가게 막는다.
             if (screenRight <= 1) {
@@ -435,16 +435,16 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                 isDoubleTapFirstTouched = false // 더블탭 터치가 끝났다는걸 알린다.
 
                 // 사용자가 터치한곳의 NDK 좌표를 구한다. ( -1 ~ 1 사이값임 )
-                x = (doubleTapPointX / screenWidth) * scale - (scale / 2.0)
-                y = ((doubleTapPointY / screenHeight) * scale - (scale / 2.0)) * ratio
+                centerPointX = (doubleTapPointX / screenWidth) * scale - (scale / 2.0)
+                centerPointY = ((doubleTapPointY / screenHeight) * scale - (scale / 2.0)) * ratio
 
-                x *= -1
+                centerPointX *= -1
 
                 // 설정한 scale만큼 이미지를 확대한다.
-                screenLeft = (x.toFloat() - scale + scale / 2.0).toFloat()
-                screenRight = (x.toFloat() + scale - scale / 2.0).toFloat()
-                screenBottom = (y.toFloat() - scale + scale / 2.0).toFloat()
-                screenTop = (y.toFloat() + scale - scale / 2.0).toFloat()
+                screenLeft = (centerPointX.toFloat() - scale + scale / 2.0).toFloat()
+                screenRight = (centerPointX.toFloat() + scale - scale / 2.0).toFloat()
+                screenBottom = (centerPointY.toFloat() - scale + scale / 2.0).toFloat()
+                screenTop = (centerPointY.toFloat() + scale - scale / 2.0).toFloat()
 
                 // 화면 바깥으로 안나가게 막는다.
                 if (screenRight <= 1) {
@@ -477,10 +477,10 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                     Log.d("touchPointXY",   "c : $touchPointX : $touchFirstX")
 
                     // 설정한 scale만큼 이미지를 확대한다.
-                    screenLeft = (x.toFloat() - scale + scale / 2.0).toFloat() - moveX.toFloat()
-                    screenRight = (x.toFloat() + scale - scale / 2.0).toFloat() - moveX.toFloat()
-                    screenBottom = (y.toFloat() - scale + scale / 2.0).toFloat() + moveY.toFloat()
-                    screenTop = (y.toFloat() + scale - scale / 2.0).toFloat() + moveY.toFloat()
+                    screenLeft = (centerPointX.toFloat() - scale + scale / 2.0).toFloat() - moveX.toFloat()
+                    screenRight = (centerPointX.toFloat() + scale - scale / 2.0).toFloat() - moveX.toFloat()
+                    screenBottom = (centerPointY.toFloat() - scale + scale / 2.0).toFloat() + moveY.toFloat()
+                    screenTop = (centerPointY.toFloat() + scale - scale / 2.0).toFloat() + moveY.toFloat()
 
                     // 화면 바깥으로 안나가게 막는다.
                     if (screenRight <= 1) {
@@ -497,8 +497,8 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                     }
 
                     // 사용자가 움직인 곳으로 화면을 이동시켜준다.
-                    x = ((screenLeft + screenRight) / 2).toDouble()
-                    y = ((screenBottom + screenTop) / 2).toDouble()
+                    centerPointX = ((screenLeft + screenRight) / 2).toDouble()
+                    centerPointY = ((screenBottom + screenTop) / 2).toDouble()
                 }
             }
 
