@@ -10,13 +10,136 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <Button
-        android:id="@+id/flowyZoomBtn"
-        android:layout_width="wrap_content"
+    <!-- 상단 메뉴바 -->
+    <LinearLayout
+        android:id="@+id/topMenuLayout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="FLowy OFF"
+        android:background="@drawable/menu_bar_top"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:weightSum="1"
+        app:layout_constraintHeight_max="90dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ToggleButton
+            android:id="@+id/focusToggleBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:layout_weight="0.20"
+            android:background="@drawable/focus_menu_on_off"
+            android:textOff="@string/textClear"
+            android:textOn="@string/textClear" />
+
+        <ToggleButton
+            android:id="@+id/flashToggleBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:layout_weight="0.20"
+            android:background="@drawable/flash_menu_on_off"
+            android:textOff="@string/textClear"
+            android:textOn="@string/textClear" />
+
+        <ToggleButton
+            android:id="@+id/lensChangeToggleBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:layout_weight="0.20"
+            android:background="@drawable/lens_change_menu_on_off"
+            android:textOff="@string/textClear"
+            android:textOn="@string/textClear" />
+
+        <ToggleButton
+            android:id="@+id/flowyZoomToggleBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:layout_weight="0.20"
+            android:background="@drawable/flowy_zoom_menu_on_off"
+            android:textOff="@string/textClear"
+            android:textOn="@string/textClear" />
+
+        <ToggleButton
+            android:id="@+id/mirroringToggleBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:layout_weight="0.20"
+            android:background="@drawable/mirroring_menu_on_off"
+            android:textOff="@string/textClear"
+            android:textOn="@string/textClear" />
+
+    </LinearLayout>
+
+    <!-- 하단 메뉴바 -->
+    <LinearLayout
+        android:id="@+id/bottomMenuLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/menu_bar_bottom"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:weightSum="1"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/glSurfaceView"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintHeight_max="90dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent">
+
+        <ToggleButton
+            android:id="@+id/menuToggleBtn"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_margin="5dp"
+            android:layout_weight="0.20"
+            android:background="@drawable/menu_on_off"
+            android:textOff="@string/textClear"
+            android:textOn="@string/textClear" />
+
+        <ToggleButton
+            android:id="@+id/flowyCastToggleBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:layout_weight="0.20"
+            android:background="@drawable/flowy_cast_menu_on_off"
+            android:textOff="@string/textClear"
+            android:textOn="@string/textClear" />
+
+        <ToggleButton
+            android:id="@+id/freezeToggleBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:layout_weight="0.20"
+            android:background="@drawable/freeze_menu_on_off"
+            android:textOff="@string/textClear"
+            android:textOn="@string/textClear" />
+
+        <ToggleButton
+            android:id="@+id/contrastToggleBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:layout_weight="0.20"
+            android:background="@drawable/contrast_menu_on_off"
+            android:textOff="@string/textClear"
+            android:textOn="@string/textClear" />
+
+        <ToggleButton
+            android:id="@+id/controlToggleBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:layout_weight="0.20"
+            android:background="@drawable/control_menu_on_off"
+            android:textOff="@string/textClear"
+            android:textOn="@string/textClear" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

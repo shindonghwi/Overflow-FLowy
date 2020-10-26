@@ -2,10 +2,11 @@ package com.overflow.flowy.Fragment
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.os.Handler
 import android.util.Log
 import android.view.*
 import android.widget.Button
+import android.widget.Toast
+import android.widget.ToggleButton
 import androidx.fragment.app.Fragment
 import com.overflow.flowy.R
 import com.overflow.flowy.Util.THIS_CONTEXT
@@ -16,8 +17,21 @@ import com.overflow.flowy.View.FlowyGLSurfaceView
 class FragmentCamera : Fragment(), View.OnClickListener {
 
     private lateinit var glSurfaceView: FlowyGLSurfaceView // 카메라 미리보기가 나올 화면
-    private lateinit var flowyZoomBtn: Button // 플로위 줌 버튼 활성/비활성화 버튼
     private var flowyZoomLongClickEvent: Boolean = false // 롱클릭 이벤트 콜백을 위한 변수, 이벤트 발생시 플로위 줌 시작
+
+    /** 메뉴바 상단에 있는 버튼 */
+    private lateinit var focusToggleBtn : ToggleButton
+    private lateinit var flashToggleBtn : ToggleButton
+    private lateinit var lensChangeToggleBtn : ToggleButton
+    private lateinit var flowyZoomToggleBtn : ToggleButton
+    private lateinit var mirroringToggleBtn : ToggleButton
+
+    /** 메뉴바 하단에 있는 버튼 */
+    private lateinit var menuToggleBtn : ToggleButton
+    private lateinit var flowyCastToggleBtn : ToggleButton
+    private lateinit var freezeToggleBtn : ToggleButton
+    private lateinit var contrastToggleBtn : ToggleButton
+    private lateinit var controlToggleBtn : ToggleButton
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -31,11 +45,29 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         super.onViewCreated(view, savedInstanceState)
         THIS_CONTEXT = context
         glSurfaceView = view.findViewById(R.id.glSurfaceView)
-        flowyZoomBtn = view.findViewById(R.id.flowyZoomBtn)
+
+        idInit(view = view)
 
         setClickListener() // 클릭 리스너 설정
         screenTouchListener() // 터치 리스너 설정
 
+    }
+
+    /** layout id 초기화하는 공간 */
+    private fun idInit(view : View){
+        // 메뉴바 상단의 아이콘
+        focusToggleBtn = view.findViewById(R.id.focusToggleBtn)
+        flashToggleBtn = view.findViewById(R.id.flashToggleBtn)
+        lensChangeToggleBtn = view.findViewById(R.id.lensChangeToggleBtn)
+        flowyZoomToggleBtn = view.findViewById(R.id.flowyZoomToggleBtn)
+        mirroringToggleBtn = view.findViewById(R.id.mirroringToggleBtn)
+
+        // 메뉴바 하단의 아이콘
+        menuToggleBtn = view.findViewById(R.id.menuToggleBtn)
+        flowyCastToggleBtn = view.findViewById(R.id.flowyCastToggleBtn)
+        freezeToggleBtn = view.findViewById(R.id.freezeToggleBtn)
+        contrastToggleBtn = view.findViewById(R.id.contrastToggleBtn)
+        controlToggleBtn = view.findViewById(R.id.controlToggleBtn)
     }
 
     /** 사용자가 화면을 터치했을때 좌표를 항상 기록한다. */
@@ -71,7 +103,16 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     /** 클릭 리스너 관리 */
     private fun setClickListener() {
-        flowyZoomBtn.setOnClickListener(this)
+        focusToggleBtn.setOnClickListener(this)
+        flashToggleBtn.setOnClickListener(this)
+        lensChangeToggleBtn.setOnClickListener(this)
+        flowyZoomToggleBtn.setOnClickListener(this)
+        mirroringToggleBtn.setOnClickListener(this)
+        menuToggleBtn.setOnClickListener(this)
+        flowyCastToggleBtn.setOnClickListener(this)
+        freezeToggleBtn.setOnClickListener(this)
+        contrastToggleBtn.setOnClickListener(this)
+        controlToggleBtn.setOnClickListener(this)
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -103,6 +144,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                         super.onLongPress(e)
                         flowyZoomLongClickEvent = true // 롱클릭 이벤트가 발생했을때, 플로위 줌을 시작한다.
                     }
+
                 })
 
             override fun onTouch(v: View, event: MotionEvent): Boolean {
@@ -135,7 +177,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 if (event.action == MotionEvent.ACTION_UP) {
                     setTouchPoint(0.0, 0.0) // 터치한 포인트를 0,0 으로 초기화한다.
                     setFirstTouchPoint(0.0, 0.0) // 첫번째로 터치한 포인트를 0,0으로 초기화한다.
-                    Log.d("ActionUP", "onTouch: up")
+                    Log.d("ClickEvent", "action up")
                     isTouching = false // 현재 상태를 터치중 아님으로 변경한다.
                     flowyZoomLongClickEvent = false // 플로위줌을 사용하기 다시 사용하기 위해 롱클릭 이벤트를 false로 만듦
                 }
@@ -148,25 +190,83 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     /** 클릭 이벤트 처리 */
     override fun onClick(v: View) {
-
         when (v.id) {
+            R.id.focusToggleBtn ->{
+                menuCheckedOff(focusToggleBtn)
+                Toast.makeText(context, "포커스 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+            }
+            R.id.flashToggleBtn ->{
+                menuCheckedOff(flashToggleBtn)
+                Toast.makeText(context, "플래쉬 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+            }
+            R.id.lensChangeToggleBtn ->{
+                menuCheckedOff(lensChangeToggleBtn)
+                Toast.makeText(context, "화면전환 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+            }
             // 플로위 줌을 사용 여부를 변경한다.
-            R.id.flowyZoomBtn -> {
-
+            R.id.flowyZoomToggleBtn -> {
+                menuCheckedOff(flowyZoomToggleBtn)
                 // 플로위 줌 버튼을 눌렀을때 카메라 모드가 기본값이면, 카메라 모드는 flowy로 카메라 서브 모드는 longClick으로 변경한다.
                 if (cameraMode == "default") {
                     cameraMode = "flowy"
                     cameraSubMode = "longClick"
-                    flowyZoomBtn.text = "FLowy ON"
                 }
 
                 // 카메라 모드가 플로위 모드라면, 카메라모드를 기본값으로, 카메라 서브값도 기본값으로 변경한다.
                 else if (cameraMode == "flowy") {
                     cameraMode = "default"
                     cameraSubMode = "longClick"
-                    flowyZoomBtn.text = "FLowy OFF"
                 }
             }
+            R.id.mirroringToggleBtn ->{
+                menuCheckedOff(mirroringToggleBtn)
+                Toast.makeText(context, "화면공유 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+            }
+            R.id.menuToggleBtn ->{
+                menuCheckedOff(menuToggleBtn)
+                Toast.makeText(context, "메뉴 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+            }
+            R.id.flowyCastToggleBtn ->{
+                menuCheckedOff(flowyCastToggleBtn)
+                Toast.makeText(context, "플로위 캐스트 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+            }
+            R.id.freezeToggleBtn ->{
+                menuCheckedOff(freezeToggleBtn)
+                Toast.makeText(context, "프리즈 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+            }
+            R.id.contrastToggleBtn ->{
+                menuCheckedOff(contrastToggleBtn)
+                Toast.makeText(context, "고대비 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+            }
+            R.id.controlToggleBtn ->{
+                menuCheckedOff(controlToggleBtn)
+                Toast.makeText(context, "밝기, 대비 조절 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+            }
+
+
+        }
+    }
+
+    /** 메뉴 활성화된 버튼 해제 */
+    private fun menuCheckedOff(clickToggleButton: ToggleButton) {
+
+        // 사용자가 누른 버튼이 눌렀을때 꺼질 상태라면, 해당 버튼을 비활성화 한다.
+        if(!clickToggleButton.isChecked){
+            clickToggleButton.isChecked = false
+        }
+        // 사용자가 누른 버튼이 눌렀을때 켜질 상태라면, 다른버튼은 비활성화하고 선택한 버튼만 활성화 한다.
+        else{
+            focusToggleBtn.isChecked = false
+            flashToggleBtn.isChecked = false
+            lensChangeToggleBtn.isChecked = false
+            flowyZoomToggleBtn.isChecked = false
+            mirroringToggleBtn.isChecked = false
+            menuToggleBtn.isChecked = false
+            flowyCastToggleBtn.isChecked = false
+            freezeToggleBtn.isChecked = false
+            contrastToggleBtn.isChecked = false
+            controlToggleBtn.isChecked = false
+            clickToggleButton.isChecked = true
         }
     }
 
@@ -197,4 +297,5 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         var doubleTapPointY: Double = 0.0
 
     }
+
 }

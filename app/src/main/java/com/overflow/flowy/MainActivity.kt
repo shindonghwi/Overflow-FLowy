@@ -42,14 +42,6 @@ class MainActivity : AppCompatActivity() {
 
         /** 화면 하단에 소프트 키 없애는 코드 */
         disableSoftKey()
-
-        iv = findViewById(R.id.iv)
-        initImage = findViewById(R.id.initImage)
-    }
-
-    companion object{
-        lateinit var iv : ImageView
-        lateinit var initImage : ImageView
     }
 
     private fun requestPermission(){

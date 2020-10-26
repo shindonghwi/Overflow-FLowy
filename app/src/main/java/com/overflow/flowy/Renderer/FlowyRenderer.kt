@@ -7,10 +7,7 @@ import android.opengl.GLSurfaceView
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Size
-import androidx.camera.core.AspectRatio
-import androidx.camera.core.Camera
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointX
@@ -21,8 +18,6 @@ import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchFirstX
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchFirstY
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointX
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointY
-import com.overflow.flowy.MainActivity.Companion.initImage
-import com.overflow.flowy.MainActivity.Companion.iv
 import com.overflow.flowy.Provider.SurfaceTextureProvider
 import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLSurfaceView
@@ -42,10 +37,8 @@ import kotlin.math.min
 class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurfaceView.Renderer,
     SurfaceTexture.OnFrameAvailableListener {
 
-    private var pVertex: FloatBuffer =
-        ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
-    private var pTexCoord: FloatBuffer =
-        ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+    private var pVertex: FloatBuffer = ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+    private var pTexCoord: FloatBuffer = ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
     private var sfTexture: SurfaceTexture? = null
     private var program = 0
     private lateinit var cameraProvider: ProcessCameraProvider
@@ -85,13 +78,6 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
 
     /** NDC 및 OPENGL 좌표계 설정 */
     private fun setNDCandOPENGL(cameraMode: String) {
-
-        // 화면 중간에 빨간색 점
-        CoroutineScope(Dispatchers.Main).launch {
-            initImage.bringToFront()
-            initImage.x = (screenWidth / 2).toFloat()
-            initImage.y = (screenHeight / 2).toFloat()
-        }
 
         if (cameraMode == "default"){
             varNDC = NDC_VERTICE
@@ -294,6 +280,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         // ProcessCameraProvider를 통해서 CameraProvider 객체를 얻을 수 있다고함.
         val cameraProviderFuture =
             ProcessCameraProvider.getInstance(THIS_CONTEXT!!)
+
         cameraProviderFuture.addListener(
             Runnable {
                 try {
@@ -403,13 +390,6 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                 screenRight, screenTop // right, top
             )
 
-            // 사용자가 터치한 부분을 점 찍는다.
-            CoroutineScope(Dispatchers.Main).launch {
-                iv.bringToFront()
-                iv.x = touchPointX.toFloat()
-                iv.y = touchPointY.toFloat()
-                Log.d("userTouchPoint", iv.x.toString() + " :: " + iv.y.toString())
-            }
             GLES20.glViewport(0, 0, screenWidth, screenHeight)
         }
     }

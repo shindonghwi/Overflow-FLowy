@@ -2,4 +2,6 @@
     <string name="app_name">Flowy</string>
     <string name="settings">설정</string>
 
+    <string name="textClear"> </string>
+
 </resources>
