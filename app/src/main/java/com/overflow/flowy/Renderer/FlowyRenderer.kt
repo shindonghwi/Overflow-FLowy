@@ -545,8 +545,18 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         val testColorHandle1 = GLES20.glGetUniformLocation(program, "reversalColor1")
         val testColorHandle2 = GLES20.glGetUniformLocation(program, "reversalColor2")
 
-        val reversalColor1 = colorIntToFloatArray(luminanceArrayData[luminanceIndex - 1].reversalColor1)
-        val reversalColor2 = colorIntToFloatArray(luminanceArrayData[luminanceIndex - 1].reversalColor2)
+        var reversalColor1 : FloatArray
+        var reversalColor2 : FloatArray
+
+        // 사용자가 너무 빨리누를경우 인덱스 에러가 난다. 예외처리
+        try {
+            reversalColor1 = colorIntToFloatArray(luminanceArrayData[luminanceIndex - 1].reversalColor1)
+            reversalColor2 = colorIntToFloatArray(luminanceArrayData[luminanceIndex - 1].reversalColor2)
+        }catch (e : ArrayIndexOutOfBoundsException){
+            reversalColor1 = colorIntToFloatArray(luminanceArrayData[0].reversalColor1)
+            reversalColor2 = colorIntToFloatArray(luminanceArrayData[0].reversalColor2)
+        }
+
 
         GLES20.glUniform4fv(testColorHandle1, 1, reversalColor1, 0)
         GLES20.glUniform4fv(testColorHandle2, 1, reversalColor2, 0)

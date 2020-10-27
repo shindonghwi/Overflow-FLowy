@@ -252,6 +252,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             }
             R.id.luminanceToggleBtn ->{
 
+                // fragment Shader에서 프로그램을 한번만 만들기 위한 플래그
+                // 프로그램을 여러번 만들면 메모리릭이 발생한다.
                 luminanceFlag = true
 
                 // 고대비를 활성화 시킨다.
