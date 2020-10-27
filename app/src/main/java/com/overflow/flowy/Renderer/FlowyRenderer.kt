@@ -351,7 +351,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
             if (touchPointY >= yMax) touchPointY = yMax
 
             // 스케일 설정 : 2f -> 1배, 4f -> 2배, 6f -> 3배
-            val scale = 4.0f
+            val scale = 8.0f
 
             // 화면 비율 : 조정된 크기에 대한 전체 화면의 크기 : 1이상의 값이 나온다.
             var ratio = (screenHeight.toDouble() / adjustHeight.toDouble())
@@ -408,7 +408,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
             varNDC = NDC_VERTICE // 기본 모드로 설정한다.
         } else {
             // 스케일 설정 : 2f -> 1배, 4f -> 2배, 6f -> 3배
-            val scale = 6.0f
+            val scale = 8.0f
 
             // 화면 비율 : 조정된 크기에 대한 전체 화면의 크기 : 1이상의 값이 나온다.
             var ratio = (screenHeight.toDouble() / adjustHeight.toDouble())
