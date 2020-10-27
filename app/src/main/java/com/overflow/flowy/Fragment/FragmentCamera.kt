@@ -8,11 +8,15 @@ import android.widget.Button
 import android.widget.Toast
 import android.widget.ToggleButton
 import androidx.fragment.app.Fragment
+import com.overflow.flowy.DTO.LuminanceData
 import com.overflow.flowy.R
 import com.overflow.flowy.Util.THIS_CONTEXT
 import com.overflow.flowy.Util.cameraMode
 import com.overflow.flowy.Util.cameraSubMode
+import com.overflow.flowy.Util.fragmentType
 import com.overflow.flowy.View.FlowyGLSurfaceView
+import java.util.*
+import kotlin.collections.ArrayList
 
 class FragmentCamera : Fragment(), View.OnClickListener {
 
@@ -30,7 +34,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private lateinit var menuToggleBtn : ToggleButton
     private lateinit var flowyCastToggleBtn : ToggleButton
     private lateinit var freezeToggleBtn : ToggleButton
-    private lateinit var contrastToggleBtn : ToggleButton
+    private lateinit var luminanceToggleBtn : ToggleButton
     private lateinit var controlToggleBtn : ToggleButton
 
     override fun onCreateView(
@@ -66,8 +70,20 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         menuToggleBtn = view.findViewById(R.id.menuToggleBtn)
         flowyCastToggleBtn = view.findViewById(R.id.flowyCastToggleBtn)
         freezeToggleBtn = view.findViewById(R.id.freezeToggleBtn)
-        contrastToggleBtn = view.findViewById(R.id.contrastToggleBtn)
+        luminanceToggleBtn = view.findViewById(R.id.luminanceToggleBtn)
         controlToggleBtn = view.findViewById(R.id.controlToggleBtn)
+
+        /** 고대비 기본 색상 초기화 */
+        luminanceDataInit()
+    }
+
+    /** 고대비 기본 색상 초기화 */
+    fun luminanceDataInit(){
+        luminanceArrayData = ArrayList<LuminanceData>()
+        luminanceArrayData.add(LuminanceData(R.color.black, R.color.white))
+        luminanceArrayData.add(LuminanceData(R.color.black, R.color.yellow))
+        luminanceArrayData.add(LuminanceData(R.color.blue, R.color.white))
+        luminanceArrayData.add(LuminanceData(R.color.blue, R.color.yellow))
     }
 
     /** 사용자가 화면을 터치했을때 좌표를 항상 기록한다. */
@@ -111,7 +127,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         menuToggleBtn.setOnClickListener(this)
         flowyCastToggleBtn.setOnClickListener(this)
         freezeToggleBtn.setOnClickListener(this)
-        contrastToggleBtn.setOnClickListener(this)
+        luminanceToggleBtn.setOnClickListener(this)
         controlToggleBtn.setOnClickListener(this)
     }
 
@@ -192,54 +208,72 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     override fun onClick(v: View) {
         when (v.id) {
             R.id.focusToggleBtn ->{
-                menuCheckedOff(focusToggleBtn)
+//                menuCheckedOff(focusToggleBtn)
                 Toast.makeText(context, "포커스 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
             }
             R.id.flashToggleBtn ->{
-                menuCheckedOff(flashToggleBtn)
+//                menuCheckedOff(flashToggleBtn)
                 Toast.makeText(context, "플래쉬 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
             }
             R.id.lensChangeToggleBtn ->{
-                menuCheckedOff(lensChangeToggleBtn)
+//                menuCheckedOff(lensChangeToggleBtn)
                 Toast.makeText(context, "화면전환 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
             }
             // 플로위 줌을 사용 여부를 변경한다.
             R.id.flowyZoomToggleBtn -> {
-                menuCheckedOff(flowyZoomToggleBtn)
+//                menuCheckedOff(flowyZoomToggleBtn)
                 // 플로위 줌 버튼을 눌렀을때 카메라 모드가 기본값이면, 카메라 모드는 flowy로 카메라 서브 모드는 longClick으로 변경한다.
-                if (cameraMode == "default") {
+                if (flowyZoomToggleBtn.isChecked) {
                     cameraMode = "flowy"
                     cameraSubMode = "longClick"
                 }
 
                 // 카메라 모드가 플로위 모드라면, 카메라모드를 기본값으로, 카메라 서브값도 기본값으로 변경한다.
-                else if (cameraMode == "flowy") {
+                else{
                     cameraMode = "default"
-                    cameraSubMode = "longClick"
+                    cameraSubMode = "default"
                 }
             }
             R.id.mirroringToggleBtn ->{
-                menuCheckedOff(mirroringToggleBtn)
+//                menuCheckedOff(mirroringToggleBtn)
                 Toast.makeText(context, "화면공유 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
             }
             R.id.menuToggleBtn ->{
-                menuCheckedOff(menuToggleBtn)
+//                menuCheckedOff(menuToggleBtn)
                 Toast.makeText(context, "메뉴 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
             }
             R.id.flowyCastToggleBtn ->{
-                menuCheckedOff(flowyCastToggleBtn)
+//                menuCheckedOff(flowyCastToggleBtn)
                 Toast.makeText(context, "플로위 캐스트 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
             }
             R.id.freezeToggleBtn ->{
-                menuCheckedOff(freezeToggleBtn)
+//                menuCheckedOff(freezeToggleBtn)
                 Toast.makeText(context, "프리즈 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
             }
-            R.id.contrastToggleBtn ->{
-                menuCheckedOff(contrastToggleBtn)
-                Toast.makeText(context, "고대비 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+            R.id.luminanceToggleBtn ->{
+
+                luminanceFlag = true
+
+                // 고대비를 활성화 시킨다.
+                // arraylist에 등록된 고대비 색상의 갯수보다 내가 선택한 횟수가 많다면 기본색상을 보여줘야한다.
+                if (luminanceIndex >= luminanceArrayData.size) {
+                    luminanceIndex = 0
+                }
+                else{
+                    luminanceIndex += 1
+                }
+
+                if (luminanceIndex == 0) {
+                    fragmentType = "default"
+                    luminanceToggleBtn.isChecked = false
+                }
+                else {
+                    fragmentType = "luminance"
+                    luminanceToggleBtn.isChecked = true
+                }
             }
             R.id.controlToggleBtn ->{
-                menuCheckedOff(controlToggleBtn)
+//                menuCheckedOff(controlToggleBtn)
                 Toast.makeText(context, "밝기, 대비 조절 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
             }
 
@@ -248,27 +282,27 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     }
 
     /** 메뉴 활성화된 버튼 해제 */
-    private fun menuCheckedOff(clickToggleButton: ToggleButton) {
-
-        // 사용자가 누른 버튼이 눌렀을때 꺼질 상태라면, 해당 버튼을 비활성화 한다.
-        if(!clickToggleButton.isChecked){
-            clickToggleButton.isChecked = false
-        }
-        // 사용자가 누른 버튼이 눌렀을때 켜질 상태라면, 다른버튼은 비활성화하고 선택한 버튼만 활성화 한다.
-        else{
-            focusToggleBtn.isChecked = false
-            flashToggleBtn.isChecked = false
-            lensChangeToggleBtn.isChecked = false
-            flowyZoomToggleBtn.isChecked = false
-            mirroringToggleBtn.isChecked = false
-            menuToggleBtn.isChecked = false
-            flowyCastToggleBtn.isChecked = false
-            freezeToggleBtn.isChecked = false
-            contrastToggleBtn.isChecked = false
-            controlToggleBtn.isChecked = false
-            clickToggleButton.isChecked = true
-        }
-    }
+//    private fun menuCheckedOff(clickToggleButton: ToggleButton) {
+//
+//        // 사용자가 누른 버튼이 눌렀을때 꺼질 상태라면, 해당 버튼을 비활성화 한다.
+//        if(!clickToggleButton.isChecked){
+//            clickToggleButton.isChecked = false
+//        }
+//        // 사용자가 누른 버튼이 눌렀을때 켜질 상태라면, 다른버튼은 비활성화하고 선택한 버튼만 활성화 한다.
+//        else{
+//            focusToggleBtn.isChecked = false
+//            flashToggleBtn.isChecked = false
+//            lensChangeToggleBtn.isChecked = false
+//            flowyZoomToggleBtn.isChecked = false
+//            mirroringToggleBtn.isChecked = false
+//            menuToggleBtn.isChecked = false
+//            flowyCastToggleBtn.isChecked = false
+//            freezeToggleBtn.isChecked = false
+//            contrastToggleBtn.isChecked = false
+//            controlToggleBtn.isChecked = false
+//            clickToggleButton.isChecked = true
+//        }
+//    }
 
     companion object {
 
@@ -296,6 +330,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         var doubleTapPointX: Double = 0.0
         var doubleTapPointY: Double = 0.0
 
+        /** 고대비 색상과 인덱스 */
+        lateinit var luminanceArrayData : ArrayList<LuminanceData>
+        var luminanceIndex : Int = 0
+        var luminanceFlag : Boolean = false
     }
 
 }

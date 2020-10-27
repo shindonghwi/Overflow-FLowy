@@ -1,29 +1,36 @@
 package com.overflow.flowy.Renderer
 
+import android.graphics.Color
 import android.graphics.SurfaceTexture
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
+import android.os.Build
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Size
-import androidx.camera.core.*
+import androidx.annotation.RequiresApi
+import androidx.camera.core.AspectRatio
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointX
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointY
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.isDoubleTapFirstTouched
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.isTouching
+import com.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceArrayData
+import com.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceFlag
+import com.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceIndex
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchFirstX
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchFirstY
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointX
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointY
 import com.overflow.flowy.Provider.SurfaceTextureProvider
+import com.overflow.flowy.R
 import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLSurfaceView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -57,8 +64,6 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
     private var varNDC: FloatArray = NDC_VERTICE
 
     /** 셰이더 코드 설정 */
-    private lateinit var vertexType: String
-    private lateinit var fragmentType: String
     private lateinit var vertexCode: String
     private lateinit var fragmentCode: String
 
@@ -110,12 +115,22 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
 
         setNDCandOPENGL(cameraMode = cameraMode)
 
-        // 프로그램 연결
-        GLES20.glUseProgram(program)
-
         // 프래그먼트 쉐이더 조절
-        if (fragmentType == "default") FShaderControlDefault()
-        else if (fragmentType == "luminance") FShaderControlLuminance()
+        if (fragmentType == "default") {
+            if (luminanceFlag){
+                program = createProgram()
+                luminanceFlag = false
+            }
+            FShaderControlDefault()
+        }
+        else if (fragmentType == "luminance") {
+//            if (luminanceFlag){
+                program = createProgram()
+//                luminanceFlag = false
+//            }
+            FShaderControlLuminance()
+        }
+        GLES20.glUseProgram(program)
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -143,11 +158,8 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         // 카메라 프리뷰 설정
         setUpCameraPreview(cameraLensMode = cameraLensMode, aspectRatio = screenSetAspectRatio())
 
-        // 셰이터 프로그램 타입 설정
-        setProgramCode(vertexType = "default", fragmentType = "default")
-
         // 셰이더 프로그램 생성
-        program = createProgram(vertexCode = vertexCode, fragmentCode = fragmentCode)
+        program = createProgram()
 
 //        flowyGLSurfaceView.display.getRealSize(Point())
         mGLInit = true
@@ -228,16 +240,11 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
 //        }
     }
 
-    /** 셰이더 프로그램 타입 설정 */
-    private fun setProgramCode(vertexType: String, fragmentType: String) {
-        this.vertexType = vertexType
-        this.fragmentType = fragmentType
+    /** 셰이더 프로그램 생성 */
+    private fun createProgram(): Int {
         this.vertexCode = LoadFile().shaderCodeRead(rawFile = "vertex", type = vertexType)
         this.fragmentCode = LoadFile().shaderCodeRead(rawFile = "fragment", type = fragmentType)
-    }
 
-    /** 셰이더 프로그램 생성 */
-    private fun createProgram(vertexCode: String, fragmentCode: String): Int {
         var vshader = GLES20.glCreateShader(GLES20.GL_VERTEX_SHADER)
         GLES20.glShaderSource(vshader, vertexCode)
         GLES20.glCompileShader(vshader)
@@ -513,6 +520,18 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         GLES20.glFlush()
     }
 
+    /** Color 값은 Int인데 fragment에 적용하기 위해 floatArray로 바꾸는 함수 */
+    fun colorIntToFloatArray(color:Int) : FloatArray{
+
+        val red = (((THIS_CONTEXT!!.resources.getColor(color) shr 16) and 0xff).toDouble()).toFloat()
+        val green = (((THIS_CONTEXT!!.resources.getColor(color) shr 8) and 0xff).toDouble()).toFloat()
+        val blue = ((THIS_CONTEXT!!.resources.getColor(color) and 0xff).toDouble()).toFloat()
+
+        Log.d("colorcolor", "colorIntToFloatArray: $red : $green : $blue")
+
+        return floatArrayOf(red, green, blue, 1.0f)
+    }
+
     /** fragment Shader default : rgb 조작 */
     private fun FShaderControlLuminance() {
         val ph = GLES20.glGetAttribLocation(program, "vPosition") // vertex shader
@@ -523,12 +542,14 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         GLES20.glEnableVertexAttribArray(ph)
         GLES20.glEnableVertexAttribArray(tch)
 
-        val testColorHandle1 = GLES20.glGetUniformLocation(program, "vColor1")
-        val testColorHandle2 = GLES20.glGetUniformLocation(program, "vColor2")
-        val color1 = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)
-        val color2 = floatArrayOf(1.0f, 1.0f, 0.0f, 1.0f)
-        GLES20.glUniform4fv(testColorHandle1, 1, color1, 0)
-        GLES20.glUniform4fv(testColorHandle2, 1, color2, 0)
+        val testColorHandle1 = GLES20.glGetUniformLocation(program, "reversalColor1")
+        val testColorHandle2 = GLES20.glGetUniformLocation(program, "reversalColor2")
+
+        val reversalColor1 = colorIntToFloatArray(luminanceArrayData[luminanceIndex - 1].reversalColor1)
+        val reversalColor2 = colorIntToFloatArray(luminanceArrayData[luminanceIndex - 1].reversalColor2)
+
+        GLES20.glUniform4fv(testColorHandle1, 1, reversalColor1, 0)
+        GLES20.glUniform4fv(testColorHandle2, 1, reversalColor2, 0)
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0)
