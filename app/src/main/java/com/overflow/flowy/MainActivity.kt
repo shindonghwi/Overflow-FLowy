@@ -11,6 +11,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -33,12 +34,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        savedInstanceState ?: supportFragmentManager.beginTransaction()
-                .replace(R.id.container,
-                    FragmentCamera()
-                ,"FlowyCameraFragment"
-                )
-                .commit()
+
 
         /** 화면 하단에 소프트 키 없애는 코드 */
         disableSoftKey()
@@ -64,6 +60,18 @@ class MainActivity : AppCompatActivity() {
                     REQUEST_PERMISSION_CODE
             )
         }
+
+        // 거절된 퍼미션이 없다면 카메라 실행
+        else{
+            Log.d("asdsa","asd")
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.container,
+                    FragmentCamera()
+                    ,"FlowyCameraFragment"
+                )
+                .commit()
+        }
+
     }
 
     // Flowy 권한 요청을 onStart에서 한다.
@@ -106,6 +114,14 @@ class MainActivity : AppCompatActivity() {
                                     errorDialog()?.show()
                                 }
                             }
+                        }
+                        else{
+                            supportFragmentManager.beginTransaction()
+                                .replace(R.id.container,
+                                    FragmentCamera()
+                                    ,"FlowyCameraFragment"
+                                )
+                                .commit()
                         }
                     }
                 }

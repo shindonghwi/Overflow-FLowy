@@ -9,17 +9,17 @@ import android.os.Build
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Size
+import android.view.Surface
 import androidx.annotation.RequiresApi
-import androidx.camera.core.AspectRatio
-import androidx.camera.core.Camera
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import com.google.common.util.concurrent.ListenableFuture
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointX
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointY
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.isDoubleTapFirstTouched
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.isTouching
+import com.overflow.flowy.Fragment.FragmentCamera.Companion.lensChangeFlag
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceArrayData
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceFlag
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceIndex
@@ -31,21 +31,27 @@ import com.overflow.flowy.Provider.SurfaceTextureProvider
 import com.overflow.flowy.R
 import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLSurfaceView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.util.concurrent.ExecutionException
 import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.opengles.GL
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
 class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurfaceView.Renderer,
-    SurfaceTexture.OnFrameAvailableListener {
+    SurfaceTexture.OnFrameAvailableListener{
 
-    private var pVertex: FloatBuffer = ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
-    private var pTexCoord: FloatBuffer = ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+    private var pVertex: FloatBuffer =
+        ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
+    private var pTexCoord: FloatBuffer =
+        ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
     private var sfTexture: SurfaceTexture? = null
     private var program = 0
     private lateinit var cameraProvider: ProcessCameraProvider
@@ -54,7 +60,6 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
     private lateinit var preview: Preview
     private var mGLInit = false
     private var mUpdateST = false
-    private lateinit var camera: Camera
 
     private lateinit var OPENGL_VERTICE: FloatArray
     private var cameraXAspectRatio: Int = -1
@@ -74,24 +79,26 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
     }
 
     /** 화면의 중심점 및 왼, 오, 위, 아래 값 : 중심점 기준으로 사각형이 생긴다고 생각하면됨. */
-    var centerPointX = 0.0
-    var centerPointY = 0.0
-    var screenLeft = 0.0f
-    var screenRight = 0.0f
-    var screenBottom = 0.0f
-    var screenTop = 0.0f
+    private var centerPointX = 0.0
+    private var centerPointY = 0.0
+    private var screenLeft = 0.0f
+    private var screenRight = 0.0f
+    private var screenBottom = 0.0f
+    private var screenTop = 0.0f
 
     /** NDC 및 OPENGL 좌표계 설정 */
     private fun setNDCandOPENGL(cameraMode: String) {
 
-        if (cameraMode == "default"){
-            varNDC = NDC_VERTICE
-        }
-        else if (cameraSubMode == "longClick") {
-            modeFlowy()
-        }
-        else if (cameraSubMode == "flowyDoubleTap"){
-            modeDoubleTap()
+        when {
+            cameraMode == "default" -> {
+                varNDC = NDC_VERTICE
+            }
+            cameraSubMode == "longClick" -> {
+                modeFlowy()
+            }
+            cameraSubMode == "flowyDoubleTap" -> {
+                modeDoubleTap()
+            }
         }
 
         /** NDC 좌표계 설정 */
@@ -107,30 +114,44 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         if (!mGLInit) return
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
-        // 텍스처가 업데이트 가능 할 때 업데이트한다.
-        textureUpdate()
-
-        // 사용자 기기에 따른 화면 설정
-        setScreenWindow()
-
-        setNDCandOPENGL(cameraMode = cameraMode)
-
-        // 프래그먼트 쉐이더 조절
-        if (fragmentType == "default") {
-            if (luminanceFlag){
-                program = createProgram()
-                luminanceFlag = false
-            }
-            FShaderControlDefault()
+        if (lensChangeFlag) {
+            setCamera()
+            lensChangeFlag = false
+            mUpdateST = false
+            return
         }
-        else if (fragmentType == "luminance") {
+
+        if (!mUpdateST) {
+            Log.d("updateAvailable", "$mUpdateST")
+            return
+        } else {
+            // 텍스처가 업데이트 가능 할 때 업데이트한다.
+            textureUpdate()
+
+            // 사용자 기기에 따른 화면 설정
+            setScreenWindow()
+
+            setNDCandOPENGL(cameraMode = cameraMode)
+
+            // 프래그먼트 쉐이더 값 변경
+            if (fragmentType == "default") {
+                if (luminanceFlag) {
+                    program = createProgram()
+                    luminanceFlag = false
+                }
+                FShaderControlDefault()
+            }
+            else if (fragmentType == "luminance") {
 //            if (luminanceFlag){
                 program = createProgram()
 //                luminanceFlag = false
 //            }
-            FShaderControlLuminance()
+                FShaderControlLuminance()
+            }
+            GLES20.glUseProgram(program)
         }
-        GLES20.glUseProgram(program)
+
+
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -142,21 +163,14 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-        initTex()
+//        initTex()
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
 
-        cameraLensMode = 1 // 카메라 렌즈 모드 설정 ( 전면 : 0, 후면 : 1)
-
-        // 카메라 방향 셋팅
-        cameraDirectionSetting(cameraLensMode = cameraLensMode)
+        // 카메라 셋팅
+        setCamera()
 
         // 좌표계 설정
         setNDCandOPENGL(cameraMode = cameraMode)
-
-        cameraXAspectRatio = screenSetAspectRatio() // 16:9 -> 1 [] 4:3 -> 0
-
-        // 카메라 프리뷰 설정
-        setUpCameraPreview(cameraLensMode = cameraLensMode, aspectRatio = screenSetAspectRatio())
 
         // 셰이더 프로그램 생성
         program = createProgram()
@@ -164,6 +178,14 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
 //        flowyGLSurfaceView.display.getRealSize(Point())
         mGLInit = true
 
+    }
+
+    private fun setCamera() {
+//         카메라 방향 셋팅
+        cameraDirectionSetting(cameraLensMode = cameraLensMode)
+        cameraXAspectRatio = screenSetAspectRatio() // 16:9 -> 1 [] 4:3 -> 0
+        // 카메라 프리뷰 설정
+        setUpCameraPreview(cameraLensMode = cameraLensMode, aspectRatio = cameraXAspectRatio)
     }
 
     private fun screenSetAspectRatio(): Int {
@@ -188,33 +210,8 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         if (cameraXAspectRatio == 0) adjustHeight = (screenWidth * 3) / 4 // 4:3 인 경우
         else adjustHeight = (screenWidth * 16) / 9 // 16:9 인 경우
 
-        Log.d("adjustScreenSize", "adjust width : $screenWidth / height : $adjustHeight")
+//        Log.d("adjustScreenSize", "adjust width : $screenWidth / height : $adjustHeight")
         GLES20.glViewport(0, (screenHeight - adjustHeight) / 2, screenWidth, adjustHeight)
-    }
-
-    private fun initTex() {
-        GLES20.glGenTextures(textureArray[0], textureArray, 0)
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureArray[0])
-        GLES20.glTexParameteri(
-            GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
-            GLES20.GL_TEXTURE_WRAP_S,
-            GLES20.GL_CLAMP_TO_EDGE
-        )
-        GLES20.glTexParameteri(
-            GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
-            GLES20.GL_TEXTURE_WRAP_T,
-            GLES20.GL_CLAMP_TO_EDGE
-        )
-        GLES20.glTexParameteri(
-            GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
-            GLES20.GL_TEXTURE_MIN_FILTER,
-            GLES20.GL_NEAREST
-        )
-        GLES20.glTexParameteri(
-            GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
-            GLES20.GL_TEXTURE_MAG_FILTER,
-            GLES20.GL_NEAREST
-        )
     }
 
     fun onResume() {
@@ -229,14 +226,11 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
     /** 텍스처가 업데이트 가능 할 때 업데이트 한다. */
     private fun textureUpdate() {
 //        synchronized(this) {
-//            if (mUpdateST) {
-        try {
-            sfTexture?.updateTexImage()
-        } catch (e: Exception) {
-            sfTexture?.attachToGLContext(textureArray[0])
-        }
-        mUpdateST = false
-//            }
+            try {
+                sfTexture?.updateTexImage()
+            } catch (e: Exception) {
+                sfTexture?.attachToGLContext(textureArray[0])
+            }
 //        }
     }
 
@@ -300,9 +294,9 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                 cameraSelector = CameraSelector.Builder().requireLensFacing(cameraLensMode).build()
                 surfaceTextureProvider = SurfaceTextureProvider()
                 val builder = Preview.Builder()
-//                builder.setTargetResolution(resolution)
                 builder.setTargetAspectRatio(aspectRatio)
                 preview = builder.build()
+                cameraProvider.unbindAll()
                 preview.setSurfaceProvider(
                     surfaceTextureProvider.createSurfaceTextureProvider(
                         object : SurfaceTextureProvider.SurfaceTextureCallback {
@@ -315,11 +309,12 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                                 Log.d("onSurfaceTextureReady", "onSurfaceTextureReady")
                             }
 
-                            override fun onSafeToRelease(surfaceTexture: SurfaceTexture) {}
+                            override fun onSafeToRelease(surfaceTexture: SurfaceTexture) {
+                                Log.d("onSafeToRelease", "onSafeToRelease")
+                            }
                         }
                     )
                 )
-                cameraProvider.unbindAll()
                 camera = cameraProvider.bindToLifecycle(createLifeCycle(), cameraSelector, preview)
             }
             , ContextCompat.getMainExecutor(THIS_CONTEXT)
@@ -366,7 +361,10 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
             centerPointX = (touchPointX / screenWidth) * scale - (scale / 2.0)
             centerPointY = ((touchPointY / screenHeight) * scale - (scale / 2.0)) * ratio
 
-            Log.d("ndkPoint", "ndkPoint : centerPointX : $centerPointX // centerPointY : $centerPointY // ")
+            Log.d(
+                "ndkPoint",
+                "ndkPoint : centerPointX : $centerPointX // centerPointY : $centerPointY // "
+            )
 
             // x의 좌표값을 뒤집는다.
             centerPointX *= -1
@@ -401,15 +399,14 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         }
     }
 
-    private fun modeDoubleTap(){
+    private fun modeDoubleTap() {
         val yMin = ((screenHeight - adjustHeight) / 2).toDouble()
         val yMax = (((screenHeight - adjustHeight) / 2) + adjustHeight).toDouble()
 
         // 화면 바깥을 터치했을때는, FLowy Zoom 모드가 아니라 기본모드로 보여준다.
         if (doubleTapPointY <= yMin || doubleTapPointY >= yMax) {
             varNDC = NDC_VERTICE // 기본 모드로 설정한다.
-        }
-        else{
+        } else {
             // 스케일 설정 : 2f -> 1배, 4f -> 2배, 6f -> 3배
             val scale = 6.0f
 
@@ -418,7 +415,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
             Log.d("ratio", "ratio : $ratio // ")
 
             /** 더블 탭을 처음 클릭한 경우에, 클릭한 지점을 확대해준다. */
-            if ( isDoubleTapFirstTouched ){
+            if (isDoubleTapFirstTouched) {
                 isDoubleTapFirstTouched = false // 더블탭 터치가 끝났다는걸 알린다.
 
                 // 사용자가 터치한곳의 NDK 좌표를 구한다. ( -1 ~ 1 사이값임 )
@@ -450,10 +447,10 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
             }
             /** 더블 탭을 하여, 확대된 이미지가 보이는 상태이다.
              * 여기서는 사용자의 터치포인터를 인식하여 사용자가 움직이는 곳으로 화면을 이동시켜줘야한다. */
-            else{
+            else {
                 val scrollSpeed = 20 // 값을 올릴수록 스크롤 속도가 느려진다.
 
-                if (touchPointX != 0.0 && touchPointY != 0.0 && touchFirstX != 0.0 && touchFirstY != 0.0){
+                if (touchPointX != 0.0 && touchPointY != 0.0 && touchFirstX != 0.0 && touchFirstY != 0.0) {
 
                     // 사용자가 손가락으로 화면을 이동하는데, 얼마나 이동했는지 구하는 식이다.
                     var moveX = touchPointX - touchFirstX
@@ -461,13 +458,17 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                     var moveY = touchPointY - touchFirstY
                     moveY = (moveY / screenHeight) * scale / scrollSpeed
 
-                    Log.d("touchPointXY",   "c : $touchPointX : $touchFirstX")
+                    Log.d("touchPointXY", "c : $touchPointX : $touchFirstX")
 
                     // 설정한 scale만큼 이미지를 확대한다.
-                    screenLeft = (centerPointX.toFloat() - scale + scale / 2.0).toFloat() - moveX.toFloat()
-                    screenRight = (centerPointX.toFloat() + scale - scale / 2.0).toFloat() - moveX.toFloat()
-                    screenBottom = (centerPointY.toFloat() - scale + scale / 2.0).toFloat() + moveY.toFloat()
-                    screenTop = (centerPointY.toFloat() + scale - scale / 2.0).toFloat() + moveY.toFloat()
+                    screenLeft =
+                        (centerPointX.toFloat() - scale + scale / 2.0).toFloat() - moveX.toFloat()
+                    screenRight =
+                        (centerPointX.toFloat() + scale - scale / 2.0).toFloat() - moveX.toFloat()
+                    screenBottom =
+                        (centerPointY.toFloat() - scale + scale / 2.0).toFloat() + moveY.toFloat()
+                    screenTop =
+                        (centerPointY.toFloat() + scale - scale / 2.0).toFloat() + moveY.toFloat()
 
                     // 화면 바깥으로 안나가게 막는다.
                     if (screenRight <= 1) {
@@ -521,10 +522,12 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
     }
 
     /** Color 값은 Int인데 fragment에 적용하기 위해 floatArray로 바꾸는 함수 */
-    fun colorIntToFloatArray(color:Int) : FloatArray{
+    fun colorIntToFloatArray(color: Int): FloatArray {
 
-        val red = (((THIS_CONTEXT!!.resources.getColor(color) shr 16) and 0xff).toDouble()).toFloat()
-        val green = (((THIS_CONTEXT!!.resources.getColor(color) shr 8) and 0xff).toDouble()).toFloat()
+        val red =
+            (((THIS_CONTEXT!!.resources.getColor(color) shr 16) and 0xff).toDouble()).toFloat()
+        val green =
+            (((THIS_CONTEXT!!.resources.getColor(color) shr 8) and 0xff).toDouble()).toFloat()
         val blue = ((THIS_CONTEXT!!.resources.getColor(color) and 0xff).toDouble()).toFloat()
 
         Log.d("colorcolor", "colorIntToFloatArray: $red : $green : $blue")
@@ -545,14 +548,16 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         val testColorHandle1 = GLES20.glGetUniformLocation(program, "reversalColor1")
         val testColorHandle2 = GLES20.glGetUniformLocation(program, "reversalColor2")
 
-        var reversalColor1 : FloatArray
-        var reversalColor2 : FloatArray
+        var reversalColor1: FloatArray
+        var reversalColor2: FloatArray
 
         // 사용자가 너무 빨리누를경우 인덱스 에러가 난다. 예외처리
         try {
-            reversalColor1 = colorIntToFloatArray(luminanceArrayData[luminanceIndex - 1].reversalColor1)
-            reversalColor2 = colorIntToFloatArray(luminanceArrayData[luminanceIndex - 1].reversalColor2)
-        }catch (e : ArrayIndexOutOfBoundsException){
+            reversalColor1 =
+                colorIntToFloatArray(luminanceArrayData[luminanceIndex - 1].reversalColor1)
+            reversalColor2 =
+                colorIntToFloatArray(luminanceArrayData[luminanceIndex - 1].reversalColor2)
+        } catch (e: ArrayIndexOutOfBoundsException) {
             reversalColor1 = colorIntToFloatArray(luminanceArrayData[0].reversalColor1)
             reversalColor2 = colorIntToFloatArray(luminanceArrayData[0].reversalColor2)
         }
@@ -574,5 +579,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         var screenHeight: Int = 0
         private const val RATIO_4_3_VALUE = 4.0 / 3.0
         private const val RATIO_16_9_VALUE = 16.0 / 9.0
+        lateinit var camera: Camera
     }
+
 }

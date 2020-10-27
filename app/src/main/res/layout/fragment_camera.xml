@@ -24,6 +24,7 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <!-- 구현되면 bg 수정해야함 -->
         <ToggleButton
             android:id="@+id/focusToggleBtn"
             android:layout_width="0dp"
@@ -64,6 +65,7 @@
             android:textOff="@string/textClear"
             android:textOn="@string/textClear" />
 
+        <!-- 구현되면 bg 수정해야함 -->
         <ToggleButton
             android:id="@+id/mirroringToggleBtn"
             android:layout_width="0dp"
@@ -90,6 +92,7 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent">
 
+        <!-- 구현되면 bg 수정해야함 -->
         <ToggleButton
             android:id="@+id/menuToggleBtn"
             android:layout_width="0dp"
@@ -100,6 +103,7 @@
             android:textOff="@string/textClear"
             android:textOn="@string/textClear" />
 
+        <!-- 구현되면 bg 수정해야함 -->
         <ToggleButton
             android:id="@+id/flowyCastToggleBtn"
             android:layout_width="0dp"
@@ -110,6 +114,7 @@
             android:textOff="@string/textClear"
             android:textOn="@string/textClear" />
 
+        <!-- 구현되면 bg 수정해야함 -->
         <ToggleButton
             android:id="@+id/freezeToggleBtn"
             android:layout_width="0dp"
@@ -130,6 +135,7 @@
             android:textOff="@string/textClear"
             android:textOn="@string/textClear" />
 
+        <!-- 구현되면 bg 수정해야함 -->
         <ToggleButton
             android:id="@+id/controlToggleBtn"
             android:layout_width="0dp"

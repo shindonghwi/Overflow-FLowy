@@ -35,7 +35,6 @@ import java.util.ArrayList
     1.0f, 0.0f
 )
 
-
 @JvmField var THIS_CONTEXT : Context? = null
 @JvmField var textureArray = IntArray(5)
 @JvmField var cameraLensMode : Int = CameraSelector.LENS_FACING_BACK // 카메라의 렌즈방향 - 전면, 후면
@@ -43,3 +42,7 @@ import java.util.ArrayList
 @JvmField var cameraSubMode : String = "longClick" // 카메라 서브 모드 - 기본은 longClick 모드 , flowyDoubleTap 등
 @JvmField var fragmentType : String = "default"
 @JvmField var vertexType : String = "default"
+
+/** 부가기능 : 플래시, 포커스 기능 등 */
+@JvmField var addSetting : String = "default"
+@JvmField var addSettingStatus : String = "default"

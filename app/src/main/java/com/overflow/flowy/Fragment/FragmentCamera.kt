@@ -1,22 +1,23 @@
 package com.overflow.flowy.Fragment
 
+import android.R.attr.x
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import android.view.*
-import android.widget.Button
 import android.widget.Toast
 import android.widget.ToggleButton
 import androidx.fragment.app.Fragment
 import com.overflow.flowy.DTO.LuminanceData
 import com.overflow.flowy.R
-import com.overflow.flowy.Util.THIS_CONTEXT
-import com.overflow.flowy.Util.cameraMode
-import com.overflow.flowy.Util.cameraSubMode
-import com.overflow.flowy.Util.fragmentType
+import com.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
+import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLSurfaceView
-import java.util.*
-import kotlin.collections.ArrayList
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.lang.Exception
+
 
 class FragmentCamera : Fragment(), View.OnClickListener {
 
@@ -37,6 +38,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private lateinit var luminanceToggleBtn : ToggleButton
     private lateinit var controlToggleBtn : ToggleButton
 
+    private lateinit var alertToast : Toast
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -49,6 +52,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         super.onViewCreated(view, savedInstanceState)
         THIS_CONTEXT = context
         glSurfaceView = view.findViewById(R.id.glSurfaceView)
+
+        alertToast = Toast(context)
 
         idInit(view = view)
 
@@ -208,20 +213,45 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     override fun onClick(v: View) {
         when (v.id) {
             R.id.focusToggleBtn ->{
-//                menuCheckedOff(focusToggleBtn)
-                Toast.makeText(context, "포커스 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+                if (alertToast != null) alertToast.cancel()
+                alertToast = Toast.makeText(context,"포커스 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT )
+                alertToast.show()
             }
+            /** 플래시 기능 */
             R.id.flashToggleBtn ->{
-//                menuCheckedOff(flashToggleBtn)
-                Toast.makeText(context, "플래쉬 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+
+                try {
+                    if ( flashToggleBtn.isChecked ){
+                        camera.cameraControl.enableTorch(true)
+                    }
+                    else{
+                        camera.cameraControl.enableTorch(false)
+                    }
+                }
+                catch (e : Exception){
+                    Toast.makeText(context, "잠시후에 실행해주세요",Toast.LENGTH_SHORT).show()
+                }
+
             }
+            /** 화면 전환 기능 (전면, 후면) */
             R.id.lensChangeToggleBtn ->{
-//                menuCheckedOff(lensChangeToggleBtn)
-                Toast.makeText(context, "화면전환 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+
+                // 0 : 전면
+                // 1 : 후면
+
+                lensChangeFlag = true
+                cameraLensMode = if (cameraLensMode == 0) 1 else 0
+
+                if (flashToggleBtn.isChecked){
+                    flashToggleBtn.isChecked = false
+                    camera.cameraControl.enableTorch(false)
+                }
+
+                flashToggleBtn.isEnabled = cameraLensMode != 0
             }
-            // 플로위 줌을 사용 여부를 변경한다.
+
+            /** 플로위줌 기능 완료 */
             R.id.flowyZoomToggleBtn -> {
-//                menuCheckedOff(flowyZoomToggleBtn)
                 // 플로위 줌 버튼을 눌렀을때 카메라 모드가 기본값이면, 카메라 모드는 flowy로 카메라 서브 모드는 longClick으로 변경한다.
                 if (flowyZoomToggleBtn.isChecked) {
                     cameraMode = "flowy"
@@ -235,21 +265,26 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 }
             }
             R.id.mirroringToggleBtn ->{
-//                menuCheckedOff(mirroringToggleBtn)
-                Toast.makeText(context, "화면공유 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+                if (alertToast != null) alertToast.cancel()
+                alertToast = Toast.makeText(context,"화면공유 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT )
+                alertToast.show()
             }
             R.id.menuToggleBtn ->{
-//                menuCheckedOff(menuToggleBtn)
-                Toast.makeText(context, "메뉴 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+                if (alertToast != null) alertToast.cancel()
+                alertToast = Toast.makeText(context,"메뉴 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT )
+                alertToast.show()
             }
             R.id.flowyCastToggleBtn ->{
-//                menuCheckedOff(flowyCastToggleBtn)
-                Toast.makeText(context, "플로위 캐스트 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+                if (alertToast != null) alertToast.cancel()
+                alertToast = Toast.makeText(context,"플로위 캐스트 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT )
+                alertToast.show()
             }
             R.id.freezeToggleBtn ->{
-//                menuCheckedOff(freezeToggleBtn)
-                Toast.makeText(context, "프리즈 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+                if (alertToast != null) alertToast.cancel()
+                alertToast = Toast.makeText(context,"화면 멈춤 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT )
+                alertToast.show()
             }
+            /** 고대비 기능 완료 */
             R.id.luminanceToggleBtn ->{
 
                 // fragment Shader에서 프로그램을 한번만 만들기 위한 플래그
@@ -275,8 +310,9 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 }
             }
             R.id.controlToggleBtn ->{
-//                menuCheckedOff(controlToggleBtn)
-                Toast.makeText(context, "밝기, 대비 조절 기능은 서비스 구현 예정입니다.",Toast.LENGTH_SHORT).show()
+                if (alertToast != null) alertToast.cancel()
+                alertToast = Toast.makeText(context,"밝기, 대비 조절 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT )
+                alertToast.show()
             }
 
 
@@ -332,10 +368,18 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         var doubleTapPointX: Double = 0.0
         var doubleTapPointY: Double = 0.0
 
+
+        /** --------------------- 고대비 기능 모드 --------------------- */
+
         /** 고대비 색상과 인덱스 */
         lateinit var luminanceArrayData : ArrayList<LuminanceData>
         var luminanceIndex : Int = 0
         var luminanceFlag : Boolean = false
+
+        /** --------------------- 화면 전환 기능 --------------------- */
+        var lensChangeFlag = false
+
+
     }
 
 }
