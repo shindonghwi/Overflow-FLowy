@@ -227,20 +227,20 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
 
     /** 텍스처가 업데이트 가능 할 때 업데이트 한다. */
     private fun textureUpdate() {
-//        synchronized(this) {
-        if (freezeMode){
-            Log.d("freezeMode","$freezeMode")
-            // RenderMode를 Dirty로 설정했기에 requestRender를 요청하지 않으면 렌더링이 중단된다.
-            flowyGLSurfaceView.requestRender()
-            return
-        }
-        try {
-            sfTexture?.updateTexImage()
-        } catch (e: Exception) {
-            sfTexture?.attachToGLContext(textureArray[0])
-        }
+        synchronized(this) {
+            if (freezeMode) {
+                Log.d("freezeMode", "$freezeMode")
+                // RenderMode를 Dirty로 설정했기에 requestRender를 요청하지 않으면 렌더링이 중단된다.
+                flowyGLSurfaceView.requestRender()
+                return
+            }
+            try {
+                sfTexture?.updateTexImage()
+            } catch (e: Exception) {
+                sfTexture?.attachToGLContext(textureArray[0])
+            }
 
-//        }
+        }
     }
 
     /** 셰이더 프로그램 생성 */
