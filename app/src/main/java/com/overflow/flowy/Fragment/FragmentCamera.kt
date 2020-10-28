@@ -1,6 +1,5 @@
 package com.overflow.flowy.Fragment
 
-import android.R.attr.x
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
@@ -13,9 +12,6 @@ import com.overflow.flowy.R
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
 import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLSurfaceView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.lang.Exception
 
 
@@ -279,10 +275,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 alertToast = Toast.makeText(context,"플로위 캐스트 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT )
                 alertToast.show()
             }
+            /** 화면 멈춤 기능 완료 */
             R.id.freezeToggleBtn ->{
-                if (alertToast != null) alertToast.cancel()
-                alertToast = Toast.makeText(context,"화면 멈춤 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT )
-                alertToast.show()
+                // 눌렀는데 체크가 되어있다면
+                freezeMode = freezeToggleBtn.isChecked
             }
             /** 고대비 기능 완료 */
             R.id.luminanceToggleBtn ->{
@@ -318,29 +314,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         }
     }
-
-    /** 메뉴 활성화된 버튼 해제 */
-//    private fun menuCheckedOff(clickToggleButton: ToggleButton) {
-//
-//        // 사용자가 누른 버튼이 눌렀을때 꺼질 상태라면, 해당 버튼을 비활성화 한다.
-//        if(!clickToggleButton.isChecked){
-//            clickToggleButton.isChecked = false
-//        }
-//        // 사용자가 누른 버튼이 눌렀을때 켜질 상태라면, 다른버튼은 비활성화하고 선택한 버튼만 활성화 한다.
-//        else{
-//            focusToggleBtn.isChecked = false
-//            flashToggleBtn.isChecked = false
-//            lensChangeToggleBtn.isChecked = false
-//            flowyZoomToggleBtn.isChecked = false
-//            mirroringToggleBtn.isChecked = false
-//            menuToggleBtn.isChecked = false
-//            flowyCastToggleBtn.isChecked = false
-//            freezeToggleBtn.isChecked = false
-//            contrastToggleBtn.isChecked = false
-//            controlToggleBtn.isChecked = false
-//            clickToggleButton.isChecked = true
-//        }
-//    }
 
     companion object {
 
