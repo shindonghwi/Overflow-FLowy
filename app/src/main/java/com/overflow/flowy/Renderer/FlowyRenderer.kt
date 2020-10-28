@@ -46,7 +46,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurfaceView.Renderer,
-    SurfaceTexture.OnFrameAvailableListener{
+    SurfaceTexture.OnFrameAvailableListener {
 
     private var pVertex: FloatBuffer =
         ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
@@ -114,6 +114,10 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         if (!mGLInit) return
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
+        Log.d("sutexture", "$mUpdateST")
+
+//        if (addSetting == "freeze" && addSettingStatus == "on") mUpdateST = false
+
         if (lensChangeFlag) {
             setCamera()
             lensChangeFlag = false
@@ -123,7 +127,6 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
 
         if (!mUpdateST) {
             Log.d("updateAvailable", "$mUpdateST")
-            return
         } else {
             // 텍스처가 업데이트 가능 할 때 업데이트한다.
             textureUpdate()
@@ -140,8 +143,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                     luminanceFlag = false
                 }
                 FShaderControlDefault()
-            }
-            else if (fragmentType == "luminance") {
+            } else if (fragmentType == "luminance") {
 //            if (luminanceFlag){
                 program = createProgram()
 //                luminanceFlag = false
@@ -226,11 +228,18 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
     /** 텍스처가 업데이트 가능 할 때 업데이트 한다. */
     private fun textureUpdate() {
 //        synchronized(this) {
-            try {
-                sfTexture?.updateTexImage()
-            } catch (e: Exception) {
-                sfTexture?.attachToGLContext(textureArray[0])
-            }
+        if (freezeMode){
+            Log.d("freezeMode","$freezeMode")
+            // RenderMode를 Dirty로 설정했기에 requestRender를 요청하지 않으면 렌더링이 중단된다.
+            flowyGLSurfaceView.requestRender()
+            return
+        }
+        try {
+            sfTexture?.updateTexImage()
+        } catch (e: Exception) {
+            sfTexture?.attachToGLContext(textureArray[0])
+        }
+
 //        }
     }
 
