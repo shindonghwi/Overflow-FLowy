@@ -33,11 +33,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-
-
-        /** 화면 하단에 소프트 키 없애는 코드 */
-        disableSoftKey()
     }
 
     private fun requestPermission(){
@@ -53,7 +48,7 @@ class MainActivity : AppCompatActivity() {
         }
         //거절된 퍼미션이 있다면...
         if(rejectedPermissionList.isNotEmpty()){
-            Log.d(MY_LOG, "requestPermission: " + rejectedPermissionList.toString())
+            Log.d(MY_LOG, "requestPermission: $rejectedPermissionList")
             //권한 요청!
             val array = arrayOfNulls<String>(rejectedPermissionList.size)
             ActivityCompat.requestPermissions(this, rejectedPermissionList.toArray(array),
@@ -63,7 +58,7 @@ class MainActivity : AppCompatActivity() {
 
         // 거절된 퍼미션이 없다면 카메라 실행
         else{
-            Log.d("asdsa","asd")
+            Log.d("permission","camera execute")
             supportFragmentManager.beginTransaction()
                 .replace(R.id.container,
                     FragmentCamera()
@@ -90,6 +85,9 @@ class MainActivity : AppCompatActivity() {
         if (myFragment != null) {
             Log.d("currentFragment", "onResume: cameraFragment()")
         }
+
+        /** 화면 하단에 소프트 키 없애는 코드 */
+        disableSoftKey()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int,
@@ -128,7 +126,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
 
     // 사용자가 권한을 [다시 권한보지 않기] 로 거절했을때 보여줄 함수
     fun errorDialog(): AlertDialog? {
