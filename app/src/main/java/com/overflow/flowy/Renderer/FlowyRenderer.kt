@@ -1,20 +1,18 @@
 package com.overflow.flowy.Renderer
 
-import android.graphics.Color
 import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraMetadata
+import android.hardware.camera2.CaptureRequest
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
-import android.os.Build
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Size
-import android.view.Surface
-import androidx.annotation.RequiresApi
+import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
-import com.google.common.util.concurrent.ListenableFuture
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointX
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointY
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.isDoubleTapFirstTouched
@@ -28,7 +26,6 @@ import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchFirstY
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointX
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointY
 import com.overflow.flowy.Provider.SurfaceTextureProvider
-import com.overflow.flowy.R
 import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLSurfaceView
 import kotlinx.coroutines.CoroutineScope
@@ -39,11 +36,11 @@ import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.util.concurrent.ExecutionException
 import javax.microedition.khronos.egl.EGLConfig
-import javax.microedition.khronos.opengles.GL
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+
 
 class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurfaceView.Renderer,
     SurfaceTexture.OnFrameAvailableListener {
@@ -64,8 +61,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
     private lateinit var OPENGL_VERTICE: FloatArray
     private var cameraXAspectRatio: Int = -1
 
-    private var adjustWidth: Int = 0
-    private var adjustHeight: Int = 0
+
     private var varNDC: FloatArray = NDC_VERTICE
 
     /** 셰이더 코드 설정 */
@@ -111,13 +107,13 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
     }
 
     override fun onDrawFrame(gl: GL10?) {
+
         if (!mGLInit) return
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
         Log.d("sutexture", "$mUpdateST")
 
-//        if (addSetting == "freeze" && addSettingStatus == "on") mUpdateST = false
-
+        // 카메라 전환시에는 텍스처 업데이트를 중단한다.
         if (lensChangeFlag) {
             setCamera()
             lensChangeFlag = false
@@ -144,10 +140,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                 }
                 FShaderControlDefault()
             } else if (fragmentType == "luminance") {
-//            if (luminanceFlag){
                 program = createProgram()
-//                luminanceFlag = false
-//            }
                 FShaderControlLuminance()
             }
             GLES20.glUseProgram(program)
@@ -170,6 +163,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
 
         // 카메라 셋팅
         setCamera()
+
 
         // 좌표계 설정
         setNDCandOPENGL(cameraMode = cameraMode)
@@ -302,9 +296,9 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                 }
                 cameraSelector = CameraSelector.Builder().requireLensFacing(cameraLensMode).build()
                 surfaceTextureProvider = SurfaceTextureProvider()
-                val builder = Preview.Builder()
-                builder.setTargetAspectRatio(aspectRatio)
-                preview = builder.build()
+                previewBuilder = Preview.Builder()
+                previewBuilder.setTargetAspectRatio(aspectRatio)
+                preview = previewBuilder.build()
                 cameraProvider.unbindAll()
                 preview.setSurfaceProvider(
                     surfaceTextureProvider.createSurfaceTextureProvider(
@@ -329,6 +323,8 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
             , ContextCompat.getMainExecutor(THIS_CONTEXT)
         )
     }
+
+
 
     /** 카메라 수명주기  생성*/
     private fun createLifeCycle(): CustomLifecycle {
@@ -586,9 +582,12 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
     companion object {
         var screenWidth: Int = 0
         var screenHeight: Int = 0
+        var adjustWidth: Int = 0
+        var adjustHeight: Int = 0
         private const val RATIO_4_3_VALUE = 4.0 / 3.0
         private const val RATIO_16_9_VALUE = 16.0 / 9.0
-        lateinit var camera: Camera
+        var camera: Camera? = null
+        lateinit var previewBuilder : Preview.Builder
     }
 
 }
