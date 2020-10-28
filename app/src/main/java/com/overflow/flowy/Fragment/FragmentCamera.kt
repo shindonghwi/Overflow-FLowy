@@ -9,10 +9,14 @@ import android.widget.ToggleButton
 import androidx.fragment.app.Fragment
 import com.overflow.flowy.DTO.LuminanceData
 import com.overflow.flowy.R
+import com.overflow.flowy.Renderer.FlowyRenderer.Companion.adjustHeight
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
+import com.overflow.flowy.Renderer.FlowyRenderer.Companion.previewBuilder
 import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLSurfaceView
 import java.lang.Exception
+import java.util.*
+import kotlin.collections.ArrayList
 
 
 class FragmentCamera : Fragment(), View.OnClickListener {
@@ -21,20 +25,20 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private var flowyZoomLongClickEvent: Boolean = false // 롱클릭 이벤트 콜백을 위한 변수, 이벤트 발생시 플로위 줌 시작
 
     /** 메뉴바 상단에 있는 버튼 */
-    private lateinit var focusToggleBtn : ToggleButton
-    private lateinit var flashToggleBtn : ToggleButton
-    private lateinit var lensChangeToggleBtn : ToggleButton
-    private lateinit var flowyZoomToggleBtn : ToggleButton
-    private lateinit var mirroringToggleBtn : ToggleButton
+    private lateinit var focusToggleBtn: ToggleButton
+    private lateinit var flashToggleBtn: ToggleButton
+    private lateinit var lensChangeToggleBtn: ToggleButton
+    private lateinit var flowyZoomToggleBtn: ToggleButton
+    private lateinit var mirroringToggleBtn: ToggleButton
 
     /** 메뉴바 하단에 있는 버튼 */
-    private lateinit var menuToggleBtn : ToggleButton
-    private lateinit var flowyCastToggleBtn : ToggleButton
-    private lateinit var freezeToggleBtn : ToggleButton
-    private lateinit var luminanceToggleBtn : ToggleButton
-    private lateinit var controlToggleBtn : ToggleButton
+    private lateinit var menuToggleBtn: ToggleButton
+    private lateinit var flowyCastToggleBtn: ToggleButton
+    private lateinit var freezeToggleBtn: ToggleButton
+    private lateinit var luminanceToggleBtn: ToggleButton
+    private lateinit var controlToggleBtn: ToggleButton
 
-    private lateinit var alertToast : Toast
+    private lateinit var alertToast: Toast
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -59,7 +63,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     }
 
     /** layout id 초기화하는 공간 */
-    private fun idInit(view : View){
+    private fun idInit(view: View) {
         // 메뉴바 상단의 아이콘
         focusToggleBtn = view.findViewById(R.id.focusToggleBtn)
         flashToggleBtn = view.findViewById(R.id.flashToggleBtn)
@@ -79,7 +83,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     }
 
     /** 고대비 기본 색상 초기화 */
-    fun luminanceDataInit(){
+    private fun luminanceDataInit() {
         luminanceArrayData = ArrayList<LuminanceData>()
         luminanceArrayData.add(LuminanceData(R.color.black, R.color.white))
         luminanceArrayData.add(LuminanceData(R.color.black, R.color.yellow))
@@ -114,6 +118,22 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     fun setDoubleTapTouchPoint(x: Double, y: Double) {
         doubleTapPointX = x
         doubleTapPointY = y
+    }
+
+    /** ------------ 포커스 기능 -------------- */
+
+    fun setFocusTouchPoint(x: Float, y: Float) {
+        touchFocusPointX = x
+        touchFocusPointY = y
+
+        // 90도 회전하기때문에 x,y값을 바꾸어서 넣어준다.
+        val x = glSurfaceView.width * touchFocusPointY /adjustHeight
+        val y = adjustHeight * touchFocusPointX / glSurfaceView.width
+
+        touchFocusPointX = x
+        touchFocusPointY = glSurfaceView.height - y
+
+        Log.d("focusPoint","$touchFocusPointX : $touchFocusPointY")
     }
 
     /** -------------------------------------------------- */
@@ -151,7 +171,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                         // 롱 클릭 모드로 변경
                         else {
                             cameraSubMode = "longClick"
-                            setDoubleTapTouchPoint(0.0,0.0)
+                            setDoubleTapTouchPoint(0.0, 0.0)
                             isDoubleTapFirstTouched = false
                         }
                         return super.onDoubleTap(e)
@@ -167,6 +187,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             override fun onTouch(v: View, event: MotionEvent): Boolean {
                 Log.d("onTouch", "${event.x} : ${event.y} ")
 
+                /** 터치를 하면 해당 위치에 포커스가 맞추어 지는 기능 */
+                focusToggleBtn.isChecked = true // 포커스 버튼을 활성화 시킨다.
+                autoFocusMode = false // 자동 포커스 기능을 해제한다.
+
                 // 사용자가 찎은 좌표를 항상 기록한다.
                 setAlwaysTouchPoint(event.x.toDouble(), event.y.toDouble())
 
@@ -179,13 +203,11 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     setTouchPoint(event.x.toDouble(), event.y.toDouble())
                     // 현재 상태를 터치중으로 변경한다.
                     isTouching = true
-                }
-                else if (cameraSubMode == "flowyDoubleTap"){
+                } else if (cameraSubMode == "flowyDoubleTap") {
 
-                    if (touchFirstX == 0.0 && touchFirstY == 0.0 && event.action == MotionEvent.ACTION_DOWN){
+                    if (touchFirstX == 0.0 && touchFirstY == 0.0 && event.action == MotionEvent.ACTION_DOWN) {
                         setFirstTouchPoint(event.x.toDouble(), event.y.toDouble())
-                    }
-                    else{
+                    } else {
                         setTouchPoint(event.x.toDouble(), event.y.toDouble())
                     }
                 }
@@ -194,9 +216,11 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 if (event.action == MotionEvent.ACTION_UP) {
                     setTouchPoint(0.0, 0.0) // 터치한 포인트를 0,0 으로 초기화한다.
                     setFirstTouchPoint(0.0, 0.0) // 첫번째로 터치한 포인트를 0,0으로 초기화한다.
+                    setFocusTouchPoint(event.x, event.y)
                     Log.d("ClickEvent", "action up")
                     isTouching = false // 현재 상태를 터치중 아님으로 변경한다.
                     flowyZoomLongClickEvent = false // 플로위줌을 사용하기 다시 사용하기 위해 롱클릭 이벤트를 false로 만듦
+                    CameraUtil().cameraTapFocus(glSurfaceView)
                 }
 
                 gestureDetector.onTouchEvent(event)
@@ -208,42 +232,52 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** 클릭 이벤트 처리 */
     override fun onClick(v: View) {
         when (v.id) {
-            R.id.focusToggleBtn ->{
-                if (alertToast != null) alertToast.cancel()
-                alertToast = Toast.makeText(context,"포커스 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT )
-                alertToast.show()
+            R.id.focusToggleBtn -> {
+                // 포커스 기능 버튼
+                autoFocusMode = !focusToggleBtn.isChecked
+
+                if (autoFocusMode) CameraUtil().cameraAutoFocus(glSurfaceView)
+                else  CameraUtil().cameraTapFocus(glSurfaceView) // 포커스 기능을 누르면 오토 포커스 잡힌 곳으로 이동해야하는데 안됨.
+
             }
             /** 플래시 기능 */
-            R.id.flashToggleBtn ->{
+            R.id.flashToggleBtn -> {
 
                 try {
-                    if ( flashToggleBtn.isChecked ){
-                        camera.cameraControl.enableTorch(true)
+                    if (camera != null) {
+                        if (flashToggleBtn.isChecked) {
+                            camera!!.cameraControl.enableTorch(true)
+                        } else {
+                            camera!!.cameraControl.enableTorch(false)
+                        }
                     }
-                    else{
-                        camera.cameraControl.enableTorch(false)
-                    }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "잠시후에 실행해주세요", Toast.LENGTH_SHORT).show()
                 }
-                catch (e : Exception){
-                    Toast.makeText(context, "잠시후에 실행해주세요",Toast.LENGTH_SHORT).show()
-                }
-
             }
             /** 화면 전환 기능 (전면, 후면) */
-            R.id.lensChangeToggleBtn ->{
+            R.id.lensChangeToggleBtn -> {
 
                 // 0 : 전면
                 // 1 : 후면
 
+                // 화면 렌즈 모드바꾸기 전면 , 후면
                 lensChangeFlag = true
                 cameraLensMode = if (cameraLensMode == 0) 1 else 0
 
-                if (flashToggleBtn.isChecked){
-                    flashToggleBtn.isChecked = false
-                    camera.cameraControl.enableTorch(false)
+                // 화면이 전면으로 바뀌게 되면 플래시 기능을 비활성화 시킨다.
+                if (camera != null){
+                    if (flashToggleBtn.isChecked) {
+                        flashToggleBtn.isChecked = false
+                        camera!!.cameraControl.enableTorch(false)
+                    }
                 }
-
                 flashToggleBtn.isEnabled = cameraLensMode != 0
+
+                // 화면이 전환 되면 포커스 기능을 끄고 자동포커스 키능을 켠다..
+                focusToggleBtn.isChecked = false
+                CameraUtil().cameraAutoFocus(glSurfaceView)
+
             }
 
             /** 플로위줌 기능 완료 */
@@ -255,33 +289,34 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 }
 
                 // 카메라 모드가 플로위 모드라면, 카메라모드를 기본값으로, 카메라 서브값도 기본값으로 변경한다.
-                else{
+                else {
                     cameraMode = "default"
                     cameraSubMode = "default"
                 }
             }
-            R.id.mirroringToggleBtn ->{
+            R.id.mirroringToggleBtn -> {
                 if (alertToast != null) alertToast.cancel()
-                alertToast = Toast.makeText(context,"화면공유 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT )
+                alertToast = Toast.makeText(context, "화면공유 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT)
                 alertToast.show()
             }
-            R.id.menuToggleBtn ->{
+            R.id.menuToggleBtn -> {
                 if (alertToast != null) alertToast.cancel()
-                alertToast = Toast.makeText(context,"메뉴 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT )
+                alertToast = Toast.makeText(context, "메뉴 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT)
                 alertToast.show()
             }
-            R.id.flowyCastToggleBtn ->{
+            R.id.flowyCastToggleBtn -> {
                 if (alertToast != null) alertToast.cancel()
-                alertToast = Toast.makeText(context,"플로위 캐스트 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT )
+                alertToast =
+                    Toast.makeText(context, "플로위 캐스트 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT)
                 alertToast.show()
             }
             /** 화면 멈춤 기능 완료 */
-            R.id.freezeToggleBtn ->{
+            R.id.freezeToggleBtn -> {
                 // 눌렀는데 체크가 되어있다면
                 freezeMode = freezeToggleBtn.isChecked
             }
             /** 고대비 기능 완료 */
-            R.id.luminanceToggleBtn ->{
+            R.id.luminanceToggleBtn -> {
 
                 // fragment Shader에서 프로그램을 한번만 만들기 위한 플래그
                 // 프로그램을 여러번 만들면 메모리릭이 발생한다.
@@ -291,23 +326,22 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 // arraylist에 등록된 고대비 색상의 갯수보다 내가 선택한 횟수가 많다면 기본색상을 보여줘야한다.
                 if (luminanceIndex >= luminanceArrayData.size) {
                     luminanceIndex = 0
-                }
-                else{
+                } else {
                     luminanceIndex += 1
                 }
 
                 if (luminanceIndex == 0) {
                     fragmentType = "default"
                     luminanceToggleBtn.isChecked = false
-                }
-                else {
+                } else {
                     fragmentType = "luminance"
                     luminanceToggleBtn.isChecked = true
                 }
             }
-            R.id.controlToggleBtn ->{
+            R.id.controlToggleBtn -> {
                 if (alertToast != null) alertToast.cancel()
-                alertToast = Toast.makeText(context,"밝기, 대비 조절 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT )
+                alertToast =
+                    Toast.makeText(context, "밝기, 대비 조절 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT)
                 alertToast.show()
             }
 
@@ -345,13 +379,17 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         /** --------------------- 고대비 기능 모드 --------------------- */
 
         /** 고대비 색상과 인덱스 */
-        lateinit var luminanceArrayData : ArrayList<LuminanceData>
-        var luminanceIndex : Int = 0
-        var luminanceFlag : Boolean = false
+        lateinit var luminanceArrayData: ArrayList<LuminanceData>
+        var luminanceIndex: Int = 0
+        var luminanceFlag: Boolean = false
 
         /** --------------------- 화면 전환 기능 --------------------- */
         var lensChangeFlag = false
 
+
+        /** 포커스 기능 */
+        var touchFocusPointX : Float = 0f
+        var touchFocusPointY : Float = 0f
 
     }
 
