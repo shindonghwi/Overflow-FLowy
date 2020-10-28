@@ -43,6 +43,5 @@ import java.util.ArrayList
 @JvmField var fragmentType : String = "default"
 @JvmField var vertexType : String = "default"
 
-/** 부가기능 : 플래시, 포커스 기능 등 */
-@JvmField var addSetting : String = "default"
-@JvmField var addSettingStatus : String = "default"
+/** 부가기능 : 플래시, 포커스, 프리즈 기능 등 */
+@JvmField var freezeMode : Boolean = false
