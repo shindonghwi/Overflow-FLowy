@@ -48,3 +48,4 @@ import java.util.ArrayList
 @JvmField var autoFocusMode : Boolean = true
 
 @JvmField var deviceRotationValue : Int = 0
+

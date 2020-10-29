@@ -3,14 +3,14 @@ package com.overflow.flowy.Fragment
 import android.R.attr.button
 import android.annotation.SuppressLint
 import android.hardware.SensorManager
+import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CaptureFailure
+import android.hardware.camera2.CaptureRequest
 import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.view.animation.AccelerateDecelerateInterpolator
-import android.widget.ImageButton
-import android.widget.SeekBar
-import android.widget.Toast
-import android.widget.ToggleButton
+import android.widget.*
 import androidx.fragment.app.Fragment
 import com.overflow.flowy.DTO.LuminanceData
 import com.overflow.flowy.R
@@ -24,6 +24,12 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     private lateinit var glSurfaceView: FlowyGLSurfaceView // 카메라 미리보기가 나올 화면
     private var flowyZoomLongClickEvent: Boolean = false // 롱클릭 이벤트 콜백을 위한 변수, 이벤트 발생시 플로위 줌 시작
+
+    /** 각 요소들의 부모 레이아웃 */
+    private lateinit var topMenuLayout : LinearLayout
+    private lateinit var bottomMenuLayout : LinearLayout
+    private lateinit var pinchZoomLinearLayout : LinearLayout
+    private var twoPointClickFlag : Boolean = true
 
     /** 메뉴바 상단에 있는 버튼 */
     private lateinit var focusToggleBtn: ToggleButton
@@ -46,6 +52,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     private var pinchZoomFinishCallback: Boolean = false
     private var deviceSensorDirection = 0f
+    private var pinchZoomFlag: Boolean = true
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -71,6 +78,12 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     /** layout id 초기화하는 공간 */
     private fun idInit(view: View) {
+
+        // 각메뉴들의 부모 레이아웃
+        topMenuLayout = view.findViewById(R.id.topMenuLayout)
+        bottomMenuLayout = view.findViewById(R.id.bottomMenuLayout)
+        pinchZoomLinearLayout = view.findViewById(R.id.pinchZoomLinearLayout)
+
         // 메뉴바 상단의 아이콘
         focusToggleBtn = view.findViewById(R.id.focusToggleBtn)
         flashToggleBtn = view.findViewById(R.id.flashToggleBtn)
@@ -163,7 +176,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         controlToggleBtn.setOnClickListener(this)
     }
 
-    private var pinchZoomFlag: Boolean = true
 
     private fun pinchZoomListener() {
         pinchZoomSeekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -219,8 +231,9 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                         return super.onDoubleTap(e)
                     }
 
-                    override fun onLongPress(e: MotionEvent?) {
-                        super.onLongPress(e)
+                    override fun onShowPress(e: MotionEvent?) {
+                        super.onShowPress(e)
+                        Log.d("onShowPress", "onShowPress")
                         flowyZoomLongClickEvent = true // 롱클릭 이벤트가 발생했을때, 플로위 줌을 시작한다.
                     }
                 })
@@ -287,7 +300,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 setAlwaysTouchPoint(event.x.toDouble(), event.y.toDouble())
 
                 // 롱클릭 이벤트를 받아, 플로위 롱클릭 모드에서 움직이는 경우
-                if (flowyZoomLongClickEvent && cameraMode == "flowy" && event.action == MotionEvent.ACTION_MOVE) {
+                if (flowyZoomLongClickEvent && cameraMode == "flowy" && (event.action == MotionEvent.ACTION_MOVE || event.action == MotionEvent.ACTION_DOWN)) {
                     // 첫번째로 터치한 좌표를 받아 firstTouchX , Y 에 할당한다. 화면 여백을 클릭하는걸 방지 하기 위함.
                     if (touchFirstX == 0.0 && touchFirstY == 0.0)
                         setFirstTouchPoint(event.x.toDouble(), event.y.toDouble())
@@ -315,11 +328,33 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     CameraUtil().cameraTapFocus(glSurfaceView)
                 }
 
+                if (event.action == MotionEvent.ACTION_MASK && event.action == MotionEvent.ACTION_POINTER_DOWN)
+                    Log.d("asdsdasad",event.pointerCount.toString())
+
+                if (event.action == MotionEvent.ACTION_POINTER_2_DOWN && event.pointerCount == 2){
+                    twoPointClick()
+                }
+
+
                 gestureDetector.onTouchEvent(event)
                 pinchZoomGesture.onTouchEvent(event)
                 return true
             }
         })
+    }
+
+    private fun twoPointClick(){
+        if ( twoPointClickFlag ){
+            topMenuLayout.visibility = View.GONE
+            bottomMenuLayout.visibility = View.GONE
+            pinchZoomLinearLayout.visibility = View.GONE
+        }
+        else{
+            topMenuLayout.visibility = View.VISIBLE
+            bottomMenuLayout.visibility = View.VISIBLE
+            pinchZoomLinearLayout.visibility = View.VISIBLE
+        }
+        twoPointClickFlag = !twoPointClickFlag
     }
 
     /** 클릭 이벤트 처리 */
@@ -437,11 +472,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     Toast.makeText(context, "밝기, 대비 조절 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT)
                 alertToast.show()
             }
-
-
         }
     }
-
     override fun onResume() {
         super.onResume()
         /** 화면 방향 체크 */
