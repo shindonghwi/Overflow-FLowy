@@ -167,6 +167,7 @@
         app:layout_constraintStart_toStartOf="parent">
 
         <ImageButton
+            android:id="@+id/pinchZoomMinusImgBtn"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="0.1"
@@ -186,6 +187,7 @@
             android:thumb="@drawable/seekbar_thumb_style" />
 
         <ImageButton
+            android:id="@+id/pinchZoomPlusImgBtn"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="0.1"

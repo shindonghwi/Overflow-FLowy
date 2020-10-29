@@ -1,9 +1,13 @@
 package com.overflow.flowy.Fragment
 
+import android.R.attr.button
 import android.annotation.SuppressLint
+import android.hardware.SensorManager
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.Toast
 import android.widget.ToggleButton
@@ -12,12 +16,8 @@ import com.overflow.flowy.DTO.LuminanceData
 import com.overflow.flowy.R
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.adjustHeight
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
-import com.overflow.flowy.Renderer.FlowyRenderer.Companion.previewBuilder
 import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLSurfaceView
-import java.lang.Exception
-import java.util.*
-import kotlin.collections.ArrayList
 
 
 class FragmentCamera : Fragment(), View.OnClickListener {
@@ -39,11 +39,13 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private lateinit var luminanceToggleBtn: ToggleButton
     private lateinit var controlToggleBtn: ToggleButton
 
-
     private lateinit var alertToast: Toast
     private lateinit var pinchZoomSeekbar: SeekBar
+    private lateinit var pinchZoomMinusImgBtn: ImageButton
+    private lateinit var pinchZoomPlusImgBtn: ImageButton
 
     private var pinchZoomFinishCallback: Boolean = false
+    private var deviceSensorDirection = 0f
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -84,6 +86,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         controlToggleBtn = view.findViewById(R.id.controlToggleBtn)
 
         pinchZoomSeekbar = view.findViewById(R.id.pinchZoomSeekbar)
+        pinchZoomMinusImgBtn = view.findViewById(R.id.pinchZoomMinusImgBtn)
+        pinchZoomPlusImgBtn = view.findViewById(R.id.pinchZoomPlusImgBtn)
 
         /** 고대비 기본 색상 초기화 */
         luminanceDataInit()
@@ -437,6 +441,82 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        /** 화면 방향 체크 */
+        deviceRotationCheck()
+    }
+
+    /** 기기의 방향 체크 - 카메라 프래그먼트에서 화면 방향에 따라서 UI 버튼도 회전이 되어야한다. */
+    private fun deviceRotationCheck(){
+        val orientationEventListener = object:OrientationEventListener(THIS_CONTEXT, SensorManager.SENSOR_DELAY_NORMAL) {
+            override fun onOrientationChanged(orientation:Int) {
+                deviceRotationValue = orientation
+                Log.d("orientation", "orientation = $deviceRotationValue")
+                uiDirectionChange()
+            }
+        }
+        orientationEventListener.enable()
+    }
+
+    /** 메뉴 버튼 방향 변경 */
+    private fun uiDirectionChange(){
+        // 정방향 이미지
+        if ( deviceRotationValue > 315 || deviceRotationValue <= 45){
+            deviceSensorDirection = 0f
+            focusToggleBtn.animate().rotation(0f).interpolator = AccelerateDecelerateInterpolator()
+            seekBarAnimation(pinchZoomSeekbar, 0f)
+        }
+        // 버튼 왼쪽으로 90도 회전
+        else if (deviceRotationValue in 46..135){
+            deviceSensorDirection = -90f
+            seekBarAnimation(pinchZoomSeekbar, 180f)
+        }
+        // 역방향 이미지
+        else if (deviceRotationValue in 136..225){
+            deviceSensorDirection = -180f
+            seekBarAnimation(pinchZoomSeekbar, 180f)
+        }
+
+        // 버튼 오른쪽으로 90도 회전
+        else if (deviceRotationValue in 226..315){
+            deviceSensorDirection = 90f
+            seekBarAnimation(pinchZoomSeekbar, 0f)
+        }
+        menuButtonAnimation(focusToggleBtn, deviceSensorDirection)
+        menuButtonAnimation(flashToggleBtn, deviceSensorDirection)
+        menuButtonAnimation(lensChangeToggleBtn, deviceSensorDirection)
+        menuButtonAnimation(flowyZoomToggleBtn, deviceSensorDirection)
+        menuButtonAnimation(mirroringToggleBtn, deviceSensorDirection)
+        menuButtonAnimation(menuToggleBtn, deviceSensorDirection)
+        menuButtonAnimation(flowyCastToggleBtn, deviceSensorDirection)
+        menuButtonAnimation(freezeToggleBtn, deviceSensorDirection)
+        menuButtonAnimation(freezeToggleBtn, deviceSensorDirection)
+        menuButtonAnimation(luminanceToggleBtn, deviceSensorDirection)
+        menuButtonAnimation(controlToggleBtn, deviceSensorDirection)
+    }
+
+    private fun menuButtonAnimation(toggleBtn : ToggleButton, rotation : Float){
+        toggleBtn.animate().apply { this.duration = 100; this.rotation(rotation) }.start()
+    }
+    private fun seekBarAnimation(seekBar: SeekBar , rotation : Float){
+        seekBar.animate().apply { this.duration = 0; this.rotation(rotation) }.start()
+        if (rotation == 180f){
+            pinchZoomMinusImgBtn.setImageResource(R.drawable.pinchzoom_plus)
+            pinchZoomPlusImgBtn.setImageResource(R.drawable.pinchzoom_minus)
+            pinchZoomMinusImgBtn.animate().apply { this.rotation(180f) }.start()
+            pinchZoomPlusImgBtn.animate().apply { this.rotation(180f) }.start()
+        }
+        else{
+            pinchZoomMinusImgBtn.setImageResource(R.drawable.pinchzoom_minus)
+            pinchZoomPlusImgBtn.setImageResource(R.drawable.pinchzoom_plus)
+            pinchZoomMinusImgBtn.animate().apply {  this.duration = 0; this.rotation(0f) }.start()
+            pinchZoomPlusImgBtn.animate().apply { this.duration = 0;  this.rotation(0f) }.start()
+        }
+
+    }
+
 
     companion object {
 

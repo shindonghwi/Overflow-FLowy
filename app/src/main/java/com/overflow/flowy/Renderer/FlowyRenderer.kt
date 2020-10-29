@@ -1,16 +1,19 @@
 package com.overflow.flowy.Renderer
 
+import android.content.Context
 import android.graphics.SurfaceTexture
-import android.hardware.camera2.CameraMetadata
-import android.hardware.camera2.CaptureRequest
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Size
-import androidx.camera.camera2.interop.Camera2Interop
-import androidx.camera.core.*
+import android.view.Surface
+import android.view.WindowManager
+import androidx.camera.core.AspectRatio
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointX
@@ -28,9 +31,6 @@ import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointY
 import com.overflow.flowy.Provider.SurfaceTextureProvider
 import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLSurfaceView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer

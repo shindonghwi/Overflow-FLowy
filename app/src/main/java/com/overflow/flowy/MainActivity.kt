@@ -2,13 +2,16 @@ package com.overflow.flowy
 
 import android.Manifest
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
+import android.view.OrientationEventListener
 import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
@@ -18,9 +21,11 @@ import androidx.core.content.ContextCompat
 import com.overflow.flowy.Fragment.FragmentCamera
 import com.overflow.flowy.Util.MY_LOG
 import com.overflow.flowy.Util.REQUEST_PERMISSION_CODE
+import com.overflow.flowy.Util.THIS_CONTEXT
+import com.overflow.flowy.Util.deviceRotationValue
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity() : AppCompatActivity() {
 
     /** 요청할 권한들을 작성해준다. */
     private val requiredPermissions = arrayOf(
@@ -88,6 +93,8 @@ class MainActivity : AppCompatActivity() {
 
         /** 화면 하단에 소프트 키 없애는 코드 */
         disableSoftKey()
+
+
     }
 
     override fun onRequestPermissionsResult(requestCode: Int,
@@ -158,5 +165,4 @@ class MainActivity : AppCompatActivity() {
 
         decorView!!.systemUiVisibility = uiOption
     }
-
 }
