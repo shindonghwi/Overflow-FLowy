@@ -3,10 +3,12 @@ package com.overflow.flowy.View
 import android.content.Context
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
+import android.util.Log
 import android.view.SurfaceHolder
 import android.widget.Button
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.overflow.flowy.Renderer.FlowyRenderer
+import com.overflow.flowy.Renderer.FlowyRenderer.Companion.cameraLifecycle
 import com.overflow.flowy.Util.THIS_CONTEXT
 
 class FlowyGLSurfaceView(context: Context, attributeSet: AttributeSet) :
@@ -40,4 +42,5 @@ class FlowyGLSurfaceView(context: Context, attributeSet: AttributeSet) :
         mRenderer.onPause()
         super.onPause()
     }
+
 }

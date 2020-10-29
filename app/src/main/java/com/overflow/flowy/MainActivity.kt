@@ -18,11 +18,12 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import com.overflow.flowy.Fragment.FragmentCamera
-import com.overflow.flowy.Util.MY_LOG
-import com.overflow.flowy.Util.REQUEST_PERMISSION_CODE
-import com.overflow.flowy.Util.THIS_CONTEXT
-import com.overflow.flowy.Util.deviceRotationValue
+import com.overflow.flowy.Renderer.FlowyRenderer
+import com.overflow.flowy.Renderer.FlowyRenderer.Companion.cameraLifecycle
+import com.overflow.flowy.Util.*
+import java.lang.Exception
 
 
 class MainActivity() : AppCompatActivity() {
@@ -85,18 +86,47 @@ class MainActivity() : AppCompatActivity() {
     override fun onResume() {
         Log.d("currentFragment", "onResume")
         super.onResume()
-        val myFragment = supportFragmentManager.findFragmentById(R.id.container)
-        Log.d("currentFragment", "$myFragment")
-        if (myFragment != null) {
-            Log.d("currentFragment", "onResume: cameraFragment()")
-        }
 
         /** 화면 하단에 소프트 키 없애는 코드 */
         disableSoftKey()
 
+        try {
+            Log.d("countFragment", supportFragmentManager.backStackEntryCount.toString())
 
+            // 만일 카메라 수명주기가 해제된 상태라면 프래그먼트 카메라를 다시 살린다.
+            if (cameraLifecycle.currentState().toString() == "DESTROYED"){
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.container,
+                        FragmentCamera()
+                        ,"FlowyCameraFragment"
+                    )
+                    .commit()
+            }
+        }catch (e : Exception){
+
+        }
     }
 
+    override fun onPause() {
+        super.onPause()
+
+        // 현재 보여지는 프래그먼트가 플로위 카메라 프래그먼트라면 수명주기를 해제한다. 그리고 onResume시에 다시 수명주기를 붙인다.
+        val fragmentTag = getVisibleFragment()!!.tag
+        if (fragmentTag == "FlowyCameraFragment"){
+            cameraLifecycle.doOnDestroy() // 카메라 수명주기 off
+            Log.d("currentLifeCycle", cameraLifecycle.currentState().toString())
+        }
+    }
+
+    /** 현재 보여지고 있는 프래그먼트를 가져온다. */
+    fun getVisibleFragment(): Fragment? {
+        for (fragment in supportFragmentManager.fragments)
+            if (fragment.isVisible)
+                return (fragment as Fragment)
+        return null
+    }
+
+    /** 권한 요청 결과 */
     override fun onRequestPermissionsResult(requestCode: Int,
                                             permissions: Array<String>, grantResults: IntArray) {
         when (requestCode) {
@@ -120,6 +150,8 @@ class MainActivity() : AppCompatActivity() {
                                 }
                             }
                         }
+
+                        // 권한을 허용한 경우에는 다음 화면으로 넘어간다.
                         else{
                             supportFragmentManager.beginTransaction()
                                 .replace(R.id.container,

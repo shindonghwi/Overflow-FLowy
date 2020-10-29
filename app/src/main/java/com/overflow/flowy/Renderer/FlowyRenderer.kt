@@ -2,6 +2,7 @@ package com.overflow.flowy.Renderer
 
 import android.content.Context
 import android.graphics.SurfaceTexture
+import android.hardware.camera2.*
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
@@ -60,8 +61,6 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
 
     private lateinit var OPENGL_VERTICE: FloatArray
     private var cameraXAspectRatio: Int = -1
-
-
     private var varNDC: FloatArray = NDC_VERTICE
 
     /** 셰이더 코드 설정 */
@@ -158,12 +157,14 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
+
+        cameraLifecycle = createLifeCycle()
+
 //        initTex()
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
 
         // 카메라 셋팅
         setCamera()
-
 
         // 좌표계 설정
         setNDCandOPENGL(cameraMode = cameraMode)
@@ -299,7 +300,6 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                 previewBuilder = Preview.Builder()
                 previewBuilder.setTargetAspectRatio(aspectRatio)
                 preview = previewBuilder.build()
-                cameraProvider.unbindAll()
                 preview.setSurfaceProvider(
                     surfaceTextureProvider.createSurfaceTextureProvider(
                         object : SurfaceTextureProvider.SurfaceTextureCallback {
@@ -318,12 +318,12 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                         }
                     )
                 )
-                camera = cameraProvider.bindToLifecycle(createLifeCycle(), cameraSelector, preview)
+                cameraProvider.unbindAll()
+                camera = cameraProvider.bindToLifecycle(cameraLifecycle, cameraSelector, preview)
             }
             , ContextCompat.getMainExecutor(THIS_CONTEXT)
         )
     }
-
 
 
     /** 카메라 수명주기  생성*/
@@ -587,7 +587,8 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         private const val RATIO_4_3_VALUE = 4.0 / 3.0
         private const val RATIO_16_9_VALUE = 16.0 / 9.0
         var camera: Camera? = null
-        lateinit var previewBuilder : Preview.Builder
-    }
+        lateinit var previewBuilder: Preview.Builder
+        lateinit var cameraLifecycle: CustomLifecycle
 
+    }
 }
