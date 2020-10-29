@@ -9,10 +9,10 @@
         android:id="@+id/glSurfaceView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- 상단 메뉴바 -->
     <LinearLayout
@@ -149,6 +149,49 @@
             android:background="@drawable/control_menu_on_off"
             android:textOff="@string/textClear"
             android:textOn="@string/textClear" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/pinchzoom_control_bar"
+        android:paddingLeft="10dp"
+        android:paddingTop="5dp"
+        android:paddingRight="10dp"
+        android:paddingBottom="5dp"
+        android:weightSum="1"
+        app:layout_constraintBottom_toTopOf="@+id/bottomMenuLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_max="50dp"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageButton
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.1"
+            android:background="@android:color/transparent"
+            android:scaleType="fitXY"
+            android:src="@drawable/pinchzoom_minus" />
+
+        <SeekBar
+            android:id="@+id/pinchZoomSeekbar"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.8"
+            android:max="100"
+            android:maxHeight="10dp"
+            android:progress="0"
+            android:progressDrawable="@drawable/seekbar_custom_style"
+            android:thumb="@drawable/seekbar_thumb_style" />
+
+        <ImageButton
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.1"
+            android:background="@android:color/transparent"
+            android:scaleType="fitXY"
+            android:src="@drawable/pinchzoom_plus" />
 
     </LinearLayout>
 

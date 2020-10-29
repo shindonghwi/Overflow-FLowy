@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import android.widget.SeekBar
 import android.widget.Toast
 import android.widget.ToggleButton
 import androidx.fragment.app.Fragment
@@ -38,7 +39,11 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private lateinit var luminanceToggleBtn: ToggleButton
     private lateinit var controlToggleBtn: ToggleButton
 
+
     private lateinit var alertToast: Toast
+    private lateinit var pinchZoomSeekbar: SeekBar
+
+    private var pinchZoomFinishCallback: Boolean = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -59,7 +64,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         setClickListener() // 클릭 리스너 설정
         screenTouchListener() // 터치 리스너 설정
-
+        pinchZoomListener() // 핀치줌 리스너 설정
     }
 
     /** layout id 초기화하는 공간 */
@@ -77,6 +82,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         freezeToggleBtn = view.findViewById(R.id.freezeToggleBtn)
         luminanceToggleBtn = view.findViewById(R.id.luminanceToggleBtn)
         controlToggleBtn = view.findViewById(R.id.controlToggleBtn)
+
+        pinchZoomSeekbar = view.findViewById(R.id.pinchZoomSeekbar)
 
         /** 고대비 기본 색상 초기화 */
         luminanceDataInit()
@@ -127,13 +134,13 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         touchFocusPointY = y
 
         // 90도 회전하기때문에 x,y값을 바꾸어서 넣어준다.
-        val x = glSurfaceView.width * touchFocusPointY /adjustHeight
+        val x = glSurfaceView.width * touchFocusPointY / adjustHeight
         val y = adjustHeight * touchFocusPointX / glSurfaceView.width
 
         touchFocusPointX = x
         touchFocusPointY = glSurfaceView.height - y
 
-        Log.d("focusPoint","$touchFocusPointX : $touchFocusPointY")
+        Log.d("focusPoint", "$touchFocusPointX : $touchFocusPointY")
     }
 
     /** -------------------------------------------------- */
@@ -152,12 +159,43 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         controlToggleBtn.setOnClickListener(this)
     }
 
+    private var pinchZoomFlag: Boolean = true
+
+    private fun pinchZoomListener() {
+        pinchZoomSeekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+
+                // 핀치줌을 사용하지 않을때 카메라 확대
+                if (!pinchZoomFlag) {
+                    camera!!.cameraControl.setLinearZoom(progress / 100.toFloat())
+                    Log.d("setLinearZoom", (progress).toString())
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                pinchZoomFlag = false
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                pinchZoomFlag = true
+            }
+
+        })
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     private fun screenTouchListener() {
 
         glSurfaceView.setOnTouchListener(object : View.OnTouchListener {
             private val gestureDetector =
                 GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onSingleTapUp(e: MotionEvent?): Boolean {
+                        /** 터치를 하면 해당 위치에 포커스가 맞추어 지는 기능 */
+                        focusToggleBtn.isChecked = true // 포커스 버튼을 활성화 시킨다.
+                        autoFocusMode = false // 자동 포커스 기능을 해제한다.
+                        return super.onSingleTapUp(e)
+                    }
+
                     override fun onDoubleTap(e: MotionEvent): Boolean {
 
                         // 더블 탭 모드로 변경
@@ -181,15 +219,65 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                         super.onLongPress(e)
                         flowyZoomLongClickEvent = true // 롱클릭 이벤트가 발생했을때, 플로위 줌을 시작한다.
                     }
-
                 })
+
+            private val pinchZoomGesture =
+                ScaleGestureDetector(
+                    context,
+                    object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                        override fun onScale(detector: ScaleGestureDetector?): Boolean {
+                            Log.d("onScale", "onScale")
+
+                            // zoomRatio의 범위는 1~8배 까지이다.
+                            var currentZoomRatio: Float =
+                                camera!!.cameraInfo.zoomState.value?.zoomRatio ?: 0F
+                            var currentZoomLinear: Float =
+                                camera!!.cameraInfo.zoomState.value?.linearZoom ?: 0F
+                            val delta = detector!!.scaleFactor
+                            var scale = currentZoomRatio * delta
+                            camera!!.cameraControl.setZoomRatio(scale)
+                            Log.d("scaleValue123", "$currentZoomRatio : $currentZoomLinear")
+
+                            scale -= 1
+                            if (scale <= 0) scale = 0f
+                            else if (scale >= 7) scale = 7f
+
+                            if (currentZoomLinear <= 0) currentZoomLinear = 0f
+                            else if (currentZoomLinear >= 1) currentZoomLinear = 1f
+
+                            if (pinchZoomFlag) {
+                                Log.d(
+                                    "scaleValue",
+                                    " 1: $currentZoomRatio : $scale : ${pinchZoomSeekbar.progress}"
+                                )
+                                pinchZoomSeekbar.progress =
+                                    (currentZoomLinear * 100.toDouble()).toInt()
+                                Log.d(
+                                    "scaleValue",
+                                    " 2: $currentZoomRatio : $scale : ${pinchZoomSeekbar.progress}"
+                                )
+//                            Log.d("progress", pinchZoomSeekbar.progress.toString())
+                            }
+                            return true
+                        }
+
+                        // 핀치 줌이 끝나면 오토 포커스 모드로 들어간다.
+                        override fun onScaleEnd(detector: ScaleGestureDetector?) {
+                            CameraUtil().cameraAutoFocus(glSurfaceView)
+                            pinchZoomFinishCallback = false
+                            focusToggleBtn.isChecked = false
+                            super.onScaleEnd(detector)
+                        }
+
+                        override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
+                            pinchZoomFinishCallback = true
+                            return super.onScaleBegin(detector)
+                        }
+                    })
+
 
             override fun onTouch(v: View, event: MotionEvent): Boolean {
                 Log.d("onTouch", "${event.x} : ${event.y} ")
-
-                /** 터치를 하면 해당 위치에 포커스가 맞추어 지는 기능 */
-                focusToggleBtn.isChecked = true // 포커스 버튼을 활성화 시킨다.
-                autoFocusMode = false // 자동 포커스 기능을 해제한다.
 
                 // 사용자가 찎은 좌표를 항상 기록한다.
                 setAlwaysTouchPoint(event.x.toDouble(), event.y.toDouble())
@@ -224,6 +312,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 }
 
                 gestureDetector.onTouchEvent(event)
+                pinchZoomGesture.onTouchEvent(event)
                 return true
             }
         })
@@ -237,7 +326,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 autoFocusMode = !focusToggleBtn.isChecked
 
                 if (autoFocusMode) CameraUtil().cameraAutoFocus(glSurfaceView)
-                else  CameraUtil().cameraTapFocus(glSurfaceView) // 포커스 기능을 누르면 오토 포커스 잡힌 곳으로 이동해야하는데 안됨.
+                else CameraUtil().cameraTapFocus(glSurfaceView) // 포커스 기능을 누르면 오토 포커스 잡힌 곳으로 이동해야하는데 안됨.
 
             }
             /** 플래시 기능 */
@@ -266,7 +355,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 cameraLensMode = if (cameraLensMode == 0) 1 else 0
 
                 // 화면이 전면으로 바뀌게 되면 플래시 기능을 비활성화 시킨다.
-                if (camera != null){
+                if (camera != null) {
                     if (flashToggleBtn.isChecked) {
                         flashToggleBtn.isChecked = false
                         camera!!.cameraControl.enableTorch(false)
@@ -388,8 +477,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
 
         /** 포커스 기능 */
-        var touchFocusPointX : Float = 0f
-        var touchFocusPointY : Float = 0f
+        var touchFocusPointX: Float = 0f
+        var touchFocusPointY: Float = 0f
 
     }
 
