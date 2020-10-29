@@ -16,9 +16,16 @@ class CustomLifecycle : LifecycleOwner {
     fun doOnStart() {
         mLifecycleRegistry.markState(Lifecycle.State.STARTED)
     }
+    fun doOnDestroy(){
+        mLifecycleRegistry.markState(Lifecycle.State.DESTROYED)
+    }
 
     override fun getLifecycle(): Lifecycle {
         return mLifecycleRegistry
+    }
+
+    fun currentState(): Lifecycle.State {
+        return mLifecycleRegistry.currentState
     }
 
     init {
