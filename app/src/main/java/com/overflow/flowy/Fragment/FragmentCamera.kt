@@ -26,10 +26,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private var flowyZoomLongClickEvent: Boolean = false // 롱클릭 이벤트 콜백을 위한 변수, 이벤트 발생시 플로위 줌 시작
 
     /** 각 요소들의 부모 레이아웃 */
-    private lateinit var topMenuLayout : LinearLayout
-    private lateinit var bottomMenuLayout : LinearLayout
-    private lateinit var pinchZoomLinearLayout : LinearLayout
-    private var twoPointClickFlag : Boolean = true
+    private lateinit var topMenuLayout: LinearLayout
+    private lateinit var bottomMenuLayout: LinearLayout
+    private lateinit var pinchZoomLinearLayout: LinearLayout
+    private var twoPointClickFlag: Boolean = true
 
     /** 메뉴바 상단에 있는 버튼 */
     private lateinit var focusToggleBtn: ToggleButton
@@ -203,6 +203,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private fun screenTouchListener() {
 
         glSurfaceView.setOnTouchListener(object : View.OnTouchListener {
+
             private val gestureDetector =
                 GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
                     override fun onSingleTapUp(e: MotionEvent?): Boolean {
@@ -238,6 +239,9 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     }
                 })
 
+            /** 핀치줌 기능 : 카메라 모드가 플로위 모드일떄랑 아닐떄랑 나뉜다.
+             * 플로위 기능을 사용할떄는 플로위 확대 - 터치한 포인트를 기준으로 확대를 시켜주고
+             * 플로위 기능을 사용 안할때는 일반 카메라 확대를 해준다. */
             private val pinchZoomGesture =
                 ScaleGestureDetector(
                     context,
@@ -245,53 +249,62 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                         override fun onScale(detector: ScaleGestureDetector?): Boolean {
                             Log.d("onScale", "onScale")
 
-                            // zoomRatio의 범위는 1~8배 까지이다.
-                            var currentZoomRatio: Float =
-                                camera!!.cameraInfo.zoomState.value?.zoomRatio ?: 0F
-                            var currentZoomLinear: Float =
-                                camera!!.cameraInfo.zoomState.value?.linearZoom ?: 0F
-                            val delta = detector!!.scaleFactor
-                            var scale = currentZoomRatio * delta
-                            camera!!.cameraControl.setZoomRatio(scale)
-                            Log.d("scaleValue123", "$currentZoomRatio : $currentZoomLinear")
+                            // 일반 확대를 사용하는 경우
+                            if (cameraMode != "flowy") {
+                                // zoomRatio의 범위는 1~8배 까지이다.
+                                var currentZoomRatio: Float =
+                                    camera!!.cameraInfo.zoomState.value?.zoomRatio ?: 0F
+                                var currentZoomLinear: Float =
+                                    camera!!.cameraInfo.zoomState.value?.linearZoom ?: 0F
+                                val delta = detector!!.scaleFactor
+                                var scale = currentZoomRatio * delta
+                                camera!!.cameraControl.setZoomRatio(scale)
+                                Log.d("scaleValue123", "$currentZoomRatio : $currentZoomLinear")
 
-                            scale -= 1
-                            if (scale <= 0) scale = 0f
-                            else if (scale >= 7) scale = 7f
+                                scale -= 1
+                                if (scale <= 0) scale = 0f
+                                else if (scale >= 7) scale = 7f
 
-                            if (currentZoomLinear <= 0) currentZoomLinear = 0f
-                            else if (currentZoomLinear >= 1) currentZoomLinear = 1f
+                                if (currentZoomLinear <= 0) currentZoomLinear = 0f
+                                else if (currentZoomLinear >= 1) currentZoomLinear = 1f
 
-                            if (pinchZoomFlag) {
-                                Log.d(
-                                    "scaleValue",
-                                    " 1: $currentZoomRatio : $scale : ${pinchZoomSeekbar.progress}"
-                                )
-                                pinchZoomSeekbar.progress =
-                                    (currentZoomLinear * 100.toDouble()).toInt()
-                                Log.d(
-                                    "scaleValue",
-                                    " 2: $currentZoomRatio : $scale : ${pinchZoomSeekbar.progress}"
-                                )
+                                if (pinchZoomFlag) {
+                                    Log.d(
+                                        "scaleValue",
+                                        " 1: $currentZoomRatio : $scale : ${pinchZoomSeekbar.progress}"
+                                    )
+                                    pinchZoomSeekbar.progress =
+                                        (currentZoomLinear * 100.toDouble()).toInt()
+                                    Log.d(
+                                        "scaleValue",
+                                        " 2: $currentZoomRatio : $scale : ${pinchZoomSeekbar.progress}"
+                                    )
 //                            Log.d("progress", pinchZoomSeekbar.progress.toString())
+                                }
                             }
+
                             return true
                         }
 
                         // 핀치 줌이 끝나면 오토 포커스 모드로 들어간다.
                         override fun onScaleEnd(detector: ScaleGestureDetector?) {
-                            CameraUtil().cameraAutoFocus(glSurfaceView)
-                            pinchZoomFinishCallback = false
-                            focusToggleBtn.isChecked = false
+                            // 일반 확대를 사용하는 경우
+                            if (cameraMode != "flowy") {
+                                CameraUtil().cameraAutoFocus(glSurfaceView)
+                                pinchZoomFinishCallback = false
+                                focusToggleBtn.isChecked = false
+                            }
                             super.onScaleEnd(detector)
                         }
 
                         override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
-                            pinchZoomFinishCallback = true
+                            // 일반 확대를 사용하는 경우
+                            if (cameraMode != "flowy") {
+                                pinchZoomFinishCallback = true
+                            }
                             return super.onScaleBegin(detector)
                         }
                     })
-
 
             override fun onTouch(v: View, event: MotionEvent): Boolean {
                 Log.d("onTouch", "${event.x} : ${event.y} ")
@@ -328,10 +341,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     CameraUtil().cameraTapFocus(glSurfaceView)
                 }
 
-                if (event.action == MotionEvent.ACTION_MASK && event.action == MotionEvent.ACTION_POINTER_DOWN)
-                    Log.d("asdsdasad",event.pointerCount.toString())
-
-                if (event.action == MotionEvent.ACTION_POINTER_2_DOWN && event.pointerCount == 2){
+                // 손가락 3개로 터치를 했을때, 메뉴를 보이게 / 안보이게 처리를 한다.
+                if (event.action == MotionEvent.ACTION_POINTER_3_DOWN && event.pointerCount == 3) {
                     twoPointClick()
                 }
 
@@ -343,13 +354,13 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         })
     }
 
-    private fun twoPointClick(){
-        if ( twoPointClickFlag ){
+    /** 화면을 더블 터치 했을떄 메뉴가 사라지고 나타나게 만드는 기능 */
+    private fun twoPointClick() {
+        if (twoPointClickFlag) {
             topMenuLayout.visibility = View.GONE
             bottomMenuLayout.visibility = View.GONE
             pinchZoomLinearLayout.visibility = View.GONE
-        }
-        else{
+        } else {
             topMenuLayout.visibility = View.VISIBLE
             bottomMenuLayout.visibility = View.VISIBLE
             pinchZoomLinearLayout.visibility = View.VISIBLE
@@ -474,6 +485,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             }
         }
     }
+
     override fun onResume() {
         super.onResume()
         /** 화면 방향 체크 */
@@ -481,38 +493,39 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     }
 
     /** 기기의 방향 체크 - 카메라 프래그먼트에서 화면 방향에 따라서 UI 버튼도 회전이 되어야한다. */
-    private fun deviceRotationCheck(){
-        val orientationEventListener = object:OrientationEventListener(THIS_CONTEXT, SensorManager.SENSOR_DELAY_NORMAL) {
-            override fun onOrientationChanged(orientation:Int) {
-                deviceRotationValue = orientation
-                Log.d("orientation", "orientation = $deviceRotationValue")
-                uiDirectionChange()
+    private fun deviceRotationCheck() {
+        val orientationEventListener =
+            object : OrientationEventListener(THIS_CONTEXT, SensorManager.SENSOR_DELAY_NORMAL) {
+                override fun onOrientationChanged(orientation: Int) {
+                    deviceRotationValue = orientation
+                    Log.d("orientation", "orientation = $deviceRotationValue")
+                    uiDirectionChange()
+                }
             }
-        }
         orientationEventListener.enable()
     }
 
     /** 메뉴 버튼 방향 변경 */
-    private fun uiDirectionChange(){
+    private fun uiDirectionChange() {
         // 정방향 이미지
-        if ( deviceRotationValue > 315 || deviceRotationValue <= 45){
+        if (deviceRotationValue > 315 || deviceRotationValue <= 45) {
             deviceSensorDirection = 0f
             focusToggleBtn.animate().rotation(0f).interpolator = AccelerateDecelerateInterpolator()
             seekBarAnimation(pinchZoomSeekbar, 0f)
         }
         // 버튼 왼쪽으로 90도 회전
-        else if (deviceRotationValue in 46..135){
+        else if (deviceRotationValue in 46..135) {
             deviceSensorDirection = -90f
             seekBarAnimation(pinchZoomSeekbar, 180f)
         }
         // 역방향 이미지
-        else if (deviceRotationValue in 136..225){
+        else if (deviceRotationValue in 136..225) {
             deviceSensorDirection = -180f
             seekBarAnimation(pinchZoomSeekbar, 180f)
         }
 
         // 버튼 오른쪽으로 90도 회전
-        else if (deviceRotationValue in 226..315){
+        else if (deviceRotationValue in 226..315) {
             deviceSensorDirection = 90f
             seekBarAnimation(pinchZoomSeekbar, 0f)
         }
@@ -529,22 +542,22 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         menuButtonAnimation(controlToggleBtn, deviceSensorDirection)
     }
 
-    private fun menuButtonAnimation(toggleBtn : ToggleButton, rotation : Float){
+    private fun menuButtonAnimation(toggleBtn: ToggleButton, rotation: Float) {
         toggleBtn.animate().apply { this.duration = 100; this.rotation(rotation) }.start()
     }
-    private fun seekBarAnimation(seekBar: SeekBar , rotation : Float){
+
+    private fun seekBarAnimation(seekBar: SeekBar, rotation: Float) {
         seekBar.animate().apply { this.duration = 0; this.rotation(rotation) }.start()
-        if (rotation == 180f){
+        if (rotation == 180f) {
             pinchZoomMinusImgBtn.setImageResource(R.drawable.pinchzoom_plus)
             pinchZoomPlusImgBtn.setImageResource(R.drawable.pinchzoom_minus)
             pinchZoomMinusImgBtn.animate().apply { this.rotation(180f) }.start()
             pinchZoomPlusImgBtn.animate().apply { this.rotation(180f) }.start()
-        }
-        else{
+        } else {
             pinchZoomMinusImgBtn.setImageResource(R.drawable.pinchzoom_minus)
             pinchZoomPlusImgBtn.setImageResource(R.drawable.pinchzoom_plus)
-            pinchZoomMinusImgBtn.animate().apply {  this.duration = 0; this.rotation(0f) }.start()
-            pinchZoomPlusImgBtn.animate().apply { this.duration = 0;  this.rotation(0f) }.start()
+            pinchZoomMinusImgBtn.animate().apply { this.duration = 0; this.rotation(0f) }.start()
+            pinchZoomPlusImgBtn.animate().apply { this.duration = 0; this.rotation(0f) }.start()
         }
 
     }
