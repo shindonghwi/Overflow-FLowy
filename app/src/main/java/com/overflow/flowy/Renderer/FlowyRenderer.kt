@@ -31,6 +31,7 @@ import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointY
 import com.overflow.flowy.Provider.SurfaceTextureProvider
 import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLSurfaceView
+import com.overflow.flowy.View.GLTextureView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -47,7 +48,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 
-class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurfaceView.Renderer,
+class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLTextureView.Renderer,
     SurfaceTexture.OnFrameAvailableListener {
 
     private var pVertex: FloatBuffer =
@@ -176,6 +177,10 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
 
 //        flowyGLSurfaceView.display.getRealSize(Point())
         mGLInit = true
+
+    }
+
+    override fun onSurfaceDestroyed(gl: GL10?) {
 
     }
 

@@ -1,6 +1,7 @@
 package com.overflow.flowy
 
 import android.Manifest
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
@@ -9,6 +10,7 @@ import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.Settings
 import android.util.Log
 import android.view.OrientationEventListener
@@ -23,6 +25,7 @@ import com.overflow.flowy.Fragment.FragmentCamera
 import com.overflow.flowy.Renderer.FlowyRenderer
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.cameraLifecycle
 import com.overflow.flowy.Util.*
+import java.io.File
 import java.lang.Exception
 
 
@@ -30,7 +33,8 @@ class MainActivity() : AppCompatActivity() {
 
     /** 요청할 권한들을 작성해준다. */
     private val requiredPermissions = arrayOf(
-            Manifest.permission.CAMERA
+            Manifest.permission.CAMERA,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
     )
 
     private var decorView: View? = null

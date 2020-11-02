@@ -1,19 +1,17 @@
 package com.overflow.flowy.Fragment
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
+import android.graphics.Bitmap
 import android.hardware.SensorManager
 import android.os.Bundle
-import android.util.DisplayMetrics
+import android.os.Environment
 import android.util.Log
 import android.view.*
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.*
-import androidx.core.view.marginBottom
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
-import com.github.chrisbanes.photoview.PhotoView
 import com.overflow.flowy.DTO.LuminanceData
 import com.overflow.flowy.R
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.adjustHeight
@@ -24,6 +22,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.FileOutputStream
 
 
 class FragmentCamera : Fragment(), View.OnClickListener {
@@ -64,6 +65,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private var pinchZoomFinishCallback: Boolean = false
     private var deviceSensorDirection = 0f
     private var pinchZoomFlag: Boolean = true
+
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -555,8 +557,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     if (freezeMode) {
                         topMenuLayout.visibility = View.INVISIBLE
                         shareFrameLayout.visibility = View.VISIBLE
-                    }
-                    else{
+                    } else {
                         topMenuLayout.visibility = View.VISIBLE
                         shareFrameLayout.visibility = View.INVISIBLE
                     }
@@ -593,12 +594,47 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             }
 
             /** 공유하기 버튼 */
-            R.id.shareImgBtn ->{
+            R.id.shareImgBtn -> {
+
+                val filePath = Environment.getExternalStorageDirectory().toString()
+                val folderName = "Flowy"
+                val fileName = "shareImage.jpeg"
+                val dirs = File(filePath, folderName)
+
+                // Flowy 폴더가 없으면 만든다.
+                if(!dirs.exists()) {
+                    dirs.mkdirs()
+                }
+
+                try {
+                    CoroutineScope(Dispatchers.Default).launch {
+//                        delay(1000)
+                        val b = glSurfaceView.bitmap
+                        b!!.compress(
+                            Bitmap.CompressFormat.JPEG,
+                            100,
+                            FileOutputStream(
+                                "$filePath/$folderName/$fileName"
+                            )
+                        )
+                    }
+                } catch (e: FileNotFoundException) {
+                    e.printStackTrace()
+                }
+
+                val shareFile = File(filePath, "$folderName/$fileName")
+
                 val intent = Intent(Intent.ACTION_SEND)
-                intent.type = "text/plain"
-                intent.putExtra(Intent.EXTRA_TEXT, R.string.shareMessage) // text는 공유하고 싶은 글자
-                val chooser = Intent.createChooser(intent, R.string.shareTitle.toString())
-                startActivity(chooser)
+                intent.type = "image/*"
+                intent.flags =
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                val uri = FileProvider.getUriForFile(
+                    THIS_CONTEXT!!,
+                    "com.overflow.flowy.fileprovider",
+                    shareFile
+                )
+                intent.putExtra(Intent.EXTRA_STREAM, uri)
+                startActivity(intent)
             }
         }
     }
