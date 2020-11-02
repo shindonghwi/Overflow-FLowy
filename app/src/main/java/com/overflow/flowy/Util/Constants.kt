@@ -50,7 +50,3 @@ import java.util.ArrayList
 @JvmField var deviceRotationValue : Int = 0
 
 
-
-/** 권한 코드 */
-@JvmField val CAMERA_PERMISSION_REQUEST_CODE = 777
-

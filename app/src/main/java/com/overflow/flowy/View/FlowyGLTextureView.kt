@@ -8,7 +8,7 @@ import android.view.ScaleGestureDetector.OnScaleGestureListener
 import android.view.SurfaceHolder
 import com.overflow.flowy.Renderer.FlowyRenderer
 
-class FlowyGLSurfaceView(context: Context, attributeSet: AttributeSet) :
+class FlowyGLTextureView(context: Context, attributeSet: AttributeSet) :
     GLTextureView(context, attributeSet){
 
     private var mRenderer: FlowyRenderer =

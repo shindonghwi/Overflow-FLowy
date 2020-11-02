@@ -17,10 +17,9 @@ import com.overflow.flowy.R
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.adjustHeight
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
 import com.overflow.flowy.Util.*
-import com.overflow.flowy.View.FlowyGLSurfaceView
+import com.overflow.flowy.View.FlowyGLTextureView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileNotFoundException
@@ -29,7 +28,7 @@ import java.io.FileOutputStream
 
 class FragmentCamera : Fragment(), View.OnClickListener {
 
-    private lateinit var glSurfaceView: FlowyGLSurfaceView // 카메라 미리보기가 나올 화면
+    private lateinit var glTextureView: FlowyGLTextureView // 카메라 미리보기가 나올 화면
     private var flowyZoomLongClickEvent: Boolean = false // 롱클릭 이벤트 콜백을 위한 변수, 이벤트 발생시 플로위 줌 시작
 
     /** 각 요소들의 부모 레이아웃 */
@@ -90,7 +89,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     /** layout id 초기화하는 공간 */
     private fun idInit(view: View) {
-        glSurfaceView = view.findViewById(R.id.glSurfaceView)
+        glTextureView = view.findViewById(R.id.glSurfaceView)
 
         // 각메뉴들의 부모 레이아웃
         topMenuLayout = view.findViewById(R.id.topMenuLayout)
@@ -238,11 +237,11 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         touchFocusPointY = y
 
         // 90도 회전하기때문에 x,y값을 바꾸어서 넣어준다.
-        val x = glSurfaceView.width * touchFocusPointY / adjustHeight
-        val y = adjustHeight * touchFocusPointX / glSurfaceView.width
+        val x = glTextureView.width * touchFocusPointY / adjustHeight
+        val y = adjustHeight * touchFocusPointX / glTextureView.width
 
         touchFocusPointX = x
-        touchFocusPointY = glSurfaceView.height - y
+        touchFocusPointY = glTextureView.height - y
 
         Log.d("focusPoint", "$touchFocusPointX : $touchFocusPointY")
     }
@@ -290,7 +289,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     @SuppressLint("ClickableViewAccessibility")
     private fun screenTouchListener() {
 
-        glSurfaceView.setOnTouchListener(object : View.OnTouchListener {
+        glTextureView.setOnTouchListener(object : View.OnTouchListener {
 
             private val gestureDetector =
                 GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
@@ -334,8 +333,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 ScaleGestureDetector(
                     context,
                     object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-                        override fun onScale(detector: ScaleGestureDetector?): Boolean {
-                            Log.d("onScale", "onScale")
+                        override fun onScale(detector: ScaleGestureDetector): Boolean {
+                            Log.d("onScale", cameraMode)
 
                             // 일반 확대를 사용하는 경우
                             if (cameraMode != "flowy") {
@@ -345,7 +344,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                                     camera!!.cameraInfo.zoomState.value?.zoomRatio ?: 0F
                                 var currentZoomLinear: Float =
                                     camera!!.cameraInfo.zoomState.value?.linearZoom ?: 0F
-                                val delta = detector!!.scaleFactor
+                                val delta = detector.scaleFactor
                                 var scale = currentZoomRatio * delta
                                 camera!!.cameraControl.setZoomRatio(scale)
                                 Log.d("scaleValue123", "$currentZoomRatio : $currentZoomLinear")
@@ -371,6 +370,16 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 //                            Log.d("progress", pinchZoomSeekbar.progress.toString())
                                 }
                             }
+                            else{
+                                cameraSubMode = "flowyPinchZoom"
+                                flowyPinchZoomDistance = detector.currentSpan
+                                if (!flowyPinchZoomPointFlag){
+                                    flowyPinchZoomPointFirstX = detector.focusX
+                                    flowyPinchZoomPointFirstY = detector.focusY
+                                    flowyPinchZoomPointFlag = true
+                                }
+                                Log.d("currentSpan","${detector.currentSpan}")
+                            }
 
                             return true
                         }
@@ -379,17 +388,21 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                         override fun onScaleEnd(detector: ScaleGestureDetector?) {
                             // 일반 확대를 사용하는 경우
                             if (cameraMode != "flowy") {
-                                CameraUtil().cameraAutoFocus(glSurfaceView)
+                                CameraUtil().cameraAutoFocus(glTextureView)
                                 pinchZoomFinishCallback = false
                                 focusToggleBtn.isChecked = false
                             }
                             super.onScaleEnd(detector)
                         }
 
-                        override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
+                        override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
                             // 일반 확대를 사용하는 경우
                             if (cameraMode != "flowy") {
                                 pinchZoomFinishCallback = true
+                            }
+                            else{
+                                flowyPinchZoomPointFirstX = detector.focusX
+                                flowyPinchZoomPointFirstY = detector.focusY
                             }
                             return super.onScaleBegin(detector)
                         }
@@ -427,7 +440,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     Log.d("ClickEvent", "action up")
                     isTouching = false // 현재 상태를 터치중 아님으로 변경한다.
                     flowyZoomLongClickEvent = false // 플로위줌을 사용하기 다시 사용하기 위해 롱클릭 이벤트를 false로 만듦
-                    CameraUtil().cameraTapFocus(glSurfaceView)
+                    CameraUtil().cameraTapFocus(glTextureView)
                 }
 
                 // 손가락 3개로 터치를 했을때, 메뉴를 보이게 / 안보이게 처리를 한다.
@@ -470,8 +483,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 // 포커스 기능 버튼
                 autoFocusMode = !focusToggleBtn.isChecked
 
-                if (autoFocusMode) CameraUtil().cameraAutoFocus(glSurfaceView)
-                else CameraUtil().cameraTapFocus(glSurfaceView) // 포커스 기능을 누르면 오토 포커스 잡힌 곳으로 이동해야하는데 안됨.
+                if (autoFocusMode) CameraUtil().cameraAutoFocus(glTextureView)
+                else CameraUtil().cameraTapFocus(glTextureView) // 포커스 기능을 누르면 오토 포커스 잡힌 곳으로 이동해야하는데 안됨.
 
             }
             /** 플래시 기능 */
@@ -514,7 +527,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
                 // 화면이 전환 되면 포커스 기능을 끄고 자동포커스 키능을 켠다..
                 focusToggleBtn.isChecked = false
-                CameraUtil().cameraAutoFocus(glSurfaceView)
+                CameraUtil().cameraAutoFocus(glTextureView)
 
             }
 
@@ -609,7 +622,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 try {
                     CoroutineScope(Dispatchers.Default).launch {
 //                        delay(1000)
-                        val b = glSurfaceView.bitmap
+                        val b = glTextureView.bitmap
                         b!!.compress(
                             Bitmap.CompressFormat.JPEG,
                             100,
@@ -762,6 +775,13 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         /** 포커스 기능 */
         var touchFocusPointX: Float = 0f
         var touchFocusPointY: Float = 0f
+
+        var flowyPinchZoomPointFirstX : Float = 0f
+        var flowyPinchZoomPointFirstY : Float = 0f
+        var flowyPinchZoomPointFlag : Boolean = false
+        var flowyPinchZoomPointX : Float = 0f
+        var flowyPinchZoomPointY : Float = 0f
+        var flowyPinchZoomDistance : Float = 0f
 
         lateinit var blackScreen: ImageView
 
