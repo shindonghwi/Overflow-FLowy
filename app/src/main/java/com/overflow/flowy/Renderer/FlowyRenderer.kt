@@ -1,22 +1,21 @@
 package com.overflow.flowy.Renderer
 
-import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
-import android.hardware.camera2.*
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Size
-import android.view.Surface
-import android.view.WindowManager
+import android.view.View
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import com.overflow.flowy.Fragment.FragmentCamera.Companion.blackScreen
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointX
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointY
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.isDoubleTapFirstTouched
@@ -32,9 +31,14 @@ import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointY
 import com.overflow.flowy.Provider.SurfaceTextureProvider
 import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLSurfaceView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
+import java.nio.IntBuffer
 import java.util.concurrent.ExecutionException
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -110,16 +114,15 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
         if (!mGLInit) return
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
-        Log.d("sutexture", "$mUpdateST")
-
         // 카메라 전환시에는 텍스처 업데이트를 중단한다.
         if (lensChangeFlag) {
+
+            // 텍스처가 업데이트 가능 할 때 업데이트한다.
             setCamera()
             lensChangeFlag = false
             mUpdateST = false
             return
         }
-
         if (!mUpdateST) {
             Log.d("updateAvailable", "$mUpdateST")
         } else {
@@ -143,9 +146,8 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                 FShaderControlLuminance()
             }
             GLES20.glUseProgram(program)
+
         }
-
-
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -226,15 +228,16 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
             if (freezeMode) {
                 Log.d("freezeMode", "$freezeMode")
                 // RenderMode를 Dirty로 설정했기에 requestRender를 요청하지 않으면 렌더링이 중단된다.
-                flowyGLSurfaceView.requestRender()
+//                flowyGLSurfaceView.requestRender()
                 return
             }
-            try {
-                sfTexture?.updateTexImage()
-            } catch (e: Exception) {
-                sfTexture?.attachToGLContext(textureArray[0])
+            else{
+                try {
+                    sfTexture?.updateTexImage()
+                } catch (e: Exception) {
+                    sfTexture?.attachToGLContext(textureArray[0])
+                }
             }
-
         }
     }
 
@@ -309,11 +312,16 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
                             ) {
                                 sfTexture = surfaceTexture
                                 sfTexture?.setOnFrameAvailableListener(this@FlowyRenderer)
+
                                 Log.d("onSurfaceTextureReady", "onSurfaceTextureReady")
                             }
 
                             override fun onSafeToRelease(surfaceTexture: SurfaceTexture) {
                                 Log.d("onSafeToRelease", "onSafeToRelease")
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    delay(900)
+                                    blackScreen.visibility = View.GONE
+                                }
                             }
                         }
                     )
@@ -453,7 +461,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLSurf
             /** 더블 탭을 하여, 확대된 이미지가 보이는 상태이다.
              * 여기서는 사용자의 터치포인터를 인식하여 사용자가 움직이는 곳으로 화면을 이동시켜줘야한다. */
             else {
-                val scrollSpeed = 20 // 값을 올릴수록 스크롤 속도가 느려진다.
+                val scrollSpeed = 30 // 값을 올릴수록 스크롤 속도가 느려진다.
 
                 if (touchPointX != 0.0 && touchPointY != 0.0 && touchFirstX != 0.0 && touchFirstY != 0.0) {
 

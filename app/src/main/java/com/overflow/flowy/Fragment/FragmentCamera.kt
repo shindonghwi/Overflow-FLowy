@@ -12,12 +12,17 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.*
 import androidx.core.view.marginBottom
 import androidx.fragment.app.Fragment
+import com.github.chrisbanes.photoview.PhotoView
 import com.overflow.flowy.DTO.LuminanceData
 import com.overflow.flowy.R
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.adjustHeight
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
 import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLSurfaceView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 class FragmentCamera : Fragment(), View.OnClickListener{
@@ -101,6 +106,8 @@ class FragmentCamera : Fragment(), View.OnClickListener{
         pinchZoomSeekbar = view.findViewById(R.id.pinchZoomSeekbar)
         pinchZoomMinusImgBtn = view.findViewById(R.id.pinchZoomMinusImgBtn)
         pinchZoomPlusImgBtn = view.findViewById(R.id.pinchZoomPlusImgBtn)
+
+        blackScreen = view.findViewById(R.id.blackScreen)
 
         /** 고대비 기본 색상 초기화 */
         luminanceDataInit()
@@ -305,6 +312,7 @@ class FragmentCamera : Fragment(), View.OnClickListener{
 
                             // 일반 확대를 사용하는 경우
                             if (cameraMode != "flowy") {
+
                                 // zoomRatio의 범위는 1~8배 까지이다.
                                 var currentZoomRatio: Float =
                                     camera!!.cameraInfo.zoomState.value?.zoomRatio ?: 0F
@@ -451,6 +459,10 @@ class FragmentCamera : Fragment(), View.OnClickListener{
             /** 화면 전환 기능 (전면, 후면) */
             R.id.lensChangeToggleBtn -> {
 
+                CoroutineScope(Dispatchers.Main).launch {
+                    blackScreen.visibility = View.VISIBLE
+                }
+
                 // 0 : 전면
                 // 1 : 후면
 
@@ -508,6 +520,11 @@ class FragmentCamera : Fragment(), View.OnClickListener{
                 // 눌렀는데 체크가 되어있다면
                 freezeMode = freezeToggleBtn.isChecked
 
+//                if(!freezeMode){
+//                    Log.d("freeeee", "onResume")
+//                    glSurfaceView.onResume()
+//                    glSurfaceView.requestRender()
+//                }
             }
             /** 고대비 기능 완료 */
             R.id.luminanceToggleBtn -> {
@@ -545,6 +562,11 @@ class FragmentCamera : Fragment(), View.OnClickListener{
         super.onResume()
         /** 화면 방향 체크 */
         deviceRotationCheck()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (freezeMode) freezeMode = false
     }
 
     /** 기기의 방향 체크 - 카메라 프래그먼트에서 화면 방향에 따라서 UI 버튼도 회전이 되어야한다. */
@@ -659,6 +681,8 @@ class FragmentCamera : Fragment(), View.OnClickListener{
         /** 포커스 기능 */
         var touchFocusPointX: Float = 0f
         var touchFocusPointY: Float = 0f
+
+        lateinit var blackScreen : ImageView
 
     }
 

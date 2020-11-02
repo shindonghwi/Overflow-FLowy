@@ -10,16 +10,26 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <ImageView
+        android:id="@+id/blackScreen"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_above="@+id/pinchZoomLinearLayout"
+        android:layout_below="@+id/topMenuLayout"
+        android:background="@color/black"
+        android:visibility="invisible"
+        tools:ignore="NotSibling" />
+
     <!-- 상단 메뉴바 -->
     <LinearLayout
         android:id="@+id/topMenuLayout"
         android:layout_width="match_parent"
         android:layout_height="100dp"
+        android:layout_alignParentTop="true"
         android:background="@drawable/menu_bar_top"
         android:orientation="horizontal"
         android:padding="10dp"
         android:weightSum="1"
-        android:layout_alignParentTop="true"
         tools:ignore="NotSibling">
 
         <!-- 구현되면 bg 수정해야함 -->
@@ -78,10 +88,10 @@
 
     <!-- 하단 메뉴바   -->
     <LinearLayout
-        android:layout_alignParentBottom="true"
         android:id="@+id/bottomMenuLayout"
         android:layout_width="match_parent"
         android:layout_height="100dp"
+        android:layout_alignParentBottom="true"
         android:background="@drawable/menu_bar_bottom"
         android:orientation="horizontal"
         android:padding="10dp"
@@ -142,10 +152,10 @@
     </LinearLayout>
 
     <LinearLayout
-        android:layout_above="@+id/bottomMenuLayout"
         android:id="@+id/pinchZoomLinearLayout"
         android:layout_width="match_parent"
         android:layout_height="50dp"
+        android:layout_above="@+id/bottomMenuLayout"
         android:background="@drawable/pinchzoom_control_bar"
         android:paddingLeft="10dp"
         android:paddingTop="5dp"

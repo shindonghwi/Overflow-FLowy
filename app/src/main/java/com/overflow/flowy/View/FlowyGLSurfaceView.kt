@@ -3,16 +3,13 @@ package com.overflow.flowy.View
 import android.content.Context
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
-import android.util.Log
+import android.view.ScaleGestureDetector
+import android.view.ScaleGestureDetector.OnScaleGestureListener
 import android.view.SurfaceHolder
-import android.widget.Button
-import androidx.constraintlayout.widget.ConstraintLayout
 import com.overflow.flowy.Renderer.FlowyRenderer
-import com.overflow.flowy.Renderer.FlowyRenderer.Companion.cameraLifecycle
-import com.overflow.flowy.Util.THIS_CONTEXT
 
 class FlowyGLSurfaceView(context: Context, attributeSet: AttributeSet) :
-    GLSurfaceView(context, attributeSet) {
+    GLSurfaceView(context, attributeSet){
 
     private var mRenderer: FlowyRenderer =
         FlowyRenderer(this)
@@ -20,7 +17,7 @@ class FlowyGLSurfaceView(context: Context, attributeSet: AttributeSet) :
     init{
         setEGLContextClientVersion(2)
         setRenderer(mRenderer)
-        renderMode = RENDERMODE_WHEN_DIRTY
+        renderMode = RENDERMODE_CONTINUOUSLY
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
@@ -42,5 +39,4 @@ class FlowyGLSurfaceView(context: Context, attributeSet: AttributeSet) :
         mRenderer.onPause()
         super.onPause()
     }
-
 }
