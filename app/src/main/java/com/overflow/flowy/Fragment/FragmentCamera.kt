@@ -1,16 +1,16 @@
 package com.overflow.flowy.Fragment
 
-import android.R.attr.button
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.res.Configuration
 import android.hardware.SensorManager
-import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CaptureFailure
-import android.hardware.camera2.CaptureRequest
 import android.os.Bundle
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.*
+import androidx.core.view.marginBottom
 import androidx.fragment.app.Fragment
 import com.overflow.flowy.DTO.LuminanceData
 import com.overflow.flowy.R
@@ -20,7 +20,7 @@ import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLSurfaceView
 
 
-class FragmentCamera : Fragment(), View.OnClickListener {
+class FragmentCamera : Fragment(), View.OnClickListener{
 
     private lateinit var glSurfaceView: FlowyGLSurfaceView // 카메라 미리보기가 나올 화면
     private var flowyZoomLongClickEvent: Boolean = false // 롱클릭 이벤트 콜백을 위한 변수, 이벤트 발생시 플로위 줌 시작
@@ -65,7 +65,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         THIS_CONTEXT = context
-        glSurfaceView = view.findViewById(R.id.glSurfaceView)
 
         alertToast = Toast(context)
 
@@ -78,6 +77,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     /** layout id 초기화하는 공간 */
     private fun idInit(view: View) {
+        glSurfaceView = view.findViewById(R.id.glSurfaceView)
 
         // 각메뉴들의 부모 레이아웃
         topMenuLayout = view.findViewById(R.id.topMenuLayout)
@@ -104,6 +104,60 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         /** 고대비 기본 색상 초기화 */
         luminanceDataInit()
+
+    }
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        uiRelocation()
+    }
+
+    // ui 재배치 ( 태블릿인지, 모바일인지 확인 )
+    private fun uiRelocation(){
+
+        // 모바일인 경우
+        if (!DeviceCheck().isTabletDevice(THIS_CONTEXT!!)){
+            // 현재 버튼의 가로크기를 구해와서, 세로크기를 가로크기와 같게 수정해준다.
+            // 그리고 상단, 하단 메뉴레이아웃의 크기를 세로크기의 1.5배로한다.
+            topMenuLayout.post {
+
+                // 상단 메뉴바 높이 조정
+                val tLayout = RelativeLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT , (focusToggleBtn.height * 1.5).toInt())
+                tLayout.addRule(RelativeLayout.ALIGN_PARENT_TOP)
+                topMenuLayout.layoutParams = tLayout
+                topMenuLayout.requestLayout()
+
+                // 하단 메뉴바 높이 조정
+                val bLayout = RelativeLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT , (focusToggleBtn.height * 1.5).toInt())
+                bLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
+                bottomMenuLayout.layoutParams = bLayout
+                bottomMenuLayout.requestLayout()
+
+            }
+        }
+
+        // 태블릿인경우
+        else{
+            topMenuLayout.post {
+
+                // 상단 메뉴바 높이 조정
+                val tLayout = RelativeLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT , (focusToggleBtn.height * 2.2).toInt())
+                tLayout.addRule(RelativeLayout.ALIGN_PARENT_TOP)
+                topMenuLayout.layoutParams = tLayout
+                topMenuLayout.requestLayout()
+
+                // 하단 메뉴바 높이 조정
+                val bLayout = RelativeLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT , (focusToggleBtn.height * 2.2).toInt())
+                bLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
+                bottomMenuLayout.layoutParams = bLayout
+                bottomMenuLayout.requestLayout()
+            }
+        }
+
     }
 
     /** 고대비 기본 색상 초기화 */
@@ -453,6 +507,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             R.id.freezeToggleBtn -> {
                 // 눌렀는데 체크가 되어있다면
                 freezeMode = freezeToggleBtn.isChecked
+
             }
             /** 고대비 기능 완료 */
             R.id.luminanceToggleBtn -> {
