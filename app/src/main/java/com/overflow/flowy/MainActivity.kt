@@ -110,16 +110,19 @@ class MainActivity() : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
 
-        // 현재 보여지는 프래그먼트가 플로위 카메라 프래그먼트라면 수명주기를 해제한다. 그리고 onResume시에 다시 수명주기를 붙인다.
-        val fragmentTag = getVisibleFragment()!!.tag
-        if (fragmentTag == "FlowyCameraFragment"){
-            cameraLifecycle.doOnDestroy() // 카메라 수명주기 off
-            Log.d("currentLifeCycle", cameraLifecycle.currentState().toString())
-        }
+            // 현재 보여지는 프래그먼트가 플로위 카메라 프래그먼트라면 수명주기를 해제한다. 그리고 onResume시에 다시 수명주기를 붙인다.
+            val topFragment = getVisibleFragment()
+            if (topFragment != null){
+                val fragmentTag = topFragment.tag
+                if (fragmentTag == "FlowyCameraFragment"){
+                    cameraLifecycle.doOnDestroy() // 카메라 수명주기 off
+                    Log.d("currentLifeCycle", cameraLifecycle.currentState().toString())
+                }
+            }
     }
 
     /** 현재 보여지고 있는 프래그먼트를 가져온다. */
-    fun getVisibleFragment(): Fragment? {
+    private fun getVisibleFragment(): Fragment? {
         for (fragment in supportFragmentManager.fragments)
             if (fragment.isVisible)
                 return (fragment as Fragment)
