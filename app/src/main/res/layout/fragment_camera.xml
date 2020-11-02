@@ -20,6 +20,26 @@
         android:visibility="invisible"
         tools:ignore="NotSibling" />
 
+    <FrameLayout
+        android:visibility="invisible"
+        android:id="@+id/shareFrameLayout"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:background="@drawable/menu_bar_top">
+
+        <ImageButton
+            android:id="@+id/shareImgBtn"
+            android:layout_width="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@android:color/transparent"
+            android:scaleType="centerInside"
+            android:src="@drawable/share" />
+
+    </FrameLayout>
+
+
     <!-- 상단 메뉴바 -->
     <LinearLayout
         android:id="@+id/topMenuLayout"

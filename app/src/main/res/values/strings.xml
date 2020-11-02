@@ -3,5 +3,7 @@
     <string name="settings">설정</string>
 
     <string name="textClear"> </string>
+    <string name="shareTitle"> Flowy 공유하기! </string>
+    <string name="shareMessage"> Flowy App을 친구와 함께 즐기세요! </string>
 
 </resources>

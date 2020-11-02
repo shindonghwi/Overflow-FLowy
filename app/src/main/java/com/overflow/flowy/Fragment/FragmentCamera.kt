@@ -2,6 +2,7 @@ package com.overflow.flowy.Fragment
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.hardware.SensorManager
 import android.os.Bundle
@@ -25,7 +26,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
-class FragmentCamera : Fragment(), View.OnClickListener{
+class FragmentCamera : Fragment(), View.OnClickListener {
 
     private lateinit var glSurfaceView: FlowyGLSurfaceView // 카메라 미리보기가 나올 화면
     private var flowyZoomLongClickEvent: Boolean = false // 롱클릭 이벤트 콜백을 위한 변수, 이벤트 발생시 플로위 줌 시작
@@ -49,6 +50,11 @@ class FragmentCamera : Fragment(), View.OnClickListener{
     private lateinit var freezeToggleBtn: ToggleButton
     private lateinit var luminanceToggleBtn: ToggleButton
     private lateinit var controlToggleBtn: ToggleButton
+
+    /** 공유 버튼 */
+    private lateinit var shareImgBtn: ImageButton
+    private lateinit var shareFrameLayout: FrameLayout
+
 
     private lateinit var alertToast: Toast
     private lateinit var pinchZoomSeekbar: SeekBar
@@ -103,6 +109,11 @@ class FragmentCamera : Fragment(), View.OnClickListener{
         luminanceToggleBtn = view.findViewById(R.id.luminanceToggleBtn)
         controlToggleBtn = view.findViewById(R.id.controlToggleBtn)
 
+        // 화면 공유버튼
+        shareFrameLayout = view.findViewById(R.id.shareFrameLayout)
+        shareImgBtn = view.findViewById(R.id.shareImgBtn)
+
+
         pinchZoomSeekbar = view.findViewById(R.id.pinchZoomSeekbar)
         pinchZoomMinusImgBtn = view.findViewById(R.id.pinchZoomMinusImgBtn)
         pinchZoomPlusImgBtn = view.findViewById(R.id.pinchZoomPlusImgBtn)
@@ -120,45 +131,58 @@ class FragmentCamera : Fragment(), View.OnClickListener{
     }
 
     // ui 재배치 ( 태블릿인지, 모바일인지 확인 )
-    private fun uiRelocation(){
+    private fun uiRelocation() {
 
         // 모바일인 경우
-        if (!DeviceCheck().isTabletDevice(THIS_CONTEXT!!)){
+        if (!DeviceCheck().isTabletDevice(THIS_CONTEXT!!)) {
             // 현재 버튼의 가로크기를 구해와서, 세로크기를 가로크기와 같게 수정해준다.
             // 그리고 상단, 하단 메뉴레이아웃의 크기를 세로크기의 1.5배로한다.
             topMenuLayout.post {
 
                 // 상단 메뉴바 높이 조정
                 val tLayout = RelativeLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT , (focusToggleBtn.height * 1.5).toInt())
+                    LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 1.5).toInt()
+                )
                 tLayout.addRule(RelativeLayout.ALIGN_PARENT_TOP)
                 topMenuLayout.layoutParams = tLayout
                 topMenuLayout.requestLayout()
 
                 // 하단 메뉴바 높이 조정
                 val bLayout = RelativeLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT , (focusToggleBtn.height * 1.5).toInt())
+                    LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 1.5).toInt()
+                )
                 bLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
                 bottomMenuLayout.layoutParams = bLayout
                 bottomMenuLayout.requestLayout()
+
+                // 공유버튼 레이아웃 높이 조정
+                val sLayout = RelativeLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 1.5).toInt()
+                )
+                sLayout.addRule(RelativeLayout.ALIGN_PARENT_TOP)
+                shareFrameLayout.layoutParams = sLayout
+                shareFrameLayout.requestLayout()
+
 
             }
         }
 
         // 태블릿인경우
-        else{
+        else {
             topMenuLayout.post {
 
                 // 상단 메뉴바 높이 조정
                 val tLayout = RelativeLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT , (focusToggleBtn.height * 2.2).toInt())
+                    LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 2.2).toInt()
+                )
                 tLayout.addRule(RelativeLayout.ALIGN_PARENT_TOP)
                 topMenuLayout.layoutParams = tLayout
                 topMenuLayout.requestLayout()
 
                 // 하단 메뉴바 높이 조정
                 val bLayout = RelativeLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT , (focusToggleBtn.height * 2.2).toInt())
+                    LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 2.2).toInt()
+                )
                 bLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
                 bottomMenuLayout.layoutParams = bLayout
                 bottomMenuLayout.requestLayout()
@@ -235,6 +259,7 @@ class FragmentCamera : Fragment(), View.OnClickListener{
         freezeToggleBtn.setOnClickListener(this)
         luminanceToggleBtn.setOnClickListener(this)
         controlToggleBtn.setOnClickListener(this)
+        shareImgBtn.setOnClickListener(this)
     }
 
 
@@ -416,14 +441,20 @@ class FragmentCamera : Fragment(), View.OnClickListener{
         })
     }
 
-    /** 화면을 더블 터치 했을떄 메뉴가 사라지고 나타나게 만드는 기능 */
+    /** 화면을 트리플 터치 했을떄 메뉴가 사라지고 나타나게 만드는 기능 */
     private fun twoPointClick() {
         if (twoPointClickFlag) {
-            topMenuLayout.visibility = View.GONE
+            if (topMenuLayout.visibility == View.VISIBLE)
+                topMenuLayout.visibility = View.GONE
+            else
+                shareFrameLayout.visibility = View.GONE
             bottomMenuLayout.visibility = View.GONE
             pinchZoomLinearLayout.visibility = View.GONE
         } else {
-            topMenuLayout.visibility = View.VISIBLE
+            if (shareFrameLayout.visibility == View.GONE)
+                shareFrameLayout.visibility = View.VISIBLE
+            else
+                topMenuLayout.visibility = View.VISIBLE
             bottomMenuLayout.visibility = View.VISIBLE
             pinchZoomLinearLayout.visibility = View.VISIBLE
         }
@@ -520,11 +551,16 @@ class FragmentCamera : Fragment(), View.OnClickListener{
                 // 눌렀는데 체크가 되어있다면
                 freezeMode = freezeToggleBtn.isChecked
 
-//                if(!freezeMode){
-//                    Log.d("freeeee", "onResume")
-//                    glSurfaceView.onResume()
-//                    glSurfaceView.requestRender()
-//                }
+                CoroutineScope(Dispatchers.Main).launch {
+                    if (freezeMode) {
+                        topMenuLayout.visibility = View.INVISIBLE
+                        shareFrameLayout.visibility = View.VISIBLE
+                    }
+                    else{
+                        topMenuLayout.visibility = View.VISIBLE
+                        shareFrameLayout.visibility = View.INVISIBLE
+                    }
+                }
             }
             /** 고대비 기능 완료 */
             R.id.luminanceToggleBtn -> {
@@ -554,6 +590,15 @@ class FragmentCamera : Fragment(), View.OnClickListener{
                 alertToast =
                     Toast.makeText(context, "밝기, 대비 조절 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT)
                 alertToast.show()
+            }
+
+            /** 공유하기 버튼 */
+            R.id.shareImgBtn ->{
+                val intent = Intent(Intent.ACTION_SEND)
+                intent.type = "text/plain"
+                intent.putExtra(Intent.EXTRA_TEXT, R.string.shareMessage) // text는 공유하고 싶은 글자
+                val chooser = Intent.createChooser(intent, R.string.shareTitle.toString())
+                startActivity(chooser)
             }
         }
     }
@@ -682,7 +727,7 @@ class FragmentCamera : Fragment(), View.OnClickListener{
         var touchFocusPointX: Float = 0f
         var touchFocusPointY: Float = 0f
 
-        lateinit var blackScreen : ImageView
+        lateinit var blackScreen: ImageView
 
     }
 
