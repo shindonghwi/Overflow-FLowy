@@ -711,7 +711,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         // 정방향 이미지
         if (deviceRotationValue > 315 || deviceRotationValue <= 45) {
             deviceSensorDirection = 0f
-            focusToggleBtn.animate().rotation(0f).interpolator = AccelerateDecelerateInterpolator()
             seekBarAnimation(pinchZoomSeekbar, 0f)
         }
         // 버튼 왼쪽으로 90도 회전
@@ -730,6 +729,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             deviceSensorDirection = 90f
             seekBarAnimation(pinchZoomSeekbar, 0f)
         }
+        imgButtonAnimation(shareImgBtn, deviceSensorDirection)
         menuButtonAnimation(focusToggleBtn, deviceSensorDirection)
         menuButtonAnimation(flashToggleBtn, deviceSensorDirection)
         menuButtonAnimation(lensChangeToggleBtn, deviceSensorDirection)
@@ -741,6 +741,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         menuButtonAnimation(freezeToggleBtn, deviceSensorDirection)
         menuButtonAnimation(luminanceToggleBtn, deviceSensorDirection)
         menuButtonAnimation(controlToggleBtn, deviceSensorDirection)
+    }
+
+    private fun imgButtonAnimation(imgBtn: ImageButton, rotation: Float) {
+        imgBtn.animate().apply { this.duration = 100; this.rotation(rotation) }.start()
     }
 
     private fun menuButtonAnimation(toggleBtn: ToggleButton, rotation: Float) {
