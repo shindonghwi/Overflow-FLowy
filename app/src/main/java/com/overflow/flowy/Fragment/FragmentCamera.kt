@@ -8,11 +8,13 @@ import android.os.Bundle
 import android.os.Environment
 import android.util.Log
 import android.view.*
-import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.*
 import androidx.core.content.FileProvider
-import androidx.core.view.setMargins
 import androidx.fragment.app.Fragment
+import com.google.android.gms.ads.AdListener
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.MobileAds
 import com.overflow.flowy.DTO.LuminanceData
 import com.overflow.flowy.R
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.adjustHeight
@@ -55,6 +57,9 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** 공유 버튼 */
     private lateinit var shareImgBtn: ImageButton
     private lateinit var shareFrameLayout: FrameLayout
+
+    /** 애드몹 */
+    private lateinit var bannerAdView: AdView
 
 
     private lateinit var alertToast: Toast
@@ -119,6 +124,9 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         pinchZoomSeekbar = view.findViewById(R.id.pinchZoomSeekbar)
         pinchZoomMinusImgBtn = view.findViewById(R.id.pinchZoomMinusImgBtn)
         pinchZoomPlusImgBtn = view.findViewById(R.id.pinchZoomPlusImgBtn)
+
+        // 배너 광고
+        bannerAdView = view.findViewById(R.id.bannerAdView)
 
         blackScreen = view.findViewById(R.id.blackScreen)
 
@@ -475,7 +483,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
                 // 손가락 3개로 터치를 했을때, 메뉴를 보이게 / 안보이게 처리를 한다.
                 if (event.action == MotionEvent.ACTION_POINTER_3_DOWN && event.pointerCount == 3) {
-                    twoPointClick()
+                    threePointClick()
                 }
 
 
@@ -487,7 +495,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     }
 
     /** 화면을 트리플 터치 했을떄 메뉴가 사라지고 나타나게 만드는 기능 */
-    private fun twoPointClick() {
+    private fun threePointClick() {
         if (twoPointClickFlag) {
             if (topMenuLayout.visibility == View.VISIBLE)
                 topMenuLayout.visibility = View.GONE
@@ -495,6 +503,14 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 shareFrameLayout.visibility = View.GONE
             bottomMenuLayout.visibility = View.GONE
             pinchZoomLinearLayout.visibility = View.GONE
+
+            // 광고 위치 조정
+            val bannerViewLayout = RelativeLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, (bannerAdView.height))
+            bannerViewLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
+            bannerViewLayout.addRule(RelativeLayout.CENTER_HORIZONTAL)
+            bannerAdView.layoutParams = bannerViewLayout
+            bannerAdView.requestLayout()
+
         } else {
             if (shareFrameLayout.visibility == View.GONE)
                 shareFrameLayout.visibility = View.VISIBLE
@@ -502,6 +518,14 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 topMenuLayout.visibility = View.VISIBLE
             bottomMenuLayout.visibility = View.VISIBLE
             pinchZoomLinearLayout.visibility = View.VISIBLE
+
+            // 광고 위치 조정
+            val bannerViewLayout = RelativeLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, (bannerAdView.height))
+            bannerViewLayout.addRule(RelativeLayout.ABOVE, R.id.pinchZoomLinearLayout)
+            bannerViewLayout.addRule(RelativeLayout.CENTER_HORIZONTAL)
+            bannerAdView.layoutParams = bannerViewLayout
+            bannerAdView.requestLayout()
+
         }
         twoPointClickFlag = !twoPointClickFlag
     }
@@ -686,6 +710,9 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         super.onResume()
         /** 화면 방향 체크 */
         deviceRotationCheck()
+
+        /** 광고 불러오기 */
+        loadAdMob()
     }
 
     override fun onPause() {
@@ -767,6 +794,37 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     }
 
+    /** 광고 로드 */
+    private fun loadAdMob(){
+        MobileAds.initialize(THIS_CONTEXT, getString(R.string.admob_app_id))
+        val adRequest = AdRequest.Builder().build()
+        bannerAdView.loadAd(adRequest)
+        bannerAdView.bringToFront()
+
+        bannerAdView.adListener = object : AdListener() {
+            override fun onAdLoaded() {
+                // 광고가 문제 없이 로드시 출력
+                Log.d("@@@", "onAdLoaded")
+            }
+
+            override fun onAdFailedToLoad(errorCode: Int) {
+                // 광고 로드에 문제가 있을시 출력
+                Log.d("@@@", "onAdFailedToLoad $errorCode")
+            }
+
+            override fun onAdOpened() {
+            }
+
+            override fun onAdClicked() {
+            }
+
+            override fun onAdLeftApplication() {
+            }
+
+            override fun onAdClosed() {
+            }
+        }
+    }
 
     companion object {
 

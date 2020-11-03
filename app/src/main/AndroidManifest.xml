@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:allowBackup="true"
@@ -15,6 +16,12 @@
         android:roundIcon="@mipmap/flowy_icon_image_round"
         android:supportsRtl="true"
         android:theme="@style/FullScreenTheme">
+
+        <!-- play-services-ads 17.0.0 이상부터는 앱id 작성해야함. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="@string/admob_app_id"/>
+
         <activity android:name=".MainActivity"
             android:screenOrientation="portrait">
             <intent-filter>
