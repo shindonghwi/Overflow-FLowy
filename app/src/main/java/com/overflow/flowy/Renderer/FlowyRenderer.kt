@@ -30,7 +30,7 @@ import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointX
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointY
 import com.overflow.flowy.Provider.SurfaceTextureProvider
 import com.overflow.flowy.Util.*
-import com.overflow.flowy.View.FlowyGLSurfaceView
+import com.overflow.flowy.View.FlowyGLTextureView
 import com.overflow.flowy.View.GLTextureView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,7 +48,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 
-class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLTextureView.Renderer,
+class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLTextureView.Renderer,
     SurfaceTexture.OnFrameAvailableListener {
 
     private var pVertex: FloatBuffer =
@@ -154,8 +154,8 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLText
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
         // 화면의 사이즈 저장
-        screenWidth = flowyGLSurfaceView.width
-        screenHeight = flowyGLSurfaceView.height
+        screenWidth = flowyGLTextureView.width
+        screenHeight = flowyGLTextureView.height
         Log.d("screenSize", "onSurfaceChanged: width : $width / height : $height")
     }
 
@@ -175,7 +175,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLText
         // 셰이더 프로그램 생성
         program = createProgram()
 
-//        flowyGLSurfaceView.display.getRealSize(Point())
+//        flowyGLTextureView.display.getRealSize(Point())
         mGLInit = true
 
     }
@@ -194,7 +194,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLText
 
     private fun screenSetAspectRatio(): Int {
 
-        val metrics = DisplayMetrics().also { flowyGLSurfaceView.display.getRealMetrics(it) }
+        val metrics = DisplayMetrics().also { flowyGLTextureView.display.getRealMetrics(it) }
         val previewRatio = max(metrics.widthPixels, metrics.heightPixels).toDouble() / min(
             metrics.widthPixels,
             metrics.heightPixels
@@ -207,7 +207,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLText
 
     override fun onFrameAvailable(surfaceTexture: SurfaceTexture?) {
         mUpdateST = true
-        flowyGLSurfaceView.requestRender()
+        flowyGLTextureView.requestRender()
     }
 
     private fun setScreenWindow() {
@@ -233,7 +233,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLText
             if (freezeMode) {
                 Log.d("freezeMode", "$freezeMode")
                 // RenderMode를 Dirty로 설정했기에 requestRender를 요청하지 않으면 렌더링이 중단된다.
-//                flowyGLSurfaceView.requestRender()
+//                flowyGLTextureView.requestRender()
                 return
             }
             else{
@@ -466,7 +466,7 @@ class FlowyRenderer(private val flowyGLSurfaceView: FlowyGLSurfaceView) : GLText
             /** 더블 탭을 하여, 확대된 이미지가 보이는 상태이다.
              * 여기서는 사용자의 터치포인터를 인식하여 사용자가 움직이는 곳으로 화면을 이동시켜줘야한다. */
             else {
-                val scrollSpeed = 30 // 값을 올릴수록 스크롤 속도가 느려진다.
+                val scrollSpeed = 400 // 값을 올릴수록 스크롤 속도가 느려진다.
 
                 if (touchPointX != 0.0 && touchPointY != 0.0 && touchFirstX != 0.0 && touchFirstY != 0.0) {
 

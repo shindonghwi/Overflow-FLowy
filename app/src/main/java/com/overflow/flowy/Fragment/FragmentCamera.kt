@@ -11,6 +11,7 @@ import android.view.*
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.*
 import androidx.core.content.FileProvider
+import androidx.core.view.setMargins
 import androidx.fragment.app.Fragment
 import com.overflow.flowy.DTO.LuminanceData
 import com.overflow.flowy.R
@@ -148,6 +149,28 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 topMenuLayout.layoutParams = tLayout
                 topMenuLayout.requestLayout()
 
+                val marginValue = 20
+                val toggleBtnParams = LinearLayout.LayoutParams(0,focusToggleBtn.width, 0.2f  )
+                toggleBtnParams.topMargin = marginValue
+                toggleBtnParams.bottomMargin = marginValue
+                toggleBtnParams.leftMargin = marginValue
+                toggleBtnParams.rightMargin = marginValue
+
+                focusToggleBtn.layoutParams = toggleBtnParams
+                focusToggleBtn.requestLayout()
+
+                flashToggleBtn.layoutParams = toggleBtnParams
+                flashToggleBtn.requestLayout()
+
+                lensChangeToggleBtn.layoutParams = toggleBtnParams
+                lensChangeToggleBtn.requestLayout()
+
+                flowyZoomToggleBtn.layoutParams = toggleBtnParams
+                flowyZoomToggleBtn.requestLayout()
+
+                mirroringToggleBtn.layoutParams = toggleBtnParams
+                mirroringToggleBtn.requestLayout()
+
                 // 하단 메뉴바 높이 조정
                 val bLayout = RelativeLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 1.5).toInt()
@@ -155,6 +178,22 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 bLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
                 bottomMenuLayout.layoutParams = bLayout
                 bottomMenuLayout.requestLayout()
+
+                menuToggleBtn.layoutParams = toggleBtnParams
+                menuToggleBtn.requestLayout()
+
+                flowyCastToggleBtn.layoutParams = toggleBtnParams
+                flowyCastToggleBtn.requestLayout()
+
+                freezeToggleBtn.layoutParams = toggleBtnParams
+                freezeToggleBtn.requestLayout()
+
+                luminanceToggleBtn.layoutParams = toggleBtnParams
+                luminanceToggleBtn.requestLayout()
+
+                controlToggleBtn.layoutParams = toggleBtnParams
+                controlToggleBtn.requestLayout()
+
 
                 // 공유버튼 레이아웃 높이 조정
                 val sLayout = RelativeLayout.LayoutParams(
@@ -164,6 +203,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 shareFrameLayout.layoutParams = sLayout
                 shareFrameLayout.requestLayout()
 
+                val imgBtnParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 1.2).toInt())
+                imgBtnParams.gravity = Gravity.CENTER
+                shareImgBtn.layoutParams = imgBtnParams
+                shareImgBtn.requestLayout()
 
             }
         }
@@ -269,18 +312,20 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
 
                 // 핀치줌을 사용하지 않을때 카메라 확대
-                if (!pinchZoomFlag) {
+                if (!pinchZoomFlag && cameraMode != "flowy") {
                     camera!!.cameraControl.setLinearZoom(progress / 100.toFloat())
                     Log.d("setLinearZoom", (progress).toString())
                 }
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                pinchZoomFlag = false
+                if (cameraMode != "flowy")
+                    pinchZoomFlag = false
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                pinchZoomFlag = true
+                if (cameraMode != "flowy")
+                    pinchZoomFlag = true
             }
 
         })
@@ -370,17 +415,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 //                            Log.d("progress", pinchZoomSeekbar.progress.toString())
                                 }
                             }
-                            else{
-                                cameraSubMode = "flowyPinchZoom"
-                                flowyPinchZoomDistance = detector.currentSpan
-                                if (!flowyPinchZoomPointFlag){
-                                    flowyPinchZoomPointFirstX = detector.focusX
-                                    flowyPinchZoomPointFirstY = detector.focusY
-                                    flowyPinchZoomPointFlag = true
-                                }
-                                Log.d("currentSpan","${detector.currentSpan}")
-                            }
-
                             return true
                         }
 
@@ -399,10 +433,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                             // 일반 확대를 사용하는 경우
                             if (cameraMode != "flowy") {
                                 pinchZoomFinishCallback = true
-                            }
-                            else{
-                                flowyPinchZoomPointFirstX = detector.focusX
-                                flowyPinchZoomPointFirstY = detector.focusY
                             }
                             return super.onScaleBegin(detector)
                         }
@@ -775,13 +805,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         /** 포커스 기능 */
         var touchFocusPointX: Float = 0f
         var touchFocusPointY: Float = 0f
-
-        var flowyPinchZoomPointFirstX : Float = 0f
-        var flowyPinchZoomPointFirstY : Float = 0f
-        var flowyPinchZoomPointFlag : Boolean = false
-        var flowyPinchZoomPointX : Float = 0f
-        var flowyPinchZoomPointY : Float = 0f
-        var flowyPinchZoomDistance : Float = 0f
 
         lateinit var blackScreen: ImageView
 
