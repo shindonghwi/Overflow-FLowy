@@ -30,10 +30,10 @@
         <ImageButton
             android:id="@+id/shareImgBtn"
             android:layout_width="wrap_content"
-            android:layout_margin="10dp"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
             android:background="@android:color/transparent"
+            android:layout_margin="10dp"
+            android:layout_gravity="center"
             android:scaleType="centerInside"
             android:src="@drawable/share" />
 
