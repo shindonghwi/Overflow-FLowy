@@ -21,7 +21,6 @@ import com.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointY
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.isDoubleTapFirstTouched
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.isTouching
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.lensChangeFlag
-import com.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceArrayData
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceFlag
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceIndex
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchFirstX
@@ -573,12 +572,12 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         // 사용자가 너무 빨리누를경우 인덱스 에러가 난다. 예외처리
         try {
             reversalColor1 =
-                colorIntToFloatArray(luminanceArrayData[luminanceIndex - 1].reversalColor1)
+                colorIntToFloatArray(LuminanceDefaultData[luminanceIndex - 1].reversalColor1)
             reversalColor2 =
-                colorIntToFloatArray(luminanceArrayData[luminanceIndex - 1].reversalColor2)
+                colorIntToFloatArray(LuminanceDefaultData[luminanceIndex - 1].reversalColor2)
         } catch (e: ArrayIndexOutOfBoundsException) {
-            reversalColor1 = colorIntToFloatArray(luminanceArrayData[0].reversalColor1)
-            reversalColor2 = colorIntToFloatArray(luminanceArrayData[0].reversalColor2)
+            reversalColor1 = colorIntToFloatArray(LuminanceDefaultData[0].reversalColor1)
+            reversalColor2 = colorIntToFloatArray(LuminanceDefaultData[0].reversalColor2)
         }
 
 

@@ -3,10 +3,11 @@
     <string name="settings">설정</string>
     <string name="next">Next</string>
     <string name="close">Close</string>
+    <string name="complete">완료</string>
+    <string name="FlowyVersion">Flowy 0.0.1</string>
+
 
     <string name="textClear"> </string>
-    <string name="shareTitle"> Flowy 공유하기! </string>
-    <string name="shareMessage"> Flowy App을 친구와 함께 즐기세요! </string>
 
     <!-- 안드로이드 배너 광고   -->
     <string name="admob_app_id">ca-app-pub-4486527307121569~3519092974</string>
@@ -15,4 +16,12 @@
     <!-- 배너 광고 테스트   -->
     <string name="banner_ad_unit_id_for_test">ca-app-pub-3940256099942544/6300978111</string>
 
+    <!-- flowy 메뉴 글자 -->
+    <string name="menu_theme_text">테마</string>
+    <string name="menu_contrast_text">대비</string>
+    <string name="menu_tutorial_text">자습서</string>
+    <string name="menu_info_text">정보</string>
+
+    <string name="init_back_up_text">기본값으로 복원</string>
+    <string name="menu_contrast_default_color_text">흑/백</string>
 </resources>

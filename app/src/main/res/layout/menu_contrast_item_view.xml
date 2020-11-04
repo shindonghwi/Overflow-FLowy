@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10dp"
+    android:background="@color/flowy_menu_bg"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:weightSum="1">
+
+    <ImageView
+        android:id="@+id/removeBtnImage"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.15"
+        android:gravity="center_vertical"
+        android:padding="10dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/menu_remove" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:weightSum="1"
+        android:padding="10dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.15">
+
+        <ImageView
+            android:id="@+id/contrastLeftImage"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.5"
+            android:background="@color/white"
+            android:gravity="center_vertical"
+            android:padding="5dp"
+            android:scaleType="fitCenter"
+            tools:ignore="NestedWeights" />
+
+        <ImageView
+            android:id="@+id/contrastRightImage"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.5"
+            android:background="@color/black"
+            android:gravity="center_vertical"
+            android:padding="5dp"
+            android:scaleType="fitCenter" />
+
+    </LinearLayout>
+
+
+    <TextView
+        android:id="@+id/contrastTextInfo"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_weight="0.5"
+        android:gravity="center_vertical"
+        android:paddingLeft="10dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/menu_setting"
+        android:text="@string/menu_contrast_default_color_text"
+        android:textColor="@color/white"
+        android:textSize="20dp"
+        android:textStyle="bold" />
+
+    <ImageView
+        android:padding="5dp"
+        android:id="@+id/dragAndDropImage"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.2"
+        android:gravity="center_vertical"
+        android:scaleType="fitCenter"
+        android:src="@drawable/drag_and_drop" />
+
+
+</LinearLayout>

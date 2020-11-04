@@ -69,7 +69,6 @@ class FragmentDescription : Fragment() {
         viewPagerListener()
 
         view_pager.getChildAt(0).overScrollMode = RecyclerView.OVER_SCROLL_NEVER
-
     }
 
     private fun clickListener() {

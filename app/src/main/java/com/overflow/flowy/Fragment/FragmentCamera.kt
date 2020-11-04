@@ -21,6 +21,7 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import com.overflow.flowy.DTO.LuminanceData
+import com.overflow.flowy.MainActivity
 import com.overflow.flowy.MainActivity.Companion.pref
 import com.overflow.flowy.MainActivity.Companion.prefEditor
 import com.overflow.flowy.R
@@ -30,6 +31,7 @@ import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLTextureView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileNotFoundException
@@ -146,10 +148,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         bannerVersaAD = view.findViewById(R.id.bannerVersaAD)
 
         blackScreen = view.findViewById(R.id.blackScreen)
-
-        /** 고대비 기본 색상 초기화 */
-        luminanceDataInit()
-
     }
 
     private fun togBtnStatusCheck() {
@@ -281,15 +279,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             }
         }
 
-    }
-
-    /** 고대비 기본 색상 초기화 */
-    private fun luminanceDataInit() {
-        luminanceArrayData = ArrayList<LuminanceData>()
-        luminanceArrayData.add(LuminanceData(R.color.black, R.color.white))
-        luminanceArrayData.add(LuminanceData(R.color.black, R.color.yellow))
-        luminanceArrayData.add(LuminanceData(R.color.blue, R.color.white))
-        luminanceArrayData.add(LuminanceData(R.color.blue, R.color.yellow))
     }
 
     /** 사용자가 화면을 터치했을때 좌표를 항상 기록한다. */
@@ -672,9 +661,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 alertToast.show()
             }
             R.id.menuToggleBtn -> {
-                if (alertToast != null) alertToast.cancel()
-                alertToast = Toast.makeText(context, "메뉴 기능은 서비스 구현 예정입니다.", Toast.LENGTH_SHORT)
-                alertToast.show()
+                (activity as MainActivity).replaceFragment(FragmentMenu().newInstance())
             }
             R.id.flowyCastToggleBtn -> {
                 if (alertToast != null) alertToast.cancel()
@@ -706,7 +693,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
                 // 고대비를 활성화 시킨다.
                 // arraylist에 등록된 고대비 색상의 갯수보다 내가 선택한 횟수가 많다면 기본색상을 보여줘야한다.
-                if (luminanceIndex >= luminanceArrayData.size) {
+                if (luminanceIndex >= LuminanceDefaultData.size) {
                     luminanceIndex = 0
                 } else {
                     luminanceIndex += 1
@@ -780,6 +767,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     override fun onResume() {
         super.onResume()
+        Log.d("life","camera resume")
 
         togBtnStatusCheck() // 버튼 상태 불러오기
 
@@ -791,17 +779,16 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     }
 
     override fun onPause() {
-        super.onPause()
         Log.d("lifeCycle","onPause")
+        super.onPause()
         togBtnStatusSave() // 버튼의 상태 저장
 
         if (freezeMode) freezeMode = false
     }
 
-    override fun onDestroyView() {
-        removeToggleBtnStatus()
-        super.onDestroyView()
-        Log.d("lifeCycle","onDestroyView")
+    override fun onStop() {
+        Log.d("lifeCycle","onStop")
+        super.onStop()
     }
 
     /** 기기의 방향 체크 - 카메라 프래그먼트에서 화면 방향에 따라서 UI 버튼도 회전이 되어야한다. */
@@ -922,16 +909,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         }
     }
 
-    private fun removeToggleBtnStatus(){
-        try{
-            val f = File("/data/data/com.overflow.flowy/shared_prefs", "flowyToggleBtnStatus.xml")
-            f.delete()
-        }
-        catch (e : Exception){
-
-        }
-    }
-
     companion object {
 
         /** 사용자가 찍은 좌표값 (항상 갱신됨) */
@@ -962,7 +939,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         /** --------------------- 고대비 기능 모드 --------------------- */
 
         /** 고대비 색상과 인덱스 */
-        lateinit var luminanceArrayData: ArrayList<LuminanceData>
         var luminanceIndex: Int = 0
         var luminanceFlag: Boolean = false
 

@@ -2,40 +2,28 @@ package com.overflow.flowy
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.provider.Settings
 import android.util.Log
-import android.view.OrientationEventListener
 import android.view.View
-import android.widget.ImageView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.overflow.flowy.Fragment.FragmentCamera
 import com.overflow.flowy.Fragment.FragmentDescription
-import com.overflow.flowy.Renderer.FlowyRenderer
+import com.overflow.flowy.Interface.onBackPressedListener
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.cameraLifecycle
-import com.overflow.flowy.Util.*
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.fragment_camera.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.overflow.flowy.Util.MY_LOG
+import com.overflow.flowy.Util.REQUEST_PERMISSION_CODE
 import java.io.File
-import java.lang.Exception
 
 
 class MainActivity() : AppCompatActivity() {
@@ -54,6 +42,8 @@ class MainActivity() : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        Log.d("life","onCreate")
 
         pref = this.getSharedPreferences("flowyDescription", Context.MODE_PRIVATE)
         prefEditor = pref.edit()
@@ -266,13 +256,37 @@ class MainActivity() : AppCompatActivity() {
 
     fun replaceFragment(fragment: Fragment) {
 
-        if (!fragment.toString().contains("FragmentDescription"))
-            requestPermission()
-        else if (!fragment.toString().contains("FragmentCamera"))
-            requestPermission()
-//        val fragmentManager = supportFragmentManager
-//        val fragmentTransaction = fragmentManager.beginTransaction()
-//        fragmentTransaction.replace(R.id.container, fragment).commit()
+        Log.d("replaceFragment","$fragment")
+        val fragmentManager = supportFragmentManager
+        val fragmentTransaction = fragmentManager.beginTransaction()
+        fragmentTransaction.replace(R.id.container, fragment).commit()
+    }
+
+    override fun onDestroy() {
+        removeToggleBtnStatus()
+        super.onDestroy()
+    }
+
+    private fun removeToggleBtnStatus(){
+        try{
+            val f = File("/data/data/com.overflow.flowy/shared_prefs", "flowyToggleBtnStatus.xml")
+            f.delete()
+        }
+        catch (e : Exception){
+
+        }
+    }
+
+    override fun onBackPressed() {
+        val fragmentList = supportFragmentManager.fragments
+        if (fragmentList != null) {
+            //TODO: Perform your logic to pass back press here
+            for (fragment in fragmentList) {
+                if (fragment is onBackPressedListener) {
+                    (fragment as onBackPressedListener).onBackPressed()
+                }
+            }
+        }
     }
 
     companion object{
