@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- 실제 출시시에는 테스트 버전을 해제하여야한다. adUnitId 바꿀것   -->
+    <!-- 애드몹 광고   -->
     <com.google.android.gms.ads.AdView
         xmlns:ads="http://schemas.android.com/apk/res-auto"
         android:id="@+id/bannerAdView"
@@ -14,9 +14,16 @@
         android:layout_centerHorizontal="true"
         android:layout_above="@+id/pinchZoomLinearLayout"
         ads:adSize="BANNER"
-        ads:adUnitId="@string/banner_ad_unit_id_for_test">
-
+        ads:adUnitId="@string/banner_ad_unit_id">
     </com.google.android.gms.ads.AdView>
+
+    <ImageView
+        android:id="@+id/bannerVersaAD"
+        android:layout_width="wrap_content"
+        android:scaleType="fitCenter"
+        android:layout_height="60dp"
+        android:layout_centerHorizontal="true"
+        android:layout_above="@+id/pinchZoomLinearLayout" />
 
     <com.overflow.flowy.View.FlowyGLTextureView
         android:id="@+id/glSurfaceView"

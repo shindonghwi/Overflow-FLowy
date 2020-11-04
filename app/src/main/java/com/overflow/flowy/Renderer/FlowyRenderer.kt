@@ -434,6 +434,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
 
             /** 더블 탭을 처음 클릭한 경우에, 클릭한 지점을 확대해준다. */
             if (isDoubleTapFirstTouched) {
+                Log.d("isDoubleTapFirstTouched", "isDoubleTapFirstTouched : $isDoubleTapFirstTouched // ")
                 isDoubleTapFirstTouched = false // 더블탭 터치가 끝났다는걸 알린다.
 
                 // 사용자가 터치한곳의 NDK 좌표를 구한다. ( -1 ~ 1 사이값임 )

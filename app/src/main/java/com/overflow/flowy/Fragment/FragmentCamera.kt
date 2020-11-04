@@ -1,9 +1,12 @@
 package com.overflow.flowy.Fragment
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.hardware.SensorManager
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
@@ -11,11 +14,15 @@ import android.view.*
 import android.widget.*
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import com.overflow.flowy.DTO.LuminanceData
+import com.overflow.flowy.MainActivity.Companion.pref
+import com.overflow.flowy.MainActivity.Companion.prefEditor
 import com.overflow.flowy.R
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.adjustHeight
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
@@ -30,6 +37,11 @@ import java.io.FileOutputStream
 
 
 class FragmentCamera : Fragment(), View.OnClickListener {
+
+    // 프래그먼트의 인스턴스
+    fun newInstance(): FragmentCamera {
+        return FragmentCamera()
+    }
 
     private lateinit var glTextureView: FlowyGLTextureView // 카메라 미리보기가 나올 화면
     private var flowyZoomLongClickEvent: Boolean = false // 롱클릭 이벤트 콜백을 위한 변수, 이벤트 발생시 플로위 줌 시작
@@ -58,8 +70,9 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private lateinit var shareImgBtn: ImageButton
     private lateinit var shareFrameLayout: FrameLayout
 
-    /** 애드몹 */
+    /** 광고 */
     private lateinit var bannerAdView: AdView
+    private lateinit var bannerVersaAD: ImageView
 
 
     private lateinit var alertToast: Toast
@@ -70,7 +83,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private var pinchZoomFinishCallback: Boolean = false
     private var deviceSensorDirection = 0f
     private var pinchZoomFlag: Boolean = true
-
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -95,6 +107,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     /** layout id 초기화하는 공간 */
     private fun idInit(view: View) {
+
+        pref = THIS_CONTEXT!!.getSharedPreferences("flowyToggleBtnStatus", Context.MODE_PRIVATE)
+        prefEditor = pref.edit()
+
         glTextureView = view.findViewById(R.id.glSurfaceView)
 
         // 각메뉴들의 부모 레이아웃
@@ -127,12 +143,33 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         // 배너 광고
         bannerAdView = view.findViewById(R.id.bannerAdView)
+        bannerVersaAD = view.findViewById(R.id.bannerVersaAD)
 
         blackScreen = view.findViewById(R.id.blackScreen)
 
         /** 고대비 기본 색상 초기화 */
         luminanceDataInit()
 
+    }
+
+    private fun togBtnStatusCheck() {
+
+        // 플로위줌 버튼 상태 및
+        flowyZoomToggleBtn.isChecked = pref.getBoolean("flowyZoomToggleBtn", false)
+
+        luminanceIndex = pref.getInt("luminanceToggleBtn", 0)
+        luminanceToggleBtn.isChecked = luminanceIndex != 0
+
+        lensChangeToggleBtn.isChecked = pref.getBoolean("lensChangeToggleBtn", false)
+        cameraLensMode = if (lensChangeToggleBtn.isChecked) 0 else 1
+        Log.d("sdfsfd","$luminanceIndex")
+    }
+
+    private fun togBtnStatusSave() {
+        prefEditor.putBoolean("flowyZoomToggleBtn",flowyZoomToggleBtn.isChecked)
+        prefEditor.putInt("luminanceToggleBtn",luminanceIndex)
+        prefEditor.putBoolean("lensChangeToggleBtn",lensChangeToggleBtn.isChecked)
+        prefEditor.commit()
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -158,7 +195,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 topMenuLayout.requestLayout()
 
                 val marginValue = 20
-                val toggleBtnParams = LinearLayout.LayoutParams(0,focusToggleBtn.width, 0.2f  )
+                val toggleBtnParams = LinearLayout.LayoutParams(0, focusToggleBtn.width, 0.2f)
                 toggleBtnParams.topMargin = marginValue
                 toggleBtnParams.bottomMargin = marginValue
                 toggleBtnParams.leftMargin = marginValue
@@ -211,7 +248,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 shareFrameLayout.layoutParams = sLayout
                 shareFrameLayout.requestLayout()
 
-                val imgBtnParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 1.2).toInt())
+                val imgBtnParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    (focusToggleBtn.height * 1.2).toInt()
+                )
                 imgBtnParams.gravity = Gravity.CENTER
                 shareImgBtn.layoutParams = imgBtnParams
                 shareImgBtn.requestLayout()
@@ -312,6 +352,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         luminanceToggleBtn.setOnClickListener(this)
         controlToggleBtn.setOnClickListener(this)
         shareImgBtn.setOnClickListener(this)
+        bannerVersaAD.setOnClickListener(this)
     }
 
 
@@ -504,12 +545,25 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             bottomMenuLayout.visibility = View.GONE
             pinchZoomLinearLayout.visibility = View.GONE
 
-            // 광고 위치 조정
-            val bannerViewLayout = RelativeLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, (bannerAdView.height))
-            bannerViewLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
-            bannerViewLayout.addRule(RelativeLayout.CENTER_HORIZONTAL)
-            bannerAdView.layoutParams = bannerViewLayout
+            // 애드몹 배너 광고 위치 조정
+            val bannerAdmobViewLayout = RelativeLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                (bannerAdView.height)
+            )
+            bannerAdmobViewLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
+            bannerAdmobViewLayout.addRule(RelativeLayout.CENTER_HORIZONTAL)
+            bannerAdView.layoutParams = bannerAdmobViewLayout
             bannerAdView.requestLayout()
+
+            // 회사 배너 광고 위치 조정
+            val bannerVersaViewLayout = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                (bannerVersaAD.height)
+            )
+            bannerVersaViewLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
+            bannerVersaViewLayout.addRule(RelativeLayout.CENTER_HORIZONTAL)
+            bannerVersaAD.layoutParams = bannerVersaViewLayout
+            bannerVersaAD.requestLayout()
 
         } else {
             if (shareFrameLayout.visibility == View.GONE)
@@ -519,19 +573,32 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             bottomMenuLayout.visibility = View.VISIBLE
             pinchZoomLinearLayout.visibility = View.VISIBLE
 
-            // 광고 위치 조정
-            val bannerViewLayout = RelativeLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, (bannerAdView.height))
-            bannerViewLayout.addRule(RelativeLayout.ABOVE, R.id.pinchZoomLinearLayout)
-            bannerViewLayout.addRule(RelativeLayout.CENTER_HORIZONTAL)
-            bannerAdView.layoutParams = bannerViewLayout
+            // 애드몹 광고 위치 조정
+            val bannerAdmobViewLayout = RelativeLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                (bannerAdView.height)
+            )
+            bannerAdmobViewLayout.addRule(RelativeLayout.ABOVE, R.id.pinchZoomLinearLayout)
+            bannerAdmobViewLayout.addRule(RelativeLayout.CENTER_HORIZONTAL)
+            bannerAdView.layoutParams = bannerAdmobViewLayout
             bannerAdView.requestLayout()
 
+            // 회사 배너 광고 위치 조정
+            val bannerVersaViewLayout = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                (bannerVersaAD.height)
+            )
+            bannerVersaViewLayout.addRule(RelativeLayout.ABOVE, R.id.pinchZoomLinearLayout)
+            bannerVersaViewLayout.addRule(RelativeLayout.CENTER_HORIZONTAL)
+            bannerVersaAD.layoutParams = bannerVersaViewLayout
+            bannerVersaAD.requestLayout()
         }
         twoPointClickFlag = !twoPointClickFlag
     }
 
     /** 클릭 이벤트 처리 */
     override fun onClick(v: View) {
+
         when (v.id) {
             R.id.focusToggleBtn -> {
                 // 포커스 기능 버튼
@@ -669,7 +736,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 val dirs = File(filePath, folderName)
 
                 // Flowy 폴더가 없으면 만든다.
-                if(!dirs.exists()) {
+                if (!dirs.exists()) {
                     dirs.mkdirs()
                 }
 
@@ -703,11 +770,19 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 intent.putExtra(Intent.EXTRA_STREAM, uri)
                 startActivity(intent)
             }
+
+            /** 회사 광고를 누르면 회사페이지로 ~ */
+            R.id.bannerVersaAD -> {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://atoverflow.com/")))
+            }
         }
     }
 
     override fun onResume() {
         super.onResume()
+
+        togBtnStatusCheck() // 버튼 상태 불러오기
+
         /** 화면 방향 체크 */
         deviceRotationCheck()
 
@@ -717,7 +792,16 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     override fun onPause() {
         super.onPause()
+        Log.d("lifeCycle","onPause")
+        togBtnStatusSave() // 버튼의 상태 저장
+
         if (freezeMode) freezeMode = false
+    }
+
+    override fun onDestroyView() {
+        removeToggleBtnStatus()
+        super.onDestroyView()
+        Log.d("lifeCycle","onDestroyView")
     }
 
     /** 기기의 방향 체크 - 카메라 프래그먼트에서 화면 방향에 따라서 UI 버튼도 회전이 되어야한다. */
@@ -795,7 +879,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     }
 
     /** 광고 로드 */
-    private fun loadAdMob(){
+    private fun loadAdMob() {
         MobileAds.initialize(THIS_CONTEXT, getString(R.string.admob_app_id))
         val adRequest = AdRequest.Builder().build()
         bannerAdView.loadAd(adRequest)
@@ -803,13 +887,25 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         bannerAdView.adListener = object : AdListener() {
             override fun onAdLoaded() {
+                bannerAdView.visibility = View.VISIBLE
+                bannerVersaAD.visibility = View.GONE
+
                 // 광고가 문제 없이 로드시 출력
                 Log.d("@@@", "onAdLoaded")
             }
 
             override fun onAdFailedToLoad(errorCode: Int) {
-                // 광고 로드에 문제가 있을시 출력
+                // 광고 로드에 문제가 있을시에 플로위 광고를 보여준다.
                 Log.d("@@@", "onAdFailedToLoad $errorCode")
+                if (errorCode == 3) {
+                    Glide.with(THIS_CONTEXT!!)
+                        .asGif()
+                        .load(R.raw.versa_banner)
+                        .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+                        .into(bannerVersaAD)
+                    bannerVersaAD.bringToFront()
+                    bannerAdView.visibility = View.INVISIBLE
+                }
             }
 
             override fun onAdOpened() {
@@ -826,6 +922,16 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         }
     }
 
+    private fun removeToggleBtnStatus(){
+        try{
+            val f = File("/data/data/com.overflow.flowy/shared_prefs", "flowyToggleBtnStatus.xml")
+            f.delete()
+        }
+        catch (e : Exception){
+
+        }
+    }
+
     companion object {
 
         /** 사용자가 찍은 좌표값 (항상 갱신됨) */
@@ -839,12 +945,12 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         var isDoubleTapFirstTouched: Boolean = false // 더블탭을 처음 클릭했는가?
 
         /** 사용자가 플로위 롱 클릭 모드에서 터치한 좌표 값 ( 지속적으로 바뀜 ) */
-        var touchPointX: Double = 0.0
-        var touchPointY: Double = 0.0
+        var touchPointX: Double = 0.1
+        var touchPointY: Double = 0.1
 
         /** 사용자가 플로위 롱 클릭 모드에서 처음으로 터치한 좌표 값 ( 화면 여백을 클릭하는걸 방지하기 위함 ) */
-        var touchFirstX: Double = 0.0
-        var touchFirstY: Double = 0.0
+        var touchFirstX: Double = 0.1
+        var touchFirstY: Double = 0.1
 
         /** --------------------- 플로위 더블 탭 모드 --------------------- */
 
