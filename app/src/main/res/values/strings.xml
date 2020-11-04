@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Flowy</string>
     <string name="settings">설정</string>
+    <string name="next">Next</string>
+    <string name="close">Close</string>
 
     <string name="textClear"> </string>
     <string name="shareTitle"> Flowy 공유하기! </string>

@@ -71,5 +71,17 @@ dependencies {
     /** 애드몹 광고 */
     implementation 'com.google.android.gms:play-services-ads:19.5.0'
 
+    // 앱 실행시, Overflow 앱 설명을 위해 viewPager2 사용
+    implementation "androidx.viewpager2:viewpager2:1.0.0"
+
+    // viewPager2에 보이는 이미지를 확대, 축소하기 위해서 PhtoView사용
+    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+
+    // viewPager2 사용시, 현재 페이지가 몇페이인지 사용자에게 보여주기 위함.
+    implementation 'me.relex:circleindicator:2.1.4'
+
+    // GIF, image 를 불러오기위한 Glide
+    implementation 'com.github.bumptech.glide:glide:4.11.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
 
 }
