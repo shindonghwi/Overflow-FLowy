@@ -81,13 +81,23 @@ class FragmentDescription : Fragment() {
                 view_pager.currentItem = view_pager.currentItem + 1
             }
 
-            // 마지막 페이지인 경우에는 Close 글자가 보이는데, 이떄는 페이지를 종료하면서, 카메라가 활성화 되는 Activity로 이동시킨다.
+            // 마지막 페이지인 경우에는 Close 글자가 보이는데, 이떄는 페이지를 종료하면서, 해당 fragment로 이동시킨다.
             else if (page_move_status_btn.text == getString(R.string.close)) {
-                view_pager.visibility = View.GONE
-                indicator.visibility = View.GONE
-                page_move_status_btn.visibility = View.GONE
-                (activity as MainActivity).requestPermission()
-//                (activity as MainActivity).replaceFragment(FragmentCamera().newInstance())
+
+                val backStackEntry = activity!!.supportFragmentManager.backStackEntryCount
+
+                // 제일 첫 화면에 보이는 자습서
+                if (backStackEntry <= 1){
+                    view_pager.visibility = View.GONE
+                    indicator.visibility = View.GONE
+                    page_move_status_btn.visibility = View.GONE
+                    (activity as MainActivity).requestPermission()
+                }
+
+                // 메뉴 - 자습서를 켰을때
+                else{
+                    activity!!.supportFragmentManager.popBackStack()
+                }
             }
         }
     }

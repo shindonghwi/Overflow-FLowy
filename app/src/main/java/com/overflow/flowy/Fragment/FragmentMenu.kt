@@ -48,9 +48,12 @@ class FragmentMenu : Fragment(){
         flowyMenuAdapter.setOnClick(object : AdapterFlowyMenu.OnItemClicked{
             override fun onItemClick(position: Int) {
 
-                // 대비 메뉴 클릭
-                if (position == 0){
-                    (activity as MainActivity).replaceFragment("add", FragmentMenuContrast().newInstance())
+                when(position){
+                    // 대비 메뉴
+                    0 -> (activity as MainActivity).replaceFragment("add", FragmentMenuContrast().newInstance())
+
+                    // 자습서
+                    1 -> (activity as MainActivity).replaceFragment("replace", FragmentDescription().newInstance())
                 }
             }
         })
