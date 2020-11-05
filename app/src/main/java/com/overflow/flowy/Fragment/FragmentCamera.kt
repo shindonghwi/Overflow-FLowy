@@ -20,7 +20,10 @@ import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
-import com.overflow.flowy.DTO.LuminanceData
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.overflow.flowy.DTO.ContrastData
+import com.overflow.flowy.Interface.onBackPressedListener
 import com.overflow.flowy.MainActivity
 import com.overflow.flowy.MainActivity.Companion.pref
 import com.overflow.flowy.MainActivity.Companion.prefEditor
@@ -31,7 +34,6 @@ import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLTextureView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileNotFoundException
@@ -41,7 +43,8 @@ import java.io.FileOutputStream
 class FragmentCamera : Fragment(), View.OnClickListener {
 
     // 프래그먼트의 인스턴스
-    fun newInstance(): FragmentCamera {
+    public fun newInstance(): FragmentCamera {
+        Log.d("newInstance","카메라 인스턴스 생성")
         return FragmentCamera()
     }
 
@@ -105,6 +108,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         setClickListener() // 클릭 리스너 설정
         screenTouchListener() // 터치 리스너 설정
         pinchZoomListener() // 핀치줌 리스너 설정
+        loadLuminanceData() // 사용자의 대비 데이터 가져오기
     }
 
     /** layout id 초기화하는 공간 */
@@ -150,6 +154,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         blackScreen = view.findViewById(R.id.blackScreen)
     }
 
+    /** 메뉴바에 있는 토글버튼 상태 가져오기 */
     private fun togBtnStatusCheck() {
 
         // 플로위줌 버튼 상태 및
@@ -163,6 +168,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         Log.d("sdfsfd","$luminanceIndex")
     }
 
+    /** 메뉴바에 있는 토글버튼 상태 저장하기 */
     private fun togBtnStatusSave() {
         prefEditor.putBoolean("flowyZoomToggleBtn",flowyZoomToggleBtn.isChecked)
         prefEditor.putInt("luminanceToggleBtn",luminanceIndex)
@@ -170,12 +176,35 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         prefEditor.commit()
     }
 
+    /** 화면이 생성됨과 동시에 기기방향에 따라 토글 버튼 방향 변경 메서드 추가 */
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         uiRelocation()
     }
 
-    // ui 재배치 ( 태블릿인지, 모바일인지 확인 )
+    /** 사용자의 대비 데이터 가져오기 */
+    fun loadLuminanceData(){
+        val contrastPref = THIS_CONTEXT!!.getSharedPreferences("userLuminance", Context.MODE_PRIVATE)
+        val contrastPrefEditor = contrastPref.edit()
+
+        val userLuminancePref = contrastPref.getBoolean("userLuminanceInitFlag", true)
+        // 처음 사용하는 사람이라면, luminance 데이터를 초기화 시켜준다.
+        if (userLuminancePref){
+            contrastPrefEditor.putBoolean("userLuminanceInitFlag", false)
+            contrastPrefEditor.commit()
+            SharedPreferenceUtil().saveArrayListData(contrastPref, "userLumincanceData", contrastInitData)
+            userContrastData = contrastInitData
+            Log.d("lumiinit","처음")
+        }
+        // 처음 사용하는 사람이 아니라면, 이전에 사용하던 luminance 데이터를 가져온다.
+        else{
+            val contrastMutableListData = SharedPreferenceUtil().loadArrayListData(contrastPref, "userLumincanceData")
+            userContrastData = contrastMutableListData
+            Log.d("lumiinit","처음아님")
+        }
+    }
+
+    /** ui 재배치 ( 태블릿인지, 모바일인지 확인 ) */
     private fun uiRelocation() {
 
         // 모바일인 경우
@@ -661,7 +690,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 alertToast.show()
             }
             R.id.menuToggleBtn -> {
-                (activity as MainActivity).replaceFragment(FragmentMenu().newInstance())
+                (activity as MainActivity).replaceFragment("add", FragmentMenu().newInstance())
             }
             R.id.flowyCastToggleBtn -> {
                 if (alertToast != null) alertToast.cancel()
@@ -693,8 +722,13 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
                 // 고대비를 활성화 시킨다.
                 // arraylist에 등록된 고대비 색상의 갯수보다 내가 선택한 횟수가 많다면 기본색상을 보여줘야한다.
-                if (luminanceIndex >= LuminanceDefaultData.size) {
+                if (luminanceIndex >= userContrastData.size) {
                     luminanceIndex = 0
+                    if (userContrastData.size == 0){
+                        if (alertToast != null) alertToast.cancel()
+                        alertToast = Toast.makeText(context, "[메뉴 - 대비] 값을 설정해주세요", Toast.LENGTH_SHORT)
+                        alertToast.show()
+                    }
                 } else {
                     luminanceIndex += 1
                 }
@@ -951,6 +985,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         var touchFocusPointY: Float = 0f
 
         lateinit var blackScreen: ImageView
+
+        var userContrastData = arrayListOf<ContrastData>()
 
     }
 

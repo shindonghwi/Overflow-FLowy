@@ -13,17 +13,20 @@ import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.overflow.flowy.Fragment.FragmentCamera
 import com.overflow.flowy.Fragment.FragmentDescription
+import com.overflow.flowy.Fragment.FragmentMenu
 import com.overflow.flowy.Interface.onBackPressedListener
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.cameraLifecycle
 import com.overflow.flowy.Util.MY_LOG
 import com.overflow.flowy.Util.REQUEST_PERMISSION_CODE
 import java.io.File
+import kotlin.system.exitProcess
 
 
 class MainActivity() : AppCompatActivity() {
@@ -43,7 +46,7 @@ class MainActivity() : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        Log.d("life","onCreate")
+        Log.d("mainLifeCycle", "onCreate")
 
         pref = this.getSharedPreferences("flowyDescription", Context.MODE_PRIVATE)
         prefEditor = pref.edit()
@@ -52,13 +55,7 @@ class MainActivity() : AppCompatActivity() {
 
         // 만약 플로위 설명을 본적이 없다면, 플로위 설명 화면을 띄워주고, 본적이 있다고 알린다.
         if (!descriptionCheck) {
-            supportFragmentManager.beginTransaction()
-                .add(
-                    R.id.container,
-                    FragmentDescription()
-                    , "FragmentDescription"
-                )
-                .commit()
+            replaceFragment("add", FragmentDescription())
             prefEditor.putBoolean("flowyDescriptionCheck", true)
             prefEditor.commit()
         }
@@ -70,7 +67,8 @@ class MainActivity() : AppCompatActivity() {
     }
 
     /** 퍼미션 체크를 하고, 거절된 권한이 없다면 플로위 카메라 화면으로 이동한다. */
-    private fun requestPermission() {
+    fun requestPermission() {
+        Log.d("mainLifeCycle", "requestPermission")
         //거절되었거나 아직 수락하지 않은 권한(퍼미션)을 저장할 문자열 배열 리스트
         var rejectedPermissionList = ArrayList<String>()
 
@@ -98,34 +96,13 @@ class MainActivity() : AppCompatActivity() {
 
         // 거절된 퍼미션이 없다면 카메라 실행
         else {
-            Log.d("permission", "camera execute")
-            supportFragmentManager.beginTransaction()
-                .add(
-                    R.id.container,
-                    FragmentCamera()
-                    , "FlowyCameraFragment"
-                )
-                .commit()
+            Log.d("permissionLog", "거절된 퍼미션 없음 카메라 화면으로 이동")
+            replaceFragment("add", FragmentCamera())
         }
     }
 
-    // Flowy 권한 요청을 onStart에서 한다.
-    // 사용자가 중간에 카메라 권한을 해제 할 수도 있으니, 여기서 항상 체크한다.
-    // [ 현재는 카메라 권한만 필요함 ] - 2020-10-06
-//    override fun onStart() {
-//        super.onStart()
-//        // 현재 보여지는 프래그먼트가 플로위 카메라 프래그먼트라면 권한을 확인한다.
-//        val topFragment = getVisibleFragment()
-//        if (topFragment != null) {
-//            val fragmentTag = topFragment.tag
-//            if (fragmentTag == "FlowyCameraFragment") {
-//                requestPermission()
-//            }
-//        }
-//    }
-
     override fun onResume() {
-        Log.d("currentFragment", "onResume")
+        Log.d("mainLifeCycle", "onResume")
         super.onResume()
 
         /** 화면 하단에 소프트 키 없애는 코드 */
@@ -133,16 +110,12 @@ class MainActivity() : AppCompatActivity() {
 
         try {
             Log.d("countFragment", supportFragmentManager.backStackEntryCount.toString())
+            Log.d("cameraLifecycle", cameraLifecycle.currentState().toString())
 
             // 만일 카메라 수명주기가 해제된 상태라면 프래그먼트 카메라를 다시 살린다.
             if (cameraLifecycle.currentState().toString() == "DESTROYED") {
-                supportFragmentManager.beginTransaction()
-                    .add(
-                        R.id.container,
-                        FragmentCamera()
-                        , "FlowyCameraFragment"
-                    )
-                    .commit()
+                Log.d("permissionLog", "수명주기 해제 후 다시 실행 카메라화면으로이동")
+                replaceFragment("add", FragmentCamera())
             }
         } catch (e: Exception) {
 
@@ -150,12 +123,14 @@ class MainActivity() : AppCompatActivity() {
     }
 
     override fun onPause() {
+        Log.d("mainLifeCycle", "onPause")
         super.onPause()
 
         // 현재 보여지는 프래그먼트가 플로위 카메라 프래그먼트라면 수명주기를 해제한다. 그리고 onResume시에 다시 수명주기를 붙인다.
         val topFragment = getVisibleFragment()
+        Log.d("topfragment", topFragment.toString())
         if (topFragment != null) {
-            if (topFragment.tag == "FlowyCameraFragment") {
+            if (topFragment.tag!!.contains("FragmentCamera")) {
                 cameraLifecycle.doOnDestroy() // 카메라 수명주기 off
                 Log.d("currentLifeCycle", cameraLifecycle.currentState().toString())
             }
@@ -164,6 +139,7 @@ class MainActivity() : AppCompatActivity() {
 
     /** 현재 보여지고 있는 프래그먼트를 가져온다. */
     private fun getVisibleFragment(): Fragment? {
+        Log.d("mainLifeCycle", "getVisibleFragment")
         for (fragment in supportFragmentManager.fragments)
             if (fragment.isVisible)
                 return (fragment as Fragment)
@@ -175,6 +151,8 @@ class MainActivity() : AppCompatActivity() {
         requestCode: Int,
         permissions: Array<String>, grantResults: IntArray
     ) {
+        Log.d("mainLifeCycle", "onRequestPermissionsResult")
+
         when (requestCode) {
             REQUEST_PERMISSION_CODE -> {
                 if (grantResults.isNotEmpty()) {
@@ -210,13 +188,8 @@ class MainActivity() : AppCompatActivity() {
 
                         // 권한을 허용한 경우에는 다음 화면으로 넘어간다.
                         else {
-                            supportFragmentManager.beginTransaction()
-                                .replace(
-                                    R.id.container,
-                                    FragmentCamera()
-                                    , "FlowyCameraFragment"
-                                )
-                                .commit()
+                            Log.d("permissionLog", "권한허용되있음 카메라화면으로이동")
+                            replaceFragment("add", FragmentCamera())
                         }
                     }
                 }
@@ -226,6 +199,7 @@ class MainActivity() : AppCompatActivity() {
 
     // 사용자가 권한을 [다시 권한보지 않기] 로 거절했을때 보여줄 함수
     fun errorDialog(): AlertDialog? {
+        Log.d("mainLifeCycle", "errorDialog")
         val errorAlertDialog = AlertDialog.Builder(this)
             .setTitle("필수권한요청")
             .setMessage("[설정] - [권한] - 카메라 권한을 허용해주세요")
@@ -245,6 +219,7 @@ class MainActivity() : AppCompatActivity() {
 
     /** 화면 하단에 소프트 키 없애는 코드 */
     private fun disableSoftKey() {
+        Log.d("mainLifeCycle", "disableSoftKey")
         decorView = window.decorView
         uiOption = window.decorView.systemUiVisibility
         uiOption = uiOption or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
@@ -254,44 +229,83 @@ class MainActivity() : AppCompatActivity() {
         decorView!!.systemUiVisibility = uiOption
     }
 
-    fun replaceFragment(fragment: Fragment) {
+    fun replaceFragment(type: String, fragment: Fragment) {
+        Log.d("replaceFragment", "$fragment")
+        Log.d("mainLifeCycle", "replaceFragment")
 
-        Log.d("replaceFragment","$fragment")
         val fragmentManager = supportFragmentManager
         val fragmentTransaction = fragmentManager.beginTransaction()
-        fragmentTransaction.replace(R.id.container, fragment).commit()
+        fragmentTransaction.addToBackStack(null)
+        if (type == "replace") {
+            fragmentTransaction.replace(R.id.container, fragment, fragment.toString()).commit()
+        } else if (type == "add") {
+            fragmentTransaction.add(R.id.container, fragment, fragment.toString()).commit()
+        }
     }
 
     override fun onDestroy() {
+        Log.d("mainLifeCycle", "onDestroy")
         removeToggleBtnStatus()
         super.onDestroy()
     }
 
-    private fun removeToggleBtnStatus(){
-        try{
+    /** 화면을 닫을시 토글버튼 상태 초기화 */
+    private fun removeToggleBtnStatus() {
+        try {
             val f = File("/data/data/com.overflow.flowy/shared_prefs", "flowyToggleBtnStatus.xml")
             f.delete()
-        }
-        catch (e : Exception){
+        } catch (e: Exception) {
 
         }
     }
 
+    private var backKeyClickTime : Long = 0L
+
+
     override fun onBackPressed() {
-        val fragmentList = supportFragmentManager.fragments
-        if (fragmentList != null) {
-            //TODO: Perform your logic to pass back press here
-            for (fragment in fragmentList) {
-                if (fragment is onBackPressedListener) {
-                    (fragment as onBackPressedListener).onBackPressed()
+        val count: Int = supportFragmentManager.backStackEntryCount
+
+        Log.d("countCount","$count")
+
+        if (count == 1) {
+            if (System.currentTimeMillis() > backKeyClickTime + 2000)
+            {
+                backKeyClickTime = System.currentTimeMillis()
+                Toast.makeText(this, "뒤로 가기 버튼을 한 번 더 누르면 종료됩니다.", Toast.LENGTH_SHORT).show();
+                return
+            }
+            if (System.currentTimeMillis() <= backKeyClickTime + 2000)
+            {
+                clearStack()
+                finish()
+            }
+
+        } else {
+            supportFragmentManager.popBackStack()
+        }
+    }
+
+    /** 앱을 종료할떄 살아 있는 프래그먼트를 모두 지워준다. */
+    private fun clearStack()
+    {
+        val backStackEntry = supportFragmentManager.backStackEntryCount
+        if (backStackEntry > 0) {
+            for (i in 0 until backStackEntry) {
+                supportFragmentManager.popBackStackImmediate()
+            }
+        }
+        if (supportFragmentManager.fragments.size > 0) {
+            supportFragmentManager.fragments.forEach {
+                if (it != null) {
+                    supportFragmentManager.beginTransaction().remove(it).commit()
                 }
             }
         }
     }
 
-    companion object{
-        lateinit var pref : SharedPreferences
-        lateinit var prefEditor : SharedPreferences.Editor
+    companion object {
+        lateinit var pref: SharedPreferences
+        lateinit var prefEditor: SharedPreferences.Editor
     }
 
 }

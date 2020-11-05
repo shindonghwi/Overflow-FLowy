@@ -16,6 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import me.relex.circleindicator.CircleIndicator3
 
+/** 플로위 기능을 설명하는 프래그먼트  */
+
 class FragmentDescription : Fragment() {
 
     private lateinit var view_pager : ViewPager2
@@ -25,7 +27,6 @@ class FragmentDescription : Fragment() {
     fun newInstance():FragmentDescription {
         return FragmentDescription()
     }
-
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -85,7 +86,8 @@ class FragmentDescription : Fragment() {
                 view_pager.visibility = View.GONE
                 indicator.visibility = View.GONE
                 page_move_status_btn.visibility = View.GONE
-                (activity as MainActivity).replaceFragment(FragmentCamera().newInstance())
+                (activity as MainActivity).requestPermission()
+//                (activity as MainActivity).replaceFragment(FragmentCamera().newInstance())
             }
         }
     }

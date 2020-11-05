@@ -1,11 +1,11 @@
 package com.overflow.flowy.Fragment
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -16,10 +16,10 @@ import com.overflow.flowy.MainActivity
 import com.overflow.flowy.R
 import com.overflow.flowy.Util.THIS_CONTEXT
 
-class FragmentMenu : Fragment(), View.OnClickListener, onBackPressedListener {
+class FragmentMenu : Fragment(){
 
-    private lateinit var menuCompleteBtn: Button
     private lateinit var menuRecyclerView: RecyclerView
+    private lateinit var completeBtn: Button
 
     fun newInstance(): FragmentMenu {
         return FragmentMenu()
@@ -39,7 +39,6 @@ class FragmentMenu : Fragment(), View.OnClickListener, onBackPressedListener {
         THIS_CONTEXT = context
 
         initId(view)
-        clickListener()
 
         val flowyMenuAdapter = AdapterFlowyMenu(THIS_CONTEXT!!, loadFlowyMenuData())
 
@@ -51,30 +50,19 @@ class FragmentMenu : Fragment(), View.OnClickListener, onBackPressedListener {
 
                 // 대비 메뉴 클릭
                 if (position == 0){
-                    (activity as MainActivity).replaceFragment(FragmentMenuContrast().newInstance())
+                    (activity as MainActivity).replaceFragment("add", FragmentMenuContrast().newInstance())
                 }
             }
-
         })
+
+        completeBtn.setOnClickListener {
+            activity!!.supportFragmentManager.popBackStack()
+        }
     }
 
     private fun initId(view: View) {
-        menuCompleteBtn = view.findViewById(R.id.menuCompleteBtn)
         menuRecyclerView = view.findViewById(R.id.menuRecyclerView)
-    }
-
-    private fun clickListener() {
-        menuCompleteBtn.setOnClickListener(this)
-    }
-
-    override fun onClick(v: View) {
-        when (v.id) {
-
-            R.id.menuCompleteBtn -> {
-                (activity as MainActivity).replaceFragment(FragmentCamera().newInstance())
-            }
-
-        }
+        completeBtn = view.findViewById(R.id.completeBtn)
     }
 
     private fun loadFlowyMenuData(): Array<FlowyMenuData> {
@@ -87,7 +75,4 @@ class FragmentMenu : Fragment(), View.OnClickListener, onBackPressedListener {
         )
     }
 
-    override fun onBackPressed() {
-        (activity as MainActivity).replaceFragment(FragmentCamera().newInstance())
-    }
 }

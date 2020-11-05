@@ -5,6 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black"
+    android:clickable="true"
+    android:focusable="true"
     android:paddingTop="10dp">
 
     <TextView
@@ -32,10 +34,10 @@
         app:layout_constraintTop_toBottomOf="@+id/menuCompleteBtn" />
 
     <Button
-        android:layout_marginTop="20dp"
         android:id="@+id/initBackupBtn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
         android:background="@color/flowy_menu_bg"
         android:gravity="left|center_vertical"
         android:paddingLeft="10dp"

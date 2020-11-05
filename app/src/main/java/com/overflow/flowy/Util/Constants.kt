@@ -5,11 +5,7 @@ package com.overflow.flowy.Util
 import android.content.Context
 import androidx.camera.core.CameraSelector
 import com.overflow.flowy.DTO.ContrastData
-import com.overflow.flowy.DTO.LuminanceData
-import com.overflow.flowy.Fragment.FragmentCamera
 import com.overflow.flowy.R
-import java.util.*
-import kotlin.collections.ArrayList
 
 @JvmField val REQUEST_PERMISSION_CODE = 1
 @JvmField val MY_LOG = "MY_LOG"
@@ -59,26 +55,24 @@ import kotlin.collections.ArrayList
 //luminanceArrayData.add(LuminanceData(R.color.blue, R.color.yellow))
 
 
-@JvmField val LuminanceDefaultData = mutableListOf(
-    LuminanceData(R.color.black, R.color.white, "흑/백"),
-    LuminanceData(R.color.black, R.color.yellow, "흑/황"),
-    LuminanceData(R.color.blue, R.color.white,"청/백"),
-    LuminanceData(R.color.blue, R.color.yellow,"청/황")
-)
+//@JvmField val LuminanceDefaultData = mutableListOf(
+//    LuminanceData(R.color.black, R.color.white, "흑/백"),
+//    LuminanceData(R.color.black, R.color.yellow, "흑/황"),
+//    LuminanceData(R.color.blue, R.color.white,"청/백"),
+//    LuminanceData(R.color.blue, R.color.yellow,"청/황")
+//)
+//
+//@JvmField val LuminanceInitData = mutableListOf(
+//    LuminanceData(R.color.black, R.color.white, "흑/백"),
+//    LuminanceData(R.color.black, R.color.yellow, "흑/황"),
+//    LuminanceData(R.color.blue, R.color.white,"청/백"),
+//    LuminanceData(R.color.blue, R.color.yellow,"청/황")
+//)
 
-@JvmField val LuminanceInitData = mutableListOf(
-    LuminanceData(R.color.black, R.color.white, "흑/백"),
-    LuminanceData(R.color.black, R.color.yellow, "흑/황"),
-    LuminanceData(R.color.blue, R.color.white,"청/백"),
-    LuminanceData(R.color.blue, R.color.yellow,"청/황")
-)
-
-@JvmField val contrastInitData = mutableListOf(
+@JvmField val contrastInitData = arrayListOf<ContrastData>(
     ContrastData(null, (R.color.black), (R.color.white), "흑/백", null),
     ContrastData(null, (R.color.black), (R.color.yellow), "흑/황", null),
     ContrastData(null, (R.color.blue), (R.color.white), "청/백", null),
     ContrastData(null, (R.color.blue), (R.color.yellow), "청/황", null)
 )
-
-//@JvmField val dsf = ArrayList<String>(mutableListOf())
 
