@@ -113,6 +113,7 @@ class MainActivity : AppCompatActivity(){
         /** 화면 하단에 소프트 키 없애는 코드 */
         disableSoftKey()
 
+        /** 카메라 수명주기가 끝났다면, 다시 카메라를 실행하는 코드 */
         try{
             if (cameraLifecycle.currentState() == Lifecycle.State.DESTROYED){
                 clearStack()
@@ -124,7 +125,7 @@ class MainActivity : AppCompatActivity(){
 
         }
 
-
+        /** 화면이 닫혔을때, 카메라 수명주기가 다시 살아남. */
         try{
             cameraLifecycle.doOnResume()
             cameraLifecycle.doOnStarted()
@@ -136,6 +137,8 @@ class MainActivity : AppCompatActivity(){
     override fun onPause() {
         Log.d("mainLifeCycle", "onPause")
         super.onPause()
+
+        /** 화면이 닫혔을때, 카메라 수명주기 죽임. */
         try{
             cameraLifecycle.doOnStarted()
         }catch (e : UninitializedPropertyAccessException){
@@ -252,19 +255,10 @@ class MainActivity : AppCompatActivity(){
 
     override fun onDestroy() {
         Log.d("mainLifeCycle", "onDestroy")
-        removeToggleBtnStatus()
         super.onDestroy()
     }
 
-    /** 화면을 닫을시 토글버튼 상태 초기화 */
-    private fun removeToggleBtnStatus() {
-        try {
-            val f = File("/data/data/com.overflow.flowy/shared_prefs", "flowyToggleBtnStatus.xml")
-            f.delete()
-        } catch (e: Exception) {
 
-        }
-    }
 
     /** 백버튼 이벤트 : 카메라 프래그먼트일 경우에는 뒤로가기 종료하고, 그렇지 않은 경우에는 프래그먼트 뒤로가기를 한다. */
     override fun onBackPressed() {

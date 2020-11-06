@@ -811,7 +811,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     override fun onResume() {
         super.onResume()
         Log.d("life","camera resume")
-
         togBtnStatusCheck() // 버튼 상태 불러오기
 
         /** 화면 방향 체크 */
@@ -825,11 +824,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         Log.d("lifeCycle","onPause")
         super.onPause()
         togBtnStatusSave() // 버튼의 상태 저장
-    }
-
-    override fun onStop() {
-        Log.d("lifeCycle","onStop")
-        super.onStop()
     }
 
     /** 기기의 방향 체크 - 카메라 프래그먼트에서 화면 방향에 따라서 UI 버튼도 회전이 되어야한다. */
