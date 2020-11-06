@@ -5,6 +5,7 @@ import android.graphics.SurfaceTexture
 import android.util.Log
 import android.util.Size
 import android.view.Surface
+import android.view.SurfaceHolder
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.core.impl.utils.executor.CameraXExecutors
@@ -50,12 +51,13 @@ class SurfaceTextureProvider : SurfaceTexture.OnFrameAvailableListener{
             resolution: Size
         )
 
-        fun onSafeToRelease(surfaceTexture: SurfaceTexture)
+        fun onSafeToRelease(surfaceTexture: SurfaceTexture){
+
+        }
     }
 
     override fun onFrameAvailable(surfaceTexture: SurfaceTexture?) {
-
-        Log.d("tetssde","onFrame")
-
+        Log.d("tetetest", "onFrameAvailable")
     }
+
 }

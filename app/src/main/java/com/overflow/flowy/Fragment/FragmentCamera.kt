@@ -6,12 +6,19 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.hardware.SensorManager
+import android.hardware.camera2.CameraDevice
+import android.hardware.camera2.CameraManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
 import android.util.Log
 import android.view.*
 import android.widget.*
+import androidx.camera.core.CameraXConfig
+import androidx.camera.core.impl.utils.executor.CameraXExecutors
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
@@ -94,6 +101,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        Log.d("aaaaaaaaaaaaaa","생성됨")
         return inflater.inflate(R.layout.fragment_camera, container, false)
     }
 
@@ -176,9 +184,9 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         prefEditor.commit()
     }
 
-    /** 화면이 생성됨과 동시에 기기방향에 따라 토글 버튼 방향 변경 메서드 추가 */
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    /** ui 버튼 크기 변경 메서드 추가 */
+    override fun onStart() {
+        super.onStart()
         uiRelocation()
     }
 
@@ -209,6 +217,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         // 모바일인 경우
         if (!DeviceCheck().isTabletDevice(THIS_CONTEXT!!)) {
+
             // 현재 버튼의 가로크기를 구해와서, 세로크기를 가로크기와 같게 수정해준다.
             // 그리고 상단, 하단 메뉴레이아웃의 크기를 세로크기의 1.5배로한다.
             topMenuLayout.post {
@@ -816,8 +825,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         Log.d("lifeCycle","onPause")
         super.onPause()
         togBtnStatusSave() // 버튼의 상태 저장
-
-        if (freezeMode) freezeMode = false
     }
 
     override fun onStop() {

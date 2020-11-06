@@ -7,9 +7,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.hardware.camera2.CameraDevice
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.provider.Settings
 import android.util.Log
 import android.view.View
@@ -18,18 +20,18 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
 import com.overflow.flowy.Fragment.FragmentCamera
 import com.overflow.flowy.Fragment.FragmentDescription
-import com.overflow.flowy.Fragment.FragmentMenu
-import com.overflow.flowy.Interface.onBackPressedListener
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.cameraLifecycle
+import com.overflow.flowy.Renderer.FlowyRenderer.Companion.mUpdateST
 import com.overflow.flowy.Util.MY_LOG
 import com.overflow.flowy.Util.REQUEST_PERMISSION_CODE
 import java.io.File
-import kotlin.system.exitProcess
 
-
-class MainActivity() : AppCompatActivity() {
+class MainActivity : AppCompatActivity(){
 
     /** 요청할 권한들을 작성해준다. */
     private val requiredPermissions = arrayOf(
@@ -40,6 +42,9 @@ class MainActivity() : AppCompatActivity() {
     /** 화면 소프트키 없애기 */
     private var decorView: View? = null
     private var uiOption = 0
+
+    private var backKeyClickTime : Long = 0L
+
 
     @SuppressLint("CommitPrefEdits")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,16 +113,22 @@ class MainActivity() : AppCompatActivity() {
         /** 화면 하단에 소프트 키 없애는 코드 */
         disableSoftKey()
 
-        try {
-            Log.d("countFragment", supportFragmentManager.backStackEntryCount.toString())
-            Log.d("cameraLifecycle", cameraLifecycle.currentState().toString())
-
-            // 만일 카메라 수명주기가 해제된 상태라면 프래그먼트 카메라를 다시 살린다.
-            if (cameraLifecycle.currentState().toString() == "DESTROYED") {
-                Log.d("permissionLog", "수명주기 해제 후 다시 실행 카메라화면으로이동")
-                replaceFragment("add", FragmentCamera())
+        try{
+            if (cameraLifecycle.currentState() == Lifecycle.State.DESTROYED){
+                clearStack()
+                replaceFragment("add", FragmentCamera().newInstance())
+                return
             }
-        } catch (e: Exception) {
+        }
+        catch (e : Exception){
+
+        }
+
+
+        try{
+            cameraLifecycle.doOnResume()
+            cameraLifecycle.doOnStarted()
+        }catch (e : UninitializedPropertyAccessException){
 
         }
     }
@@ -125,15 +136,9 @@ class MainActivity() : AppCompatActivity() {
     override fun onPause() {
         Log.d("mainLifeCycle", "onPause")
         super.onPause()
-
-        // 현재 보여지는 프래그먼트가 플로위 카메라 프래그먼트라면 수명주기를 해제한다. 그리고 onResume시에 다시 수명주기를 붙인다.
-        val topFragment = getVisibleFragment()
-        Log.d("topfragment", topFragment.toString())
-        if (topFragment != null) {
-            if (topFragment.tag!!.contains("FragmentCamera")) {
-                cameraLifecycle.doOnDestroy() // 카메라 수명주기 off
-                Log.d("currentLifeCycle", cameraLifecycle.currentState().toString())
-            }
+        try{
+            cameraLifecycle.doOnStarted()
+        }catch (e : UninitializedPropertyAccessException){
         }
     }
 
@@ -236,6 +241,8 @@ class MainActivity() : AppCompatActivity() {
         val fragmentManager = supportFragmentManager
         val fragmentTransaction = fragmentManager.beginTransaction()
         fragmentTransaction.addToBackStack(null)
+        fragmentTransaction.setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_left,
+            R.anim.slide_out_right, R.anim.slide_in_right)
         if (type == "replace") {
             fragmentTransaction.replace(R.id.container, fragment, fragment.toString()).commit()
         } else if (type == "add") {
@@ -259,9 +266,7 @@ class MainActivity() : AppCompatActivity() {
         }
     }
 
-    private var backKeyClickTime : Long = 0L
-
-
+    /** 백버튼 이벤트 : 카메라 프래그먼트일 경우에는 뒤로가기 종료하고, 그렇지 않은 경우에는 프래그먼트 뒤로가기를 한다. */
     override fun onBackPressed() {
         val count: Int = supportFragmentManager.backStackEntryCount
 
@@ -307,5 +312,4 @@ class MainActivity() : AppCompatActivity() {
         lateinit var pref: SharedPreferences
         lateinit var prefEditor: SharedPreferences.Editor
     }
-
 }

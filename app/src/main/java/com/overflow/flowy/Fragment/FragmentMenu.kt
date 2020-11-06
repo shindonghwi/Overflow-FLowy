@@ -53,7 +53,10 @@ class FragmentMenu : Fragment(){
                     0 -> (activity as MainActivity).replaceFragment("add", FragmentMenuContrast().newInstance())
 
                     // 자습서
-                    1 -> (activity as MainActivity).replaceFragment("replace", FragmentDescription().newInstance())
+                    1 -> (activity as MainActivity).replaceFragment("add", FragmentDescription().newInstance())
+
+                    // 정보
+                    2 -> (activity as MainActivity).replaceFragment("add", FragmentMenuInfo().newInstance())
                 }
             }
         })

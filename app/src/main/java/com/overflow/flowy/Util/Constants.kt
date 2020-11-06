@@ -49,25 +49,6 @@ import com.overflow.flowy.R
 @JvmField var autoFocusMode : Boolean = true
 
 @JvmField var deviceRotationValue : Int = 0
-//luminanceArrayData.add(LuminanceData(R.color.black, R.color.white))
-//luminanceArrayData.add(LuminanceData(R.color.black, R.color.yellow))
-//luminanceArrayData.add(LuminanceData(R.color.blue, R.color.white))
-//luminanceArrayData.add(LuminanceData(R.color.blue, R.color.yellow))
-
-
-//@JvmField val LuminanceDefaultData = mutableListOf(
-//    LuminanceData(R.color.black, R.color.white, "흑/백"),
-//    LuminanceData(R.color.black, R.color.yellow, "흑/황"),
-//    LuminanceData(R.color.blue, R.color.white,"청/백"),
-//    LuminanceData(R.color.blue, R.color.yellow,"청/황")
-//)
-//
-//@JvmField val LuminanceInitData = mutableListOf(
-//    LuminanceData(R.color.black, R.color.white, "흑/백"),
-//    LuminanceData(R.color.black, R.color.yellow, "흑/황"),
-//    LuminanceData(R.color.blue, R.color.white,"청/백"),
-//    LuminanceData(R.color.blue, R.color.yellow,"청/황")
-//)
 
 @JvmField val contrastInitData = arrayListOf<ContrastData>(
     ContrastData(null, (R.color.black), (R.color.white), "흑/백", null),

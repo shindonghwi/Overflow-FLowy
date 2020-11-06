@@ -2,7 +2,7 @@
 <resources>
     <color name="colorPrimary">#6200EE</color>
     <color name="colorPrimaryDark">#3700B3</color>
-    <color name="colorAccent">#03DAC5</color>
+    <color name="colorAccent">#3b8be7</color>
 
     <color name="white">#ffffff</color>
     <color name="black">#000000</color>
@@ -11,5 +11,6 @@
     <color name="pastel_blue">#28E7FF</color>
     <color name="flowy_logo_color">#3b8be7</color>
     <color name="flowy_menu_bg">#353535</color>
+    <color name="light_gray">#a0a0a0</color>
 
 </resources>

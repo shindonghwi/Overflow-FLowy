@@ -13,11 +13,17 @@ class CustomLifecycle : LifecycleOwner {
         mLifecycleRegistry.markState(Lifecycle.State.RESUMED)
     }
 
-    fun doOnStart() {
+    fun doOnStarted() {
         mLifecycleRegistry.markState(Lifecycle.State.STARTED)
     }
     fun doOnDestroy(){
         mLifecycleRegistry.markState(Lifecycle.State.DESTROYED)
+    }
+    fun doOnCreated(){
+        mLifecycleRegistry.markState(Lifecycle.State.CREATED)
+    }
+    fun doOnInitialized(){
+        mLifecycleRegistry.markState(Lifecycle.State.INITIALIZED)
     }
 
     override fun getLifecycle(): Lifecycle {

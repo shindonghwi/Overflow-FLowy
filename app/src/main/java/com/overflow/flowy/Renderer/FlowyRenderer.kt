@@ -1,18 +1,25 @@
 package com.overflow.flowy.Renderer
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraDevice
+import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CaptureRequest
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
+import android.os.Build
+import android.os.Handler
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Size
 import android.view.View
-import androidx.camera.core.AspectRatio
-import androidx.camera.core.Camera
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
+import androidx.camera.camera2.impl.Camera2CameraCaptureResultConverter
+import androidx.camera.camera2.internal.Camera2CameraCaptureResult
+import androidx.camera.camera2.internal.CameraDeviceStateCallbacks
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.blackScreen
@@ -28,6 +35,7 @@ import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchFirstY
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointX
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointY
 import com.overflow.flowy.Fragment.FragmentCamera.Companion.userContrastData
+import com.overflow.flowy.MainActivity
 import com.overflow.flowy.Provider.SurfaceTextureProvider
 import com.overflow.flowy.Util.*
 import com.overflow.flowy.View.FlowyGLTextureView
@@ -62,7 +70,6 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
     private lateinit var surfaceTextureProvider: SurfaceTextureProvider
     private lateinit var preview: Preview
     private var mGLInit = false
-    private var mUpdateST = false
 
     private lateinit var OPENGL_VERTICE: FloatArray
     private var cameraXAspectRatio: Int = -1
@@ -235,8 +242,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
                 // RenderMode를 Dirty로 설정했기에 requestRender를 요청하지 않으면 렌더링이 중단된다.
 //                flowyGLTextureView.requestRender()
                 return
-            }
-            else{
+            } else {
                 try {
                     sfTexture?.updateTexImage()
                 } catch (e: Exception) {
@@ -336,14 +342,16 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
             }
             , ContextCompat.getMainExecutor(THIS_CONTEXT)
         )
+
     }
 
 
     /** 카메라 수명주기  생성*/
     private fun createLifeCycle(): CustomLifecycle {
+        Log.d("tetetest", "라이프 사이클 생성")
         val customLifecycle = CustomLifecycle()
         customLifecycle.doOnResume()
-        customLifecycle.doOnStart()
+        customLifecycle.doOnStarted()
         return customLifecycle
     }
 
@@ -434,7 +442,10 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
 
             /** 더블 탭을 처음 클릭한 경우에, 클릭한 지점을 확대해준다. */
             if (isDoubleTapFirstTouched) {
-                Log.d("isDoubleTapFirstTouched", "isDoubleTapFirstTouched : $isDoubleTapFirstTouched // ")
+                Log.d(
+                    "isDoubleTapFirstTouched",
+                    "isDoubleTapFirstTouched : $isDoubleTapFirstTouched // "
+                )
                 isDoubleTapFirstTouched = false // 더블탭 터치가 끝났다는걸 알린다.
 
                 // 사용자가 터치한곳의 NDK 좌표를 구한다. ( -1 ~ 1 사이값임 )
@@ -603,6 +614,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         var camera: Camera? = null
         lateinit var previewBuilder: Preview.Builder
         lateinit var cameraLifecycle: CustomLifecycle
-
+        var mUpdateST = false
     }
+
 }

@@ -24,4 +24,20 @@
 
     <string name="init_back_up_text">기본값으로 복원</string>
     <string name="menu_contrast_default_color_text">흑/백</string>
+
+    <string name="inquire_text">문의하기</string>
+    <string name="share_text">공유하기</string>
+    <string name="evaluate_text">평가하기</string>
+    <string name="opensource_text">오픈소스 라이선스</string>
+
+    <string name="new_message">새로운 메시지</string>
+    <string name="email_hint">이메일을 입력하세요</string>
+    <string name="receiver_person_text">받는 사람 :</string>
+    <string name="send_person_text">보내는 사람 :</string>
+    <string name="overflow_email">info@atoverflow.com</string>
+    <string name="title">제목</string>
+    <string name="title_hint">제목을 입력하세요</string>
+    <string name="content">내용</string>
+    <string name="content_hint">내용을 입력하세요</string>
+
 </resources>
