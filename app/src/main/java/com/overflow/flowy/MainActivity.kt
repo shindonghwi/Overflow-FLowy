@@ -7,12 +7,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.hardware.camera2.CameraDevice
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
 import android.provider.Settings
+import android.telephony.TelephonyManager
 import android.util.Log
 import android.view.View
 import android.widget.Toast
@@ -21,17 +20,16 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
 import com.overflow.flowy.Fragment.FragmentCamera
 import com.overflow.flowy.Fragment.FragmentDescription
 import com.overflow.flowy.Renderer.FlowyRenderer.Companion.cameraLifecycle
-import com.overflow.flowy.Renderer.FlowyRenderer.Companion.mUpdateST
-import com.overflow.flowy.Util.MY_LOG
-import com.overflow.flowy.Util.REQUEST_PERMISSION_CODE
-import java.io.File
+import com.overflow.flowy.Util.*
+import java.util.*
+import kotlin.collections.ArrayList
 
-class MainActivity : AppCompatActivity(){
+class MainActivity : AppCompatActivity() {
+
+    private var permissionGrantFlag: Boolean = false
 
     /** 요청할 권한들을 작성해준다. */
     private val requiredPermissions = arrayOf(
@@ -43,13 +41,17 @@ class MainActivity : AppCompatActivity(){
     private var decorView: View? = null
     private var uiOption = 0
 
-    private var backKeyClickTime : Long = 0L
+    private var backKeyClickTime: Long = 0L
 
+    private val fragmentCameraInstance: FragmentCamera = FragmentCamera().newInstance()
 
     @SuppressLint("CommitPrefEdits")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // user UUID 가져오기 or UUID 생성
+        getUserUUID()
 
         Log.d("mainLifeCycle", "onCreate")
 
@@ -60,7 +62,7 @@ class MainActivity : AppCompatActivity(){
 
         // 만약 플로위 설명을 본적이 없다면, 플로위 설명 화면을 띄워주고, 본적이 있다고 알린다.
         if (!descriptionCheck) {
-            replaceFragment("add", FragmentDescription())
+            replaceFragment("add", FragmentDescription().newInstance())
             prefEditor.putBoolean("flowyDescriptionCheck", true)
             prefEditor.commit()
         }
@@ -101,8 +103,10 @@ class MainActivity : AppCompatActivity(){
 
         // 거절된 퍼미션이 없다면 카메라 실행
         else {
-            Log.d("permissionLog", "거절된 퍼미션 없음 카메라 화면으로 이동")
-            replaceFragment("add", FragmentCamera())
+            if (!getVisibleFragment().toString().contains("FragmentCamera")) {
+                Log.d("permissionLog", "거절된 퍼미션 없음 카메라 화면으로 이동")
+                replaceFragment("replace", fragmentCameraInstance)
+            }
         }
     }
 
@@ -114,22 +118,21 @@ class MainActivity : AppCompatActivity(){
         disableSoftKey()
 
         /** 카메라 수명주기가 끝났다면, 다시 카메라를 실행하는 코드 */
-        try{
-            if (cameraLifecycle.currentState() == Lifecycle.State.DESTROYED){
+        try {
+            if (cameraLifecycle.currentState() == Lifecycle.State.DESTROYED) {
                 clearStack()
-                replaceFragment("add", FragmentCamera().newInstance())
+                replaceFragment("replace", FragmentCamera().newInstance())
                 return
             }
-        }
-        catch (e : Exception){
+        } catch (e: Exception) {
 
         }
 
         /** 화면이 닫혔을때, 카메라 수명주기가 다시 살아남. */
-        try{
+        try {
             cameraLifecycle.doOnResume()
             cameraLifecycle.doOnStarted()
-        }catch (e : UninitializedPropertyAccessException){
+        } catch (e: UninitializedPropertyAccessException) {
 
         }
     }
@@ -139,9 +142,9 @@ class MainActivity : AppCompatActivity(){
         super.onPause()
 
         /** 화면이 닫혔을때, 카메라 수명주기 죽임. */
-        try{
+        try {
             cameraLifecycle.doOnStarted()
-        }catch (e : UninitializedPropertyAccessException){
+        } catch (e: UninitializedPropertyAccessException) {
         }
     }
 
@@ -166,12 +169,10 @@ class MainActivity : AppCompatActivity(){
                 if (grantResults.isNotEmpty()) {
                     for ((i, permission) in permissions.withIndex()) {
 
-                        Log.d(MY_LOG, permission.toString())
-
                         // 카메라는 필수 기능이기에 허용을 안하면 앱을 종료한다.
                         if (permission == "android.permission.CAMERA" && grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+                            permissionGrantFlag = false
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-
                                 // 사용자가 거절을 했다면, 앱을 종료시킨다.
                                 if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
                                     finish()
@@ -181,7 +182,10 @@ class MainActivity : AppCompatActivity(){
                                     errorDialog()?.show()
                                 }
                             }
-                        } else if (permission == "android.permission.WRITE_EXTERNAL_STORAGE" && grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+                        } else permissionGrantFlag = true
+
+                        if (permission == "android.permission.WRITE_EXTERNAL_STORAGE" && grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+                            permissionGrantFlag = false
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                                 // 사용자가 거절을 했다면, 앱을 종료시킨다.
                                 if (shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
@@ -192,13 +196,12 @@ class MainActivity : AppCompatActivity(){
                                     errorDialog()?.show()
                                 }
                             }
-                        }
+                        } else permissionGrantFlag = true
+                    }
 
-                        // 권한을 허용한 경우에는 다음 화면으로 넘어간다.
-                        else {
-                            Log.d("permissionLog", "권한허용되있음 카메라화면으로이동")
-                            replaceFragment("add", FragmentCamera())
-                        }
+                    if (permissionGrantFlag) {
+                        Log.d("permissionLog", "권한허용되있음 카메라화면으로이동")
+                        replaceFragment("replace", fragmentCameraInstance)
                     }
                 }
             }
@@ -226,15 +229,19 @@ class MainActivity : AppCompatActivity(){
     }
 
     /** 화면 하단에 소프트 키 없애는 코드 */
-    private fun disableSoftKey() {
+    fun disableSoftKey() {
         Log.d("mainLifeCycle", "disableSoftKey")
         decorView = window.decorView
         uiOption = window.decorView.systemUiVisibility
         uiOption = uiOption or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
         uiOption = uiOption or View.SYSTEM_UI_FLAG_FULLSCREEN
         uiOption = uiOption or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-
         decorView!!.systemUiVisibility = uiOption
+    }
+
+    /** 화면 하단에 소프트 키 생성하는 코드 */
+    fun enableSoftKey(){
+        decorView!!.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
     }
 
     fun replaceFragment(type: String, fragment: Fragment) {
@@ -244,12 +251,14 @@ class MainActivity : AppCompatActivity(){
         val fragmentManager = supportFragmentManager
         val fragmentTransaction = fragmentManager.beginTransaction()
         fragmentTransaction.addToBackStack(null)
-        fragmentTransaction.setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_left,
-            R.anim.slide_out_right, R.anim.slide_in_right)
+        fragmentTransaction.setCustomAnimations(
+            R.anim.slide_in_left, R.anim.slide_out_left,
+            R.anim.slide_out_right, R.anim.slide_in_right
+        )
         if (type == "replace") {
-            fragmentTransaction.replace(R.id.container, fragment, fragment.toString()).commit()
+            fragmentTransaction.replace(R.id.container, fragment).commit()
         } else if (type == "add") {
-            fragmentTransaction.add(R.id.container, fragment, fragment.toString()).commit()
+            fragmentTransaction.add(R.id.container, fragment).commit()
         }
     }
 
@@ -259,22 +268,19 @@ class MainActivity : AppCompatActivity(){
     }
 
 
-
     /** 백버튼 이벤트 : 카메라 프래그먼트일 경우에는 뒤로가기 종료하고, 그렇지 않은 경우에는 프래그먼트 뒤로가기를 한다. */
     override fun onBackPressed() {
         val count: Int = supportFragmentManager.backStackEntryCount
 
-        Log.d("countCount","$count")
+        Log.d("countCount", "$count")
 
         if (count == 1) {
-            if (System.currentTimeMillis() > backKeyClickTime + 2000)
-            {
+            if (System.currentTimeMillis() > backKeyClickTime + 2000) {
                 backKeyClickTime = System.currentTimeMillis()
                 Toast.makeText(this, "뒤로 가기 버튼을 한 번 더 누르면 종료됩니다.", Toast.LENGTH_SHORT).show();
                 return
             }
-            if (System.currentTimeMillis() <= backKeyClickTime + 2000)
-            {
+            if (System.currentTimeMillis() <= backKeyClickTime + 2000) {
                 clearStack()
                 finish()
             }
@@ -285,8 +291,7 @@ class MainActivity : AppCompatActivity(){
     }
 
     /** 앱을 종료할떄 살아 있는 프래그먼트를 모두 지워준다. */
-    private fun clearStack()
-    {
+    private fun clearStack() {
         val backStackEntry = supportFragmentManager.backStackEntryCount
         if (backStackEntry > 0) {
             for (i in 0 until backStackEntry) {
@@ -302,8 +307,23 @@ class MainActivity : AppCompatActivity(){
         }
     }
 
+    @SuppressLint("HardwareIds")
+    private fun getUserUUID(): String? {
+
+        val userUUIDPref = this.getSharedPreferences("userUUID", Context.MODE_PRIVATE)
+
+        USER_UUID = SharedPreferenceUtil().loadStringData(userUUIDPref, "uuid")!!
+
+        if (USER_UUID == "") {
+            USER_UUID = UUID.randomUUID().toString()
+            SharedPreferenceUtil().saveStringData(userUUIDPref, "uuid", USER_UUID)
+        }
+        return USER_UUID
+    }
+
     companion object {
         lateinit var pref: SharedPreferences
         lateinit var prefEditor: SharedPreferences.Editor
     }
+
 }

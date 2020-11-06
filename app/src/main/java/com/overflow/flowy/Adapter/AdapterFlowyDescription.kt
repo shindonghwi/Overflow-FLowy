@@ -29,7 +29,7 @@ class AdapterFlowyDescription(val context: Context, private val gif_images_path:
     override fun getItemCount(): Int = gif_images_path.size
 
     override fun onBindViewHolder(holder: viewHolder, position: Int) {
-        Glide.with(context).load(gif_images_path.get(position)).into(holder.gif_image)
+        Glide.with(context).load(gif_images_path[position]).into(holder.gif_image)
     }
 
     class viewHolder(view: View): RecyclerView.ViewHolder(view) {

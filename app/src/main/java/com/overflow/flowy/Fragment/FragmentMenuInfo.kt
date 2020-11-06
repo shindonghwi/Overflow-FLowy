@@ -88,7 +88,7 @@ class FragmentMenuInfo : Fragment(), View.OnClickListener{
                 startActivity(Intent.createChooser(msg, "앱을 선택해 주세요"))
             }
             R.id.evaluateBtn -> {}
-            R.id.openSourceBtn -> {}
+            R.id.openSourceBtn -> { (activity as MainActivity).replaceFragment("add", FragmentMenuLicense().newInstance()) }
         }
     }
 }

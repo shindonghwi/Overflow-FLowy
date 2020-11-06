@@ -1,11 +1,15 @@
 package com.overflow.flowy.Fragment
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -20,6 +24,7 @@ class FragmentMenu : Fragment(){
 
     private lateinit var menuRecyclerView: RecyclerView
     private lateinit var completeBtn: Button
+    private lateinit var flowyLogoImgVIew: ImageView
 
     fun newInstance(): FragmentMenu {
         return FragmentMenu()
@@ -61,6 +66,10 @@ class FragmentMenu : Fragment(){
             }
         })
 
+        flowyLogoImgVIew.setOnClickListener{
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://flowy.kr/")))
+        }
+
         completeBtn.setOnClickListener {
             activity!!.supportFragmentManager.popBackStack()
         }
@@ -69,6 +78,7 @@ class FragmentMenu : Fragment(){
     private fun initId(view: View) {
         menuRecyclerView = view.findViewById(R.id.menuRecyclerView)
         completeBtn = view.findViewById(R.id.completeBtn)
+        flowyLogoImgVIew = view.findViewById(R.id.flowyLogoImgVIew)
     }
 
     private fun loadFlowyMenuData(): Array<FlowyMenuData> {
@@ -81,4 +91,18 @@ class FragmentMenu : Fragment(){
         )
     }
 
+    override fun onResume() {
+        (activity as MainActivity).enableSoftKey()
+        super.onResume()
+    }
+
+    override fun onAttach(context: Context) {
+        (activity as MainActivity).enableSoftKey()
+        super.onAttach(context)
+    }
+
+    override fun onDestroyView() {
+        (activity as MainActivity).disableSoftKey()
+        super.onDestroyView()
+    }
 }

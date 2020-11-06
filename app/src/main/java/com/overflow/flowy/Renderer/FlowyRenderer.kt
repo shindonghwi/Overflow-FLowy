@@ -478,7 +478,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
             /** 더블 탭을 하여, 확대된 이미지가 보이는 상태이다.
              * 여기서는 사용자의 터치포인터를 인식하여 사용자가 움직이는 곳으로 화면을 이동시켜줘야한다. */
             else {
-                val scrollSpeed = 400 // 값을 올릴수록 스크롤 속도가 느려진다.
+                val scrollSpeed = 200 // 값을 올릴수록 스크롤 속도가 느려진다.
 
                 if (touchPointX != 0.0 && touchPointY != 0.0 && touchFirstX != 0.0 && touchFirstY != 0.0) {
 

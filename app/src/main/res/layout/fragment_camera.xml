@@ -118,6 +118,7 @@
 
         <!-- 구현되면 bg 수정해야함 -->
         <ToggleButton
+            android:visibility="gone"
             android:id="@+id/mirroringToggleBtn"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -151,6 +152,7 @@
             android:textOn="@string/textClear" />
 
         <ToggleButton
+            android:visibility="gone"
             android:id="@+id/flowyCastToggleBtn"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -160,7 +162,6 @@
             android:textOff="@string/textClear"
             android:textOn="@string/textClear" />
 
-        <!-- 구현되면 bg 수정해야함 -->
         <ToggleButton
             android:id="@+id/freezeToggleBtn"
             android:layout_width="0dp"
@@ -187,6 +188,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
+            android:visibility="gone"
             android:layout_weight="0.20"
             android:background="@drawable/control_menu_on_off"
             android:textOff="@string/textClear"

@@ -1,6 +1,7 @@
 package com.overflow.flowy.Fragment
 
 import android.annotation.SuppressLint
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -30,6 +31,7 @@ import com.google.android.gms.ads.MobileAds
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.overflow.flowy.DTO.ContrastData
+import com.overflow.flowy.Interface.RetrofitAPI
 import com.overflow.flowy.Interface.onBackPressedListener
 import com.overflow.flowy.MainActivity
 import com.overflow.flowy.MainActivity.Companion.pref
@@ -42,6 +44,12 @@ import com.overflow.flowy.View.FlowyGLTextureView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.POST
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -50,8 +58,8 @@ import java.io.FileOutputStream
 class FragmentCamera : Fragment(), View.OnClickListener {
 
     // 프래그먼트의 인스턴스
-    public fun newInstance(): FragmentCamera {
-        Log.d("newInstance","카메라 인스턴스 생성")
+    fun newInstance(): FragmentCamera {
+        Log.d("newInstance", "카메라 인스턴스 생성")
         return FragmentCamera()
     }
 
@@ -101,7 +109,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        Log.d("aaaaaaaaaaaaaa","생성됨")
+        Log.d("aaaaaaaaaaaaaa", "생성됨")
         return inflater.inflate(R.layout.fragment_camera, container, false)
     }
 
@@ -117,6 +125,11 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         screenTouchListener() // 터치 리스너 설정
         pinchZoomListener() // 핀치줌 리스너 설정
         loadLuminanceData() // 사용자의 대비 데이터 가져오기
+    }
+
+    override fun onAttach(context: Context) {
+        Log.d("sdfsdfsdf","sdfsdf")
+        super.onAttach(context)
     }
 
     /** layout id 초기화하는 공간 */
@@ -173,14 +186,14 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         lensChangeToggleBtn.isChecked = pref.getBoolean("lensChangeToggleBtn", false)
         cameraLensMode = if (lensChangeToggleBtn.isChecked) 0 else 1
-        Log.d("sdfsfd","$luminanceIndex")
+        Log.d("sdfsfd", "$luminanceIndex")
     }
 
     /** 메뉴바에 있는 토글버튼 상태 저장하기 */
     private fun togBtnStatusSave() {
-        prefEditor.putBoolean("flowyZoomToggleBtn",flowyZoomToggleBtn.isChecked)
-        prefEditor.putInt("luminanceToggleBtn",luminanceIndex)
-        prefEditor.putBoolean("lensChangeToggleBtn",lensChangeToggleBtn.isChecked)
+        prefEditor.putBoolean("flowyZoomToggleBtn", flowyZoomToggleBtn.isChecked)
+        prefEditor.putInt("luminanceToggleBtn", luminanceIndex)
+        prefEditor.putBoolean("lensChangeToggleBtn", lensChangeToggleBtn.isChecked)
         prefEditor.commit()
     }
 
@@ -191,24 +204,30 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     }
 
     /** 사용자의 대비 데이터 가져오기 */
-    fun loadLuminanceData(){
-        val contrastPref = THIS_CONTEXT!!.getSharedPreferences("userLuminance", Context.MODE_PRIVATE)
+    fun loadLuminanceData() {
+        val contrastPref =
+            THIS_CONTEXT!!.getSharedPreferences("userLuminance", Context.MODE_PRIVATE)
         val contrastPrefEditor = contrastPref.edit()
 
         val userLuminancePref = contrastPref.getBoolean("userLuminanceInitFlag", true)
         // 처음 사용하는 사람이라면, luminance 데이터를 초기화 시켜준다.
-        if (userLuminancePref){
+        if (userLuminancePref) {
             contrastPrefEditor.putBoolean("userLuminanceInitFlag", false)
             contrastPrefEditor.commit()
-            SharedPreferenceUtil().saveArrayListData(contrastPref, "userLumincanceData", contrastInitData)
+            SharedPreferenceUtil().saveArrayListData(
+                contrastPref,
+                "userLumincanceData",
+                contrastInitData
+            )
             userContrastData = contrastInitData
-            Log.d("lumiinit","처음")
+            Log.d("lumiinit", "처음")
         }
         // 처음 사용하는 사람이 아니라면, 이전에 사용하던 luminance 데이터를 가져온다.
-        else{
-            val contrastMutableListData = SharedPreferenceUtil().loadArrayListData(contrastPref, "userLumincanceData")
+        else {
+            val contrastMutableListData =
+                SharedPreferenceUtil().loadArrayListData(contrastPref, "userLumincanceData")
             userContrastData = contrastMutableListData
-            Log.d("lumiinit","처음아님")
+            Log.d("lumiinit", "처음아님")
         }
     }
 
@@ -230,27 +249,44 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 topMenuLayout.layoutParams = tLayout
                 topMenuLayout.requestLayout()
 
-                val marginValue = 20
-                val toggleBtnParams = LinearLayout.LayoutParams(0, focusToggleBtn.width, 0.2f)
-                toggleBtnParams.topMargin = marginValue
-                toggleBtnParams.bottomMargin = marginValue
-                toggleBtnParams.leftMargin = marginValue
-                toggleBtnParams.rightMargin = marginValue
+                val topWeight: Float =
+                    if (mirroringToggleBtn.visibility == View.GONE) 0.25f else 0.2f
+                val topMargin: Int =
+                    if (topWeight == 0.25f) 15 else (focusToggleBtn.height * 0.1).toInt()
+                val topMenuMargin = 40
+                val topToggleBtnParams =
+                    LinearLayout.LayoutParams(0, focusToggleBtn.width, topWeight)
+                topToggleBtnParams.topMargin = topMargin
+//                topToggleBtnParams.bottomMargin = marginValue
+                topToggleBtnParams.leftMargin = topMenuMargin
+                topToggleBtnParams.rightMargin = topMenuMargin
 
-                focusToggleBtn.layoutParams = toggleBtnParams
+                focusToggleBtn.layoutParams = topToggleBtnParams
                 focusToggleBtn.requestLayout()
 
-                flashToggleBtn.layoutParams = toggleBtnParams
+                flashToggleBtn.layoutParams = topToggleBtnParams
                 flashToggleBtn.requestLayout()
 
-                lensChangeToggleBtn.layoutParams = toggleBtnParams
+                lensChangeToggleBtn.layoutParams = topToggleBtnParams
                 lensChangeToggleBtn.requestLayout()
 
-                flowyZoomToggleBtn.layoutParams = toggleBtnParams
+                flowyZoomToggleBtn.layoutParams = topToggleBtnParams
                 flowyZoomToggleBtn.requestLayout()
 
-                mirroringToggleBtn.layoutParams = toggleBtnParams
+                mirroringToggleBtn.layoutParams = topToggleBtnParams
                 mirroringToggleBtn.requestLayout()
+
+                val bottomWeight: Float =
+                    if (controlToggleBtn.visibility == View.GONE && flowyCastToggleBtn.visibility == View.GONE) 0.33f else 0.2f
+                val bottomMargin: Int =
+                    if (topWeight == 0.33f) 15 else (focusToggleBtn.height * 0.1).toInt()
+                val bottomMenuMargin = 80
+                val bottomToggleBtnParams =
+                    LinearLayout.LayoutParams(0, focusToggleBtn.width, bottomWeight)
+                bottomToggleBtnParams.topMargin = bottomMargin
+//                topToggleBtnParams.bottomMargin = marginValue
+                bottomToggleBtnParams.leftMargin = bottomMenuMargin
+                bottomToggleBtnParams.rightMargin = bottomMenuMargin
 
                 // 하단 메뉴바 높이 조정
                 val bLayout = RelativeLayout.LayoutParams(
@@ -260,19 +296,19 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 bottomMenuLayout.layoutParams = bLayout
                 bottomMenuLayout.requestLayout()
 
-                menuToggleBtn.layoutParams = toggleBtnParams
+                menuToggleBtn.layoutParams = bottomToggleBtnParams
                 menuToggleBtn.requestLayout()
 
-                flowyCastToggleBtn.layoutParams = toggleBtnParams
+                flowyCastToggleBtn.layoutParams = bottomToggleBtnParams
                 flowyCastToggleBtn.requestLayout()
 
-                freezeToggleBtn.layoutParams = toggleBtnParams
+                freezeToggleBtn.layoutParams = bottomToggleBtnParams
                 freezeToggleBtn.requestLayout()
 
-                luminanceToggleBtn.layoutParams = toggleBtnParams
+                luminanceToggleBtn.layoutParams = bottomToggleBtnParams
                 luminanceToggleBtn.requestLayout()
 
-                controlToggleBtn.layoutParams = toggleBtnParams
+                controlToggleBtn.layoutParams = bottomToggleBtnParams
                 controlToggleBtn.requestLayout()
 
 
@@ -318,6 +354,113 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         }
 
     }
+
+    /** 메뉴 다 만들면 바로 위 메서드 uiRelocation지우고 이걸로 갈아끼우면됌 ui 재배치 ( 태블릿인지, 모바일인지 확인 ) */
+//    private fun uiRelocation() {
+//
+//        // 모바일인 경우
+//        if (!DeviceCheck().isTabletDevice(THIS_CONTEXT!!)) {
+//
+//            // 현재 버튼의 가로크기를 구해와서, 세로크기를 가로크기와 같게 수정해준다.
+//            // 그리고 상단, 하단 메뉴레이아웃의 크기를 세로크기의 1.5배로한다.
+//            topMenuLayout.post {
+//
+//                // 상단 메뉴바 높이 조정
+//                val tLayout = RelativeLayout.LayoutParams(
+//                    LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 1.5).toInt()
+//                )
+//                tLayout.addRule(RelativeLayout.ALIGN_PARENT_TOP)
+//                topMenuLayout.layoutParams = tLayout
+//                topMenuLayout.requestLayout()
+//
+//                val marginValue = 20
+//                val toggleBtnParams = LinearLayout.LayoutParams(0, focusToggleBtn.width, 0.2f)
+//                toggleBtnParams.topMargin = marginValue
+//                toggleBtnParams.bottomMargin = marginValue
+//                toggleBtnParams.leftMargin = marginValue
+//                toggleBtnParams.rightMargin = marginValue
+//
+//                focusToggleBtn.layoutParams = toggleBtnParams
+//                focusToggleBtn.requestLayout()
+//
+//                flashToggleBtn.layoutParams = toggleBtnParams
+//                flashToggleBtn.requestLayout()
+//
+//                lensChangeToggleBtn.layoutParams = toggleBtnParams
+//                lensChangeToggleBtn.requestLayout()
+//
+//                flowyZoomToggleBtn.layoutParams = toggleBtnParams
+//                flowyZoomToggleBtn.requestLayout()
+//
+//                mirroringToggleBtn.layoutParams = toggleBtnParams
+//                mirroringToggleBtn.requestLayout()
+//
+//                // 하단 메뉴바 높이 조정
+//                val bLayout = RelativeLayout.LayoutParams(
+//                    LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 1.5).toInt()
+//                )
+//                bLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
+//                bottomMenuLayout.layoutParams = bLayout
+//                bottomMenuLayout.requestLayout()
+//
+//                menuToggleBtn.layoutParams = toggleBtnParams
+//                menuToggleBtn.requestLayout()
+//
+//                flowyCastToggleBtn.layoutParams = toggleBtnParams
+//                flowyCastToggleBtn.requestLayout()
+//
+//                freezeToggleBtn.layoutParams = toggleBtnParams
+//                freezeToggleBtn.requestLayout()
+//
+//                luminanceToggleBtn.layoutParams = toggleBtnParams
+//                luminanceToggleBtn.requestLayout()
+//
+//                controlToggleBtn.layoutParams = toggleBtnParams
+//                controlToggleBtn.requestLayout()
+//
+//
+//                // 공유버튼 레이아웃 높이 조정
+//                val sLayout = RelativeLayout.LayoutParams(
+//                    LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 1.5).toInt()
+//                )
+//                sLayout.addRule(RelativeLayout.ALIGN_PARENT_TOP)
+//                shareFrameLayout.layoutParams = sLayout
+//                shareFrameLayout.requestLayout()
+//
+//                val imgBtnParams = FrameLayout.LayoutParams(
+//                    FrameLayout.LayoutParams.MATCH_PARENT,
+//                    (focusToggleBtn.height * 1.2).toInt()
+//                )
+//                imgBtnParams.gravity = Gravity.CENTER
+//                shareImgBtn.layoutParams = imgBtnParams
+//                shareImgBtn.requestLayout()
+//
+//            }
+//        }
+//
+//        // 태블릿인경우
+//        else {
+//            topMenuLayout.post {
+//
+//                // 상단 메뉴바 높이 조정
+//                val tLayout = RelativeLayout.LayoutParams(
+//                    LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 2.2).toInt()
+//                )
+//                tLayout.addRule(RelativeLayout.ALIGN_PARENT_TOP)
+//                topMenuLayout.layoutParams = tLayout
+//                topMenuLayout.requestLayout()
+//
+//                // 하단 메뉴바 높이 조정
+//                val bLayout = RelativeLayout.LayoutParams(
+//                    LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 2.2).toInt()
+//                )
+//                bLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
+//                bottomMenuLayout.layoutParams = bLayout
+//                bottomMenuLayout.requestLayout()
+//            }
+//        }
+//
+//    }
 
     /** 사용자가 화면을 터치했을때 좌표를 항상 기록한다. */
     fun setAlwaysTouchPoint(x: Double, y: Double) {
@@ -685,12 +828,18 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 if (flowyZoomToggleBtn.isChecked) {
                     cameraMode = "flowy"
                     cameraSubMode = "longClick"
+
+                    // 서버에 플로위 줌 시작 api를 보낸다.
+                    sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, "putActLog", 3)
                 }
 
                 // 카메라 모드가 플로위 모드라면, 카메라모드를 기본값으로, 카메라 서브값도 기본값으로 변경한다.
                 else {
                     cameraMode = "default"
                     cameraSubMode = "default"
+
+                    // 서버에 플로위 줌 시작 api를 보낸다.
+                    sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, "putActLog", 4)
                 }
             }
             R.id.mirroringToggleBtn -> {
@@ -733,9 +882,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 // arraylist에 등록된 고대비 색상의 갯수보다 내가 선택한 횟수가 많다면 기본색상을 보여줘야한다.
                 if (luminanceIndex >= userContrastData.size) {
                     luminanceIndex = 0
-                    if (userContrastData.size == 0){
+                    if (userContrastData.size == 0) {
                         if (alertToast != null) alertToast.cancel()
-                        alertToast = Toast.makeText(context, "[메뉴 - 대비] 값을 설정해주세요", Toast.LENGTH_SHORT)
+                        alertToast =
+                            Toast.makeText(context, "[메뉴 - 대비] 값을 설정해주세요", Toast.LENGTH_SHORT)
                         alertToast.show()
                     }
                 } else {
@@ -810,7 +960,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     override fun onResume() {
         super.onResume()
-        Log.d("life","camera resume")
+        Log.d("life", "camera resume")
         togBtnStatusCheck() // 버튼 상태 불러오기
 
         /** 화면 방향 체크 */
@@ -818,12 +968,18 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         /** 광고 불러오기 */
         loadAdMob()
+
+        /** 카메라 사용시작 로그를 서버에 보낸다. */
+        sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, "putActLog", 1)
     }
 
     override fun onPause() {
-        Log.d("lifeCycle","onPause")
+        Log.d("lifeCycle", "onPause")
         super.onPause()
         togBtnStatusSave() // 버튼의 상태 저장
+
+        /** 카메라 사용종료 로그를 서버에 보낸다. */
+        sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, "putActLog", 2)
     }
 
     /** 기기의 방향 체크 - 카메라 프래그먼트에서 화면 방향에 따라서 UI 버튼도 회전이 되어야한다. */
@@ -991,4 +1147,34 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     }
 
+    /** 서버에 플로위 줌 신호를 보낸다. */
+    private fun sendFlowyDataToServer(baseURL: String, addURL: String, userAction: Int) {
+        try{
+            val sendLogData:HashMap<String, Any> = HashMap()
+            sendLogData["api_key"] = API_KEY
+            sendLogData["device_id"] = USER_UUID
+            sendLogData["action_code"] = userAction
+
+            val retrofitBuilder = Retrofit.Builder()
+                .baseUrl(baseURL)
+                .addConverterFactory(NullOnEmptyConverterFactory())
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+
+            val retrofit = retrofitBuilder.create(RetrofitAPI::class.java)
+            retrofit.postFlowyZoomLogData(sendLogData).enqueue(object : Callback<POST>{
+                override fun onFailure(call: Call<POST>, t: Throwable) {
+                    Log.d("receiveData","POST 응답데이터 없음")
+                }
+
+                override fun onResponse(call: Call<POST>, response: Response<POST>) {
+                    Log.d("receiveData","POST 성공")
+                }
+            })
+        }
+        catch (e : Exception){
+            Log.d("retrofitError","error : " + e.message.toString())
+        }
+
+    }
 }

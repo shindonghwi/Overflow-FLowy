@@ -88,10 +88,8 @@ class FragmentDescription : Fragment() {
 
                 // 제일 첫 화면에 보이는 자습서
                 if (backStackEntry <= 1){
-                    view_pager.visibility = View.GONE
-                    indicator.visibility = View.GONE
-                    page_move_status_btn.visibility = View.GONE
                     (activity as MainActivity).requestPermission()
+                    activity!!.supportFragmentManager.popBackStack()
                 }
 
                 // 메뉴 - 자습서를 켰을때

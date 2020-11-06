@@ -7,6 +7,16 @@ import com.overflow.flowy.DTO.ContrastData
 
 class SharedPreferenceUtil {
 
+    fun saveStringData(preferences: SharedPreferences, key : String, value: String){
+        val editor = preferences.edit()
+        editor.putString(key, value)
+        editor.apply()
+    }
+
+    fun loadStringData(preferences: SharedPreferences, key : String) : String? {
+        return preferences.getString(key, "")
+    }
+
     fun saveArrayListData(preferences: SharedPreferences, key : String, arrayList: ArrayList<ContrastData>) {
         val editor = preferences.edit()
         val gson = Gson()
