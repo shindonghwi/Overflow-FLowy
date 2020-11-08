@@ -29,8 +29,6 @@ import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
 
-    private var permissionGrantFlag: Boolean = false
-
     /** 요청할 권한들을 작성해준다. */
     private val requiredPermissions = arrayOf(
         Manifest.permission.CAMERA,
@@ -62,7 +60,7 @@ class MainActivity : AppCompatActivity() {
 
         // 만약 플로위 설명을 본적이 없다면, 플로위 설명 화면을 띄워주고, 본적이 있다고 알린다.
         if (!descriptionCheck) {
-            replaceFragment("add", FragmentDescription().newInstance())
+            replaceFragment("replace", FragmentDescription().newInstance())
             prefEditor.putBoolean("flowyDescriptionCheck", true)
             prefEditor.commit()
         }
@@ -157,12 +155,16 @@ class MainActivity : AppCompatActivity() {
         return null
     }
 
+    private var permissionCheckFlag : Boolean = false
+
     /** 권한 요청 결과 */
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>, grantResults: IntArray
     ) {
         Log.d("mainLifeCycle", "onRequestPermissionsResult")
+
+        var toastPermission : ArrayList<String> = ArrayList<String>()
 
         when (requestCode) {
             REQUEST_PERMISSION_CODE -> {
@@ -171,61 +173,30 @@ class MainActivity : AppCompatActivity() {
 
                         // 카메라는 필수 기능이기에 허용을 안하면 앱을 종료한다.
                         if (permission == "android.permission.CAMERA" && grantResults[i] != PackageManager.PERMISSION_GRANTED) {
-                            permissionGrantFlag = false
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                // 사용자가 거절을 했다면, 앱을 종료시킨다.
-                                if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-                                    finish()
-                                }
-                                // 다시보지 않기로 거절 했다면, 앱 설정에 들어가서 권한을 허용해주어야 한다. 앱 설정창으로 이동시켜주는 다이얼로그
-                                else {
-                                    errorDialog()?.show()
-                                }
-                            }
-                        } else permissionGrantFlag = true
+                            permissionCheckFlag = false
+                            toastPermission.add("카메라")
+                        }
+                        else { permissionCheckFlag = true }
 
                         if (permission == "android.permission.WRITE_EXTERNAL_STORAGE" && grantResults[i] != PackageManager.PERMISSION_GRANTED) {
-                            permissionGrantFlag = false
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                // 사용자가 거절을 했다면, 앱을 종료시킨다.
-                                if (shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                                    finish()
-                                }
-                                // 다시보지 않기로 거절 했다면, 앱 설정에 들어가서 권한을 허용해주어야 한다. 앱 설정창으로 이동시켜주는 다이얼로그
-                                else {
-                                    errorDialog()?.show()
-                                }
-                            }
-                        } else permissionGrantFlag = true
-                    }
-
-                    if (permissionGrantFlag) {
-                        Log.d("permissionLog", "권한허용되있음 카메라화면으로이동")
-                        replaceFragment("replace", fragmentCameraInstance)
+                            permissionCheckFlag = false
+                            toastPermission.add("저장공간")
+                        }
+                        else{  permissionCheckFlag = true  }
                     }
                 }
             }
         }
-    }
 
-    // 사용자가 권한을 [다시 권한보지 않기] 로 거절했을때 보여줄 함수
-    fun errorDialog(): AlertDialog? {
-        Log.d("mainLifeCycle", "errorDialog")
-        val errorAlertDialog = AlertDialog.Builder(this)
-            .setTitle("필수권한요청")
-            .setMessage("[설정] - [권한] - 카메라 권한을 허용해주세요")
-            .setPositiveButton(R.string.settings) { _, _ ->
-                val intent = Intent(
-                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse(
-                        "package:$packageName"
-                    )
-                )
-                intent.addCategory(Intent.CATEGORY_DEFAULT)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                startActivity(intent)
-            }
-
-        return errorAlertDialog.create()
+        if ( permissionCheckFlag ){
+            Log.d("permissionLog", "이동 : 거절된 퍼미션 없음 카메라 화면으로 이동")
+            replaceFragment("replace", FragmentCamera().newInstance())
+        }
+        else{
+            val toastStr = toastPermission.toString()
+            Toast.makeText(this, "$toastStr\n권한 요청에 동의 해주셔야 이용가능합니다. \n설정에서 권한을 허용해주세요",Toast.LENGTH_LONG).show()
+            finish()
+        }
     }
 
     /** 화면 하단에 소프트 키 없애는 코드 */
@@ -240,7 +211,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** 화면 하단에 소프트 키 생성하는 코드 */
-    fun enableSoftKey(){
+    fun enableSoftKey() {
         decorView!!.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
     }
 
@@ -261,12 +232,6 @@ class MainActivity : AppCompatActivity() {
             fragmentTransaction.add(R.id.container, fragment).commit()
         }
     }
-
-    override fun onDestroy() {
-        Log.d("mainLifeCycle", "onDestroy")
-        super.onDestroy()
-    }
-
 
     /** 백버튼 이벤트 : 카메라 프래그먼트일 경우에는 뒤로가기 종료하고, 그렇지 않은 경우에는 프래그먼트 뒤로가기를 한다. */
     override fun onBackPressed() {

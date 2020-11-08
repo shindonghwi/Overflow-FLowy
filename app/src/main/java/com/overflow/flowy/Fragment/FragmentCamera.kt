@@ -31,6 +31,7 @@ import com.google.android.gms.ads.MobileAds
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.overflow.flowy.DTO.ContrastData
+import com.overflow.flowy.FlowyApplication
 import com.overflow.flowy.Interface.RetrofitAPI
 import com.overflow.flowy.Interface.onBackPressedListener
 import com.overflow.flowy.MainActivity
@@ -109,7 +110,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        Log.d("aaaaaaaaaaaaaa", "생성됨")
         return inflater.inflate(R.layout.fragment_camera, container, false)
     }
 
@@ -181,9 +181,18 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         // 플로위줌 버튼 상태 및
         flowyZoomToggleBtn.isChecked = pref.getBoolean("flowyZoomToggleBtn", false)
 
-        luminanceIndex = pref.getInt("luminanceToggleBtn", 0)
-        luminanceToggleBtn.isChecked = luminanceIndex != 0
+        // 고대비 모드 설정
+        luminanceIndex = pref.getInt("luminanceIndex", 0)
+        if(luminanceIndex == 0){
+            luminanceToggleBtn.isChecked = false
+            fragmentType = "default"
+        }
+        else{
+            luminanceToggleBtn.isChecked = true
+            fragmentType = "luminance"
+        }
 
+        // 카메라 렌즈 방향
         lensChangeToggleBtn.isChecked = pref.getBoolean("lensChangeToggleBtn", false)
         cameraLensMode = if (lensChangeToggleBtn.isChecked) 0 else 1
         Log.d("sdfsfd", "$luminanceIndex")
@@ -192,8 +201,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** 메뉴바에 있는 토글버튼 상태 저장하기 */
     private fun togBtnStatusSave() {
         prefEditor.putBoolean("flowyZoomToggleBtn", flowyZoomToggleBtn.isChecked)
-        prefEditor.putInt("luminanceToggleBtn", luminanceIndex)
         prefEditor.putBoolean("lensChangeToggleBtn", lensChangeToggleBtn.isChecked)
+        prefEditor.putInt("luminanceIndex", luminanceIndex)
         prefEditor.commit()
     }
 
@@ -204,7 +213,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     }
 
     /** 사용자의 대비 데이터 가져오기 */
-    fun loadLuminanceData() {
+    private fun loadLuminanceData() {
         val contrastPref =
             THIS_CONTEXT!!.getSharedPreferences("userLuminance", Context.MODE_PRIVATE)
         val contrastPrefEditor = contrastPref.edit()
@@ -219,7 +228,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 "userLumincanceData",
                 contrastInitData
             )
-            userContrastData = contrastInitData
+            userContrastData.addAll(contrastInitData)
             Log.d("lumiinit", "처음")
         }
         // 처음 사용하는 사람이 아니라면, 이전에 사용하던 luminance 데이터를 가져온다.

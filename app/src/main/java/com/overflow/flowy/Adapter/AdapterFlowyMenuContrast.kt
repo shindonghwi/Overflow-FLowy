@@ -29,7 +29,7 @@ class AdapterFlowyMenuContrast(
     private lateinit var onDrag: ItemTouchHelperListener
 
     interface OnItemClicked {
-        fun onItemClick(position: Int)
+        fun onRemoveItemClick(position: Int)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): menuContrastViewHolder {
@@ -60,7 +60,7 @@ class AdapterFlowyMenuContrast(
         init {
             removeBtnImage.setOnClickListener {
                 val pos = adapterPosition
-                onClick.onItemClick(pos)
+                onClick.onRemoveItemClick(pos)
             }
         }
     }

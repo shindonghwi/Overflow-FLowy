@@ -150,11 +150,13 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
                 }
                 FShaderControlDefault()
             } else if (fragmentType == "luminance") {
-                program = createProgram()
+                if (luminanceFlag){
+                    program = createProgram()
+                    luminanceFlag = false
+                }
                 FShaderControlLuminance()
             }
             GLES20.glUseProgram(program)
-
         }
     }
 
@@ -559,8 +561,6 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         val green =
             (((THIS_CONTEXT!!.resources.getColor(color) shr 8) and 0xff).toDouble()).toFloat()
         val blue = ((THIS_CONTEXT!!.resources.getColor(color) and 0xff).toDouble()).toFloat()
-
-        Log.d("colorcolor", "colorIntToFloatArray: $red : $green : $blue")
 
         return floatArrayOf(red, green, blue, 1.0f)
     }

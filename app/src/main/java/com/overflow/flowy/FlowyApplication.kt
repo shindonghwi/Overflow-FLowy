@@ -1,5 +1,7 @@
 package com.overflow.flowy
 
+import android.Manifest
+import android.app.Activity
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.Lifecycle
@@ -44,6 +46,7 @@ class FlowyApplication : Application(), LifecycleObserver {
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     fun onAppResumed() {
         Log.d("LifecycleAPp","onAppResumed")
+
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
@@ -73,7 +76,11 @@ class FlowyApplication : Application(), LifecycleObserver {
                 if (backgroundTimeCheck >= 55L){
                     removeToggleBtnStatus()
                     modeInit()
-                    cameraLifecycle.doOnDestroy()
+                    try {
+                        cameraLifecycle.doOnDestroy()
+                    }catch (e : UninitializedPropertyAccessException){
+                        Log.e("error","cameraLifecycle 초기화 에러")
+                    }
                     break
                 }
 
@@ -81,19 +88,17 @@ class FlowyApplication : Application(), LifecycleObserver {
             }
         }
     }
-    fun backgroundTimeCheckEnd(){
+    private fun backgroundTimeCheckEnd(){
         backgroundFlag = false
         backgroundTimeCheck = 0L
     }
 
     /** 화면을 닫을시 토글버튼 상태 초기화 */
     private fun removeToggleBtnStatus() {
-        try {
-            val f = File("/data/data/com.overflow.flowy/shared_prefs", "flowyToggleBtnStatus.xml")
-            f.delete()
-        } catch (e: Exception) {
-
-        }
+        val pref = THIS_CONTEXT!!.getSharedPreferences("flowyToggleBtnStatus", MODE_PRIVATE)
+        SharedPreferenceUtil().saveBooleanData(pref,"flowyZoomToggleBtn", false)
+        SharedPreferenceUtil().saveBooleanData(pref,"lensChangeToggleBtn", false)
+        SharedPreferenceUtil().saveIntData(pref,"luminanceIndex", 0)
     }
 
     private fun modeInit(){
