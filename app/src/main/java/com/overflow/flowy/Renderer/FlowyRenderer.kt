@@ -148,13 +148,13 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
                     program = createProgram()
                     luminanceFlag = false
                 }
-                FShaderControlDefault()
+                fShaderControlDefault()
             } else if (fragmentType == "luminance") {
                 if (luminanceFlag){
                     program = createProgram()
                     luminanceFlag = false
                 }
-                FShaderControlLuminance()
+                fShaderControlLuminance()
             }
             GLES20.glUseProgram(program)
         }
@@ -536,7 +536,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
 
 
     /** fragment Shader default : rgb 조작 */
-    private fun FShaderControlDefault() {
+    private fun fShaderControlDefault() {
         val ph = GLES20.glGetAttribLocation(program, "vPosition") // vertex shader
         val tch = GLES20.glGetAttribLocation(program, "vTexCoord") // vertex shader
 
@@ -554,7 +554,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
     }
 
     /** Color 값은 Int인데 fragment에 적용하기 위해 floatArray로 바꾸는 함수 */
-    fun colorIntToFloatArray(color: Int): FloatArray {
+    private fun colorIntToFloatArray(color: Int): FloatArray {
 
         val red =
             (((THIS_CONTEXT!!.resources.getColor(color) shr 16) and 0xff).toDouble()).toFloat()
@@ -566,7 +566,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
     }
 
     /** fragment Shader default : rgb 조작 */
-    private fun FShaderControlLuminance() {
+    private fun fShaderControlLuminance() {
         val ph = GLES20.glGetAttribLocation(program, "vPosition") // vertex shader
         val tch = GLES20.glGetAttribLocation(program, "vTexCoord") // vertex shader
 

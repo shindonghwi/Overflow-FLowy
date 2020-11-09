@@ -839,7 +839,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     cameraSubMode = "longClick"
 
                     // 서버에 플로위 줌 시작 api를 보낸다.
-                    sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, "putActLog", 3)
+                    sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL,  3)
                 }
 
                 // 카메라 모드가 플로위 모드라면, 카메라모드를 기본값으로, 카메라 서브값도 기본값으로 변경한다.
@@ -848,7 +848,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     cameraSubMode = "default"
 
                     // 서버에 플로위 줌 시작 api를 보낸다.
-                    sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, "putActLog", 4)
+                    sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, 4)
                 }
             }
             R.id.mirroringToggleBtn -> {
@@ -979,7 +979,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         loadAdMob()
 
         /** 카메라 사용시작 로그를 서버에 보낸다. */
-        sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, "putActLog", 1)
+        sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL,  1)
     }
 
     override fun onPause() {
@@ -988,7 +988,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         togBtnStatusSave() // 버튼의 상태 저장
 
         /** 카메라 사용종료 로그를 서버에 보낸다. */
-        sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, "putActLog", 2)
+        sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL,  2)
     }
 
     /** 기기의 방향 체크 - 카메라 프래그먼트에서 화면 방향에 따라서 UI 버튼도 회전이 되어야한다. */
@@ -1157,7 +1157,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     }
 
     /** 서버에 플로위 줌 신호를 보낸다. */
-    private fun sendFlowyDataToServer(baseURL: String, addURL: String, userAction: Int) {
+    private fun sendFlowyDataToServer(baseURL: String, userAction: Int) {
         try{
             val sendLogData:HashMap<String, Any> = HashMap()
             sendLogData["api_key"] = API_KEY
