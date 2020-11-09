@@ -8,6 +8,7 @@ import at.overflow.flowy.DTO.ContrastData
 import at.overflow.flowy.R
 
 @JvmField val REQUEST_PERMISSION_CODE = 1
+@JvmField val APP_UPDATE_PERMISSION_CODE = 999
 @JvmField val MY_LOG = "MY_LOG"
 
 // OpenGL 에서 vertex 좌표 ( NDC라는 디바이스 좌표계를 사용한다고 한다. ) - 중앙에 원점이 위치함.

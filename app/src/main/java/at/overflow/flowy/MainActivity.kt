@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -19,6 +20,11 @@ import at.overflow.flowy.Fragment.FragmentCamera
 import at.overflow.flowy.Fragment.FragmentDescription
 import at.overflow.flowy.Renderer.FlowyRenderer.Companion.cameraLifecycle
 import at.overflow.flowy.Util.*
+import com.google.android.play.core.appupdate.AppUpdateInfo
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.UpdateAvailability
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -29,6 +35,8 @@ class MainActivity : AppCompatActivity() {
         Manifest.permission.CAMERA,
         Manifest.permission.WRITE_EXTERNAL_STORAGE
     )
+
+    private lateinit var appUpdateManager: AppUpdateManager
 
     /** 화면 소프트키 없애기 */
     private var decorView: View? = null
@@ -44,6 +52,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // 앱 업데이트 체크
+        inAppUpdate()
+
         // user UUID 가져오기 or UUID 생성
         getUserUUID()
 
@@ -56,8 +67,10 @@ class MainActivity : AppCompatActivity() {
 
         // 만약 플로위 설명을 본적이 없다면, 플로위 설명 화면을 띄워주고, 본적이 있다고 알린다.
         if (!descriptionCheck) {
-            replaceFragment("replace", FragmentDescription()
-                .newInstance())
+            replaceFragment(
+                "replace", FragmentDescription()
+                    .newInstance()
+            )
             prefEditor.putBoolean("flowyDescriptionCheck", true)
             prefEditor.commit()
         }
@@ -65,6 +78,39 @@ class MainActivity : AppCompatActivity() {
         else {
             requestPermission()
             flowyModeInit() // 앱 시작시 플로위 모드 초기화 상태로 시작
+        }
+    }
+
+    private fun inAppUpdate() {
+        appUpdateManager = AppUpdateManagerFactory.create(applicationContext)
+        val appUpdateInfoTask = appUpdateManager.appUpdateInfo
+        appUpdateInfoTask.addOnSuccessListener { // appUpdateManager이 추가되는데 성공하면 발생하는 이벤트
+                appUpdateInfo ->
+            if ((appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE // UpdateAvailability.UPDATE_AVAILABLE == 2 이면 앱 true
+                        && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE))
+            ) { // 허용된 타입의 앱 업데이트이면 실행 (AppUpdateType.IMMEDIATE || AppUpdateType.FLEXIBLE)
+                // 업데이트가 가능하고, 상위 버전 코드의 앱이 존재하면 업데이트를 실행한다.
+                requestUpdate(appUpdateInfo)
+            }
+        }
+    }
+
+    // 업데이트 요청
+    private fun requestUpdate(appUpdateInfo: AppUpdateInfo) {
+        try {
+            appUpdateManager.startUpdateFlowForResult(
+                // 'getAppUpdateInfo()' 에 의해 리턴된 인텐트
+                appUpdateInfo,
+                // 'AppUpdateType.FLEXIBLE': 사용자에게 업데이트 여부를 물은 후 업데이트 실행 가능
+                // 'AppUpdateType.IMMEDIATE': 사용자가 수락해야만 하는 업데이트 창을 보여줌
+                AppUpdateType.IMMEDIATE,
+                // 현재 업데이트 요청을 만든 액티비티, 여기선 MainActivity.
+                this,
+                // onActivityResult 에서 사용될 REQUEST_CODE.
+                APP_UPDATE_PERMISSION_CODE
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -109,6 +155,9 @@ class MainActivity : AppCompatActivity() {
         Log.d("mainLifeCycle", "onResume")
         super.onResume()
 
+        // 업데이트 체크
+        appUpdateCheck()
+
         /** 화면 하단에 소프트 키 없애는 코드 */
         disableSoftKey()
 
@@ -116,8 +165,10 @@ class MainActivity : AppCompatActivity() {
         try {
             if (cameraLifecycle.currentState() == Lifecycle.State.DESTROYED) {
                 clearStack()
-                replaceFragment("replace", FragmentCamera()
-                    .newInstance())
+                replaceFragment(
+                    "replace", FragmentCamera()
+                        .newInstance()
+                )
                 return
             }
         } catch (e: Exception) {
@@ -153,7 +204,7 @@ class MainActivity : AppCompatActivity() {
         return null
     }
 
-    private var permissionCheckFlag : Boolean = false
+    private var permissionCheckFlag: Boolean = false
 
     /** 권한 요청 결과 */
     override fun onRequestPermissionsResult(
@@ -162,7 +213,7 @@ class MainActivity : AppCompatActivity() {
     ) {
         Log.d("mainLifeCycle", "onRequestPermissionsResult")
 
-        var toastPermission : ArrayList<String> = ArrayList<String>()
+        var toastPermission: ArrayList<String> = ArrayList<String>()
 
         when (requestCode) {
             REQUEST_PERMISSION_CODE -> {
@@ -173,29 +224,77 @@ class MainActivity : AppCompatActivity() {
                         if (permission == "android.permission.CAMERA" && grantResults[i] != PackageManager.PERMISSION_GRANTED) {
                             permissionCheckFlag = false
                             toastPermission.add("카메라")
+                        } else {
+                            permissionCheckFlag = true
                         }
-                        else { permissionCheckFlag = true }
 
                         if (permission == "android.permission.WRITE_EXTERNAL_STORAGE" && grantResults[i] != PackageManager.PERMISSION_GRANTED) {
                             permissionCheckFlag = false
                             toastPermission.add("저장공간")
+                        } else {
+                            permissionCheckFlag = true
                         }
-                        else{  permissionCheckFlag = true  }
                     }
                 }
             }
         }
-
-        if ( permissionCheckFlag ){
+        if (permissionCheckFlag) {
             Log.d("permissionLog", "이동 : 거절된 퍼미션 없음 카메라 화면으로 이동")
-            replaceFragment("replace", FragmentCamera()
-                .newInstance())
-        }
-        else{
+            replaceFragment(
+                "replace", FragmentCamera()
+                    .newInstance()
+            )
+        } else {
             val toastStr = toastPermission.toString()
-            Toast.makeText(this, "$toastStr\n권한 요청에 동의 해주셔야 이용가능합니다. \n설정에서 권한을 허용해주세요",Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                this,
+                "$toastStr\n권한 요청에 동의 해주셔야 이용가능합니다. \n설정에서 권한을 허용해주세요",
+                Toast.LENGTH_LONG
+            ).show()
             finish()
         }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == APP_UPDATE_PERMISSION_CODE) {
+            // 업데이트가 성공적으로 끝나지 않은 경우
+            if (resultCode != RESULT_OK) {
+                // 업데이트가 취소되거나 실패하면 업데이트를 다시 요청할 수 있다.,
+                // 업데이트 타입을 선택한다 (IMMEDIATE || FLEXIBLE).
+                val appUpdateInfoTask = appUpdateManager.appUpdateInfo
+                appUpdateInfoTask.addOnSuccessListener { appUpdateInfo ->
+                    if ((appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+                                // flexible한 업데이트를 위해서는 AppUpdateType.FLEXIBLE을 사용한다.
+                                && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE))
+                    ) {
+                        // 업데이트를 다시 요청한다.
+                        requestUpdate(appUpdateInfo)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun appUpdateCheck() {
+        appUpdateManager
+            .appUpdateInfo
+            .addOnSuccessListener { appUpdateInfo ->
+                if ((appUpdateInfo.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS)) {
+                    // If an in-app update is already running, resume the update.
+                    try {
+                        appUpdateManager.startUpdateFlowForResult(
+                            appUpdateInfo,
+                            AppUpdateType.IMMEDIATE,
+                            this,
+                            APP_UPDATE_PERMISSION_CODE
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
     }
 
     /** 화면 하단에 소프트 키 없애는 코드 */
@@ -292,7 +391,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    private fun flowyModeInit(){
+    private fun flowyModeInit() {
         val flowyInitPref = getSharedPreferences("flowyToggleBtnStatus", Context.MODE_PRIVATE)
         val flowyPrefEditor = flowyInitPref.edit()
         cameraMode = "default"
