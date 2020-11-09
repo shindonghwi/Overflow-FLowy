@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.overflow.flowy">
+    package="at.overflow.flowy">
 
     <uses-feature android:name="android.hardware.camera" />
 
@@ -12,7 +12,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:name=".FlowyApplication"
+        android:name="at.overflow.flowy.FlowyApplication"
         android:allowBackup="false"
         android:usesCleartextTraffic="true"
         android:icon="@mipmap/flowy_icon_image"
@@ -28,18 +28,17 @@
             android:value="@string/admob_app_id" />
 
         <activity
-            android:name=".MainActivity"
+            android:name="at.overflow.flowy.MainActivity"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.overflow.flowy.fileprovider"
+            android:authorities="at.overflow.flowy.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

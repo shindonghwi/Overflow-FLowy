@@ -28,7 +28,7 @@
         android:layout_centerHorizontal="true"
         android:layout_above="@+id/pinchZoomLinearLayout" />
 
-    <com.overflow.flowy.View.FlowyGLTextureView
+    <at.overflow.flowy.View.FlowyGLTextureView
         android:id="@+id/glSurfaceView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
@@ -201,7 +201,7 @@
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:layout_above="@+id/bottomMenuLayout"
-        android:background="@drawable/pinchzoom_control_bar"
+        android:background="@drawable/control_bar_bg"
         android:paddingLeft="10dp"
         android:paddingTop="5dp"
         android:paddingRight="10dp"
