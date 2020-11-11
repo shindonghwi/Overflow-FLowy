@@ -39,10 +39,12 @@ import at.overflow.flowy.R
 
 @JvmField var THIS_CONTEXT : Context? = null
 @JvmField var textureArray = IntArray(5)
-@JvmField var cameraLensMode : Int = CameraSelector.LENS_FACING_FRONT // 카메라의 렌즈방향 - 전면, 후면
+@JvmField var cameraLensMode : Int = CameraSelector.LENS_FACING_BACK // 카메라의 렌즈방향 - 전면, 후면
 @JvmField var cameraMode : String = "default" // 카메라 모드 - default, flowy 등
 @JvmField var cameraSubMode : String = "longClick" // 카메라 서브 모드 - 기본은 longClick 모드 , flowyDoubleTap 등
 @JvmField var fragmentType : String = "default"
+@JvmField var binaryFlag : Boolean = true
+@JvmField var inverseFlag : Boolean = false
 @JvmField var vertexType : String = "default"
 
 /** 부가기능 : 플래시, 포커스, 프리즈 기능 등 */

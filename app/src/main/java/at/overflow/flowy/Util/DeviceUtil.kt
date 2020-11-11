@@ -2,9 +2,12 @@ package at.overflow.flowy.Util
 
 import android.content.Context
 import android.content.res.Configuration
+import android.hardware.SensorManager
 import android.util.DisplayMetrics
+import android.util.Log
+import android.view.OrientationEventListener
 
-class DeviceCheck {
+class DeviceUtil {
 
     fun isTabletDevice(activityContext : Context): Boolean {
 
@@ -40,5 +43,4 @@ class DeviceCheck {
         }
         return false;
     }
-
 }

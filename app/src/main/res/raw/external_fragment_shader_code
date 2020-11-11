@@ -3,8 +3,15 @@
 precision mediump float;
 uniform samplerExternalOES sTexture;
 varying vec2 texCoord;
+uniform float bright;
+uniform float contrast;
+
 void main() {
-    gl_FragColor = texture2D(sTexture,texCoord);
+
+    gl_FragColor = texture2D(sTexture,texCoord); // base rgb color
+    gl_FragColor.rgb = mix(vec3(0.0), gl_FragColor.rgb, bright); // bright adjust
+    gl_FragColor.rgb = mix(vec3(0.5), gl_FragColor.rgb, contrast); // contrast adjust
+
 }
 [/default]
 
@@ -17,14 +24,72 @@ uniform samplerExternalOES sTexture;
 varying vec2 texCoord;
 uniform vec4 reversalColor1;
 uniform vec4 reversalColor2;
+uniform float bright;
+uniform float contrast;
+uniform float binaryType;
+uniform float inverseType;
+
+// binary, inverse type, 인풋 color1, color2 에 따라서 필터 적용
+void bgColorFilter( out vec4 fragColor, in vec2 fragCoord )
+{
+    vec2 uv = fragCoord.xy;
+
+	vec3 tex = texture2D( sTexture, uv ).rgb;
+	float shade = dot(tex, vec3(0.333333));
+
+	float redColor1 = reversalColor1[0] / 255.0;
+	float greenColor1 = reversalColor1[1] / 255.0;
+	float blueColor1 = reversalColor1[2] / 255.0;
+
+	float redColor2 = reversalColor2[0] / 255.0;
+	float greenColor2 = reversalColor2[1] / 255.0;
+	float blueColor2 = reversalColor2[2] / 255.0;
+
+    vec3 col;
+
+	if (inverseType == 1.0){
+        col = mix(
+            vec3(redColor1, greenColor1, blueColor1) * (1.0-2.0*abs(shade-0.5)),
+            vec3(redColor2, greenColor2, blueColor2), 1.0-shade);
+	}
+	else{
+        col = mix(
+            vec3(redColor2, greenColor2, blueColor2),
+            vec3(redColor1, greenColor1, blueColor1) * (1.0-2.0*abs(shade-0.5)), 1.0-shade);
+	}
+
+    fragColor = vec4(col,1.0);
+}
+
+
 void main() {
-    gl_FragColor = texture2D(sTexture,texCoord);
-    vec3 luminanceWeighting = vec3(0.2125, 0.7154, 0.0721);
-    float luminance = dot(gl_FragColor.rgb, luminanceWeighting);
-    if (luminance>0.5)
-        gl_FragColor = reversalColor1;
-    else
-        gl_FragColor = reversalColor2;
+
+    gl_FragColor = texture2D(sTexture,texCoord); // base rgb color
+
+    gl_FragColor.rgb = mix(vec3(0.0), gl_FragColor.rgb, bright); // bright adjust
+    gl_FragColor.rgb = mix(vec3(0.5), gl_FragColor.rgb, contrast); // contrast adjust
+
+    float color1total = reversalColor1[0] + reversalColor1[1] + reversalColor1[2];
+    float color2total = reversalColor2[0] + reversalColor2[1] + reversalColor2[2];
+
+    // 바이너리 모드인경우 - 이진화 처리되서 필터가 적용됨
+    if (binaryType == 1.0){
+        // luminance adjust
+        vec3 luminanceWeighting = vec3(0.2125, 0.7154, 0.0721);
+        float luminance = dot(gl_FragColor.rgb, luminanceWeighting);
+        if (luminance>0.5)
+            gl_FragColor = reversalColor1;
+        else
+            gl_FragColor = reversalColor2;
+    }
+
+    // 색상 필터가 적용됨 - 흰/청, 흑/황 등
+    else{
+        bgColorFilter(gl_FragColor, texCoord);
+    }
+
+
+
 }
 [/luminance]
 

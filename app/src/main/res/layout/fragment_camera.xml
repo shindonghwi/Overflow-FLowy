@@ -24,7 +24,7 @@
         android:id="@+id/bannerVersaAD"
         android:layout_width="wrap_content"
         android:scaleType="fitCenter"
-        android:layout_height="60dp"
+        android:layout_height="50dp"
         android:layout_centerHorizontal="true"
         android:layout_above="@+id/pinchZoomLinearLayout" />
 
@@ -188,7 +188,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
-            android:visibility="gone"
             android:layout_weight="0.20"
             android:background="@drawable/control_menu_on_off"
             android:textOff="@string/textClear"
@@ -238,6 +237,14 @@
             android:src="@drawable/pinchzoom_plus" />
 
     </LinearLayout>
+
+    <!--    테스트     -->
+    <Button
+        android:id="@+id/testBtn"
+        android:layout_width="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_height="wrap_content"
+        android:text="Image Send" />
 
 
 </RelativeLayout>

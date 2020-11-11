@@ -7,10 +7,15 @@ import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Size
 import android.view.View
-import androidx.camera.core.*
+import androidx.camera.core.AspectRatio
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.blackScreen
+import at.overflow.flowy.Fragment.FragmentCamera.Companion.brightSeekbarProgress
+import at.overflow.flowy.Fragment.FragmentCamera.Companion.contrastSeekbarProgress
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointX
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointY
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.isDoubleTapFirstTouched
@@ -255,7 +260,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         GLES20.glGetShaderiv(vshader, GLES20.GL_COMPILE_STATUS, compiled, 0)
         if (compiled[0] == 0) {
             Log.e("Shader", "Could not compile vshader")
-            Log.v(
+            Log.d(
                 "Shader",
                 "Could not compile vshader:" + GLES20.glGetShaderInfoLog(vshader)
             )
@@ -268,7 +273,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         GLES20.glGetShaderiv(fshader, GLES20.GL_COMPILE_STATUS, compiled, 0)
         if (compiled[0] == 0) {
             Log.e("Shader", "Could not compile fshader")
-            Log.v(
+            Log.d(
                 "Shader",
                 "Could not compile fshader:" + GLES20.glGetShaderInfoLog(fshader)
             )
@@ -316,7 +321,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
                                 sfTexture = surfaceTexture
                                 sfTexture?.setOnFrameAvailableListener(this@FlowyRenderer)
 
-                                Log.d("onSurfaceTextureReady", "onSurfaceTextureReady")
+                                Log.d("onSurfaceTextureReady", "$resolution")
                             }
 
                             override fun onSafeToRelease(surfaceTexture: SurfaceTexture) {
@@ -542,6 +547,75 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         GLES20.glEnableVertexAttribArray(ph)
         GLES20.glEnableVertexAttribArray(tch)
 
+        // 밝기 : 0.5 ~ 2
+        val brightHandle = GLES20.glGetUniformLocation(program, "bright")
+        val conversionBright = (0.5 + 1.5 * brightSeekbarProgress.toDouble() / 100.toDouble()).toFloat()
+        GLES20.glUniform1f(brightHandle, conversionBright)
+
+        // 대비 : 0 ~ 2
+        val contrastHandle = GLES20.glGetUniformLocation(program, "contrast")
+        val conversionContrast = (2 * contrastSeekbarProgress.toDouble() / 100.toDouble()).toFloat()
+        GLES20.glUniform1f(contrastHandle, conversionContrast)
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0)
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(program, "sTexture"), 0)
+
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        GLES20.glFlush()
+    }
+
+    /** fragment Shader default : rgb 조작 */
+    private fun fShaderControlLuminance() {
+        val ph = GLES20.glGetAttribLocation(program, "vPosition") // vertex shader
+        val tch = GLES20.glGetAttribLocation(program, "vTexCoord") // vertex shader
+
+        GLES20.glVertexAttribPointer(ph, 2, GLES20.GL_FLOAT, false, 4 * 2, pVertex)
+        GLES20.glVertexAttribPointer(tch, 2, GLES20.GL_FLOAT, false, 4 * 2, pTexCoord)
+        GLES20.glEnableVertexAttribArray(ph)
+        GLES20.glEnableVertexAttribArray(tch)
+
+        val testColorHandle1 = GLES20.glGetUniformLocation(program, "reversalColor1")
+        val testColorHandle2 = GLES20.glGetUniformLocation(program, "reversalColor2")
+
+        var reversalColor1: FloatArray
+        var reversalColor2: FloatArray
+        var mixcolor: Int
+
+        // 사용자가 고대비 버튼을 너무  빨리누를경우 인덱스 에러가 난다. 예외처리
+        try {
+            reversalColor1 =
+                colorIntToFloatArray(userContrastData[luminanceIndex - 1].contrastLeftImage!!)
+            reversalColor2 =
+                colorIntToFloatArray(userContrastData[luminanceIndex - 1].contrastRightImage!!)
+        } catch (e: ArrayIndexOutOfBoundsException) {
+            reversalColor1 = colorIntToFloatArray(userContrastData[0].contrastLeftImage!!)
+            reversalColor2 = colorIntToFloatArray(userContrastData[0].contrastRightImage!!)
+        }
+
+        GLES20.glUniform4fv(testColorHandle1, 1, reversalColor1, 0)
+        GLES20.glUniform4fv(testColorHandle2, 1, reversalColor2, 0)
+
+        // 밝기 : 0.5 ~ 2
+        val brightHandle = GLES20.glGetUniformLocation(program, "bright")
+        val conversionBright = (0.5 + 1.5 * brightSeekbarProgress.toDouble() / 100.toDouble()).toFloat()
+        GLES20.glUniform1f(brightHandle, conversionBright)
+
+        // 대비 : 0 ~ 2
+        val contrastHandle = GLES20.glGetUniformLocation(program, "contrast")
+        val conversionContrast = (2 * contrastSeekbarProgress.toDouble() / 100.toDouble()).toFloat()
+        GLES20.glUniform1f(contrastHandle, conversionContrast)
+
+        // binaryType 타입 전달 : 1.0 - On / 0.0 - Off
+        val binaryFlagHandle = GLES20.glGetUniformLocation(program, "binaryType")
+        val binaryType = if (binaryFlag) 1.0f else 0.0f
+        GLES20.glUniform1f(binaryFlagHandle, binaryType)
+
+        // inverseType 타입 전달 : 1.0 - On / 0.0 - Off
+        val inverseFlagHandle = GLES20.glGetUniformLocation(program, "inverseType")
+        val inverseType = if (inverseFlag) 1.0f else 0.0f
+        GLES20.glUniform1f(inverseFlagHandle, inverseType)
+
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0)
         GLES20.glUniform1i(GLES20.glGetUniformLocation(program, "sTexture"), 0)
@@ -560,45 +634,6 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         val blue = ((THIS_CONTEXT!!.resources.getColor(color) and 0xff).toDouble()).toFloat()
 
         return floatArrayOf(red, green, blue, 1.0f)
-    }
-
-    /** fragment Shader default : rgb 조작 */
-    private fun fShaderControlLuminance() {
-        val ph = GLES20.glGetAttribLocation(program, "vPosition") // vertex shader
-        val tch = GLES20.glGetAttribLocation(program, "vTexCoord") // vertex shader
-
-        GLES20.glVertexAttribPointer(ph, 2, GLES20.GL_FLOAT, false, 4 * 2, pVertex)
-        GLES20.glVertexAttribPointer(tch, 2, GLES20.GL_FLOAT, false, 4 * 2, pTexCoord)
-        GLES20.glEnableVertexAttribArray(ph)
-        GLES20.glEnableVertexAttribArray(tch)
-
-        val testColorHandle1 = GLES20.glGetUniformLocation(program, "reversalColor1")
-        val testColorHandle2 = GLES20.glGetUniformLocation(program, "reversalColor2")
-
-        var reversalColor1: FloatArray
-        var reversalColor2: FloatArray
-
-        // 사용자가 너무 빨리누를경우 인덱스 에러가 난다. 예외처리
-        try {
-            reversalColor1 =
-                colorIntToFloatArray(userContrastData[luminanceIndex - 1].contrastLeftImage!!)
-            reversalColor2 =
-                colorIntToFloatArray(userContrastData[luminanceIndex - 1].contrastRightImage!!)
-        } catch (e: ArrayIndexOutOfBoundsException) {
-            reversalColor1 = colorIntToFloatArray(userContrastData[0].contrastLeftImage!!)
-            reversalColor2 = colorIntToFloatArray(userContrastData[0].contrastRightImage!!)
-        }
-
-
-        GLES20.glUniform4fv(testColorHandle1, 1, reversalColor1, 0)
-        GLES20.glUniform4fv(testColorHandle2, 1, reversalColor2, 0)
-
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0)
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(program, "sTexture"), 0)
-
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
-        GLES20.glFlush()
     }
 
     companion object {

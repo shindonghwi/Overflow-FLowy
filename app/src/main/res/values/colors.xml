@@ -7,10 +7,12 @@
     <color name="white">#ffffff</color>
     <color name="black">#000000</color>
     <color name="blue">#0000ff</color>
+    <color name="green">#00ff00</color>
     <color name="yellow">#ffff00</color>
     <color name="pastel_blue">#28E7FF</color>
     <color name="flowy_logo_color">#3b8be7</color>
     <color name="flowy_menu_bg">#353535</color>
     <color name="light_gray">#a0a0a0</color>
+    <color name="theme_contrast">#5c5c5d</color>
 
 </resources>
