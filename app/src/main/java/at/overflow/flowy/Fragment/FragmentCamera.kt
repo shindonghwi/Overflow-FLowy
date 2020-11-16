@@ -64,6 +64,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private lateinit var bottomMenuLayout: LinearLayout
     private lateinit var pinchZoomLinearLayout: LinearLayout
     private var threePointClickFlag: Boolean = true
+    private var threePointClickPreStatus: Int = 0
 
     /** 메뉴바 상단에 있는 버튼 */
     private lateinit var focusToggleBtn: ToggleButton
@@ -81,7 +82,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private lateinit var controlToggleBtn: ToggleButton
 
     /** 밝기 대비 조절 버튼을 눌렀을때 나오는 뷰 */
-    private lateinit var brightShadeControlView: View
+    private var brightShadeControlView: View? = null
 
     /** 공유 버튼 */
     private lateinit var shareImgBtn: ImageButton
@@ -184,6 +185,18 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     override fun onStart() {
         super.onStart()
         uiRelocation()
+
+        if (brightShadeControlView == null) {
+            CoroutineScope(Dispatchers.Main).launch {
+                // 밝기, 대비 조절 레이아웃 생성
+                brightShadeControlView = LayoutInflateUtil().layoutViewCreate(
+                    context = THIS_CONTEXT!!,
+                    parentViewId = parentLayout,
+                    addLayout = R.layout.bright_shade_control_layout
+                )
+                brightShadeLayoutRelocation()
+            }
+        }
     }
 
     /** 사용자의 대비 데이터 가져오기 */
@@ -558,7 +571,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     threePointClick()
                 }
 
-
                 gestureDetector.onTouchEvent(event)
                 pinchZoomGesture.onTouchEvent(event)
                 return true
@@ -568,22 +580,13 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     /** 화면을 트리플 터치 했을떄 메뉴가 사라지고 나타나게 만드는 기능 */
     private fun threePointClick() {
+
+        // 메뉴를 사라지게 할때
         if (threePointClickFlag) {
-
-            if (this::brightShadeControlView.isInitialized && brightShadeControlView.visibility == View.VISIBLE){
-
-                topMenuLayout.visibility = View.GONE
-                brightShadeControlView.visibility = View.GONE
-
-                val ruleList = arrayListOf<Int>(
-                    RelativeLayout.ALIGN_PARENT_BOTTOM,
-                    RelativeLayout.CENTER_HORIZONTAL
-                )
-                val ruleSubList = arrayListOf<Int>(-1, -1)
-                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
-                setAdViewWindows(ruleList, ruleSubList, margins)
-            }
-            else if (topMenuLayout.visibility == View.VISIBLE || shareFrameLayout.visibility == View.VISIBLE) {
+            if (!freezeMode && pinchZoomLinearLayout.visibility == View.VISIBLE) {
+                topMenuLayout.visibility = View.INVISIBLE
+                bottomMenuLayout.visibility = View.INVISIBLE
+                pinchZoomLinearLayout.visibility = View.INVISIBLE
 
                 val ruleList = arrayListOf<Int>(
                     RelativeLayout.ALIGN_PARENT_BOTTOM,
@@ -593,64 +596,110 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
                 setAdViewWindows(ruleList, ruleSubList, margins)
 
-                if (topMenuLayout.visibility == View.VISIBLE) topMenuLayout.visibility = View.GONE
-                else if (shareFrameLayout.visibility == View.VISIBLE) shareFrameLayout.visibility =  View.GONE
+                threePointClickPreStatus = 1
+                Toast.makeText(context, "1", Toast.LENGTH_SHORT).show()
+            } else if (freezeMode && brightShadeControlView!!.visibility == View.GONE) {
+                shareFrameLayout.visibility = View.INVISIBLE
+                bottomMenuLayout.visibility = View.INVISIBLE
+                pinchZoomLinearLayout.visibility = View.INVISIBLE
+
+                val ruleList = arrayListOf<Int>(
+                    RelativeLayout.ALIGN_PARENT_BOTTOM,
+                    RelativeLayout.CENTER_HORIZONTAL
+                )
+                val ruleSubList = arrayListOf<Int>(-1, -1)
+                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                setAdViewWindows(ruleList, ruleSubList, margins)
+
+                threePointClickPreStatus = 2
+                Toast.makeText(context, "2", Toast.LENGTH_SHORT).show()
+            } else if (freezeMode && brightShadeControlView!!.visibility == View.VISIBLE) {
+                topMenuLayout.visibility = View.INVISIBLE
+                shareFrameLayout.visibility = View.INVISIBLE
+                bottomMenuLayout.visibility = View.INVISIBLE
+                brightShadeControlView!!.visibility = View.GONE
+
+                val ruleList = arrayListOf<Int>(
+                    RelativeLayout.ALIGN_PARENT_BOTTOM,
+                    RelativeLayout.CENTER_HORIZONTAL
+                )
+                val ruleSubList = arrayListOf<Int>(-1, -1)
+                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                setAdViewWindows(ruleList, ruleSubList, margins)
+
+                threePointClickPreStatus = 3
+                Toast.makeText(context, "3", Toast.LENGTH_SHORT).show()
+            } else if (!freezeMode && brightShadeControlView!!.visibility == View.VISIBLE) {
+                topMenuLayout.visibility = View.INVISIBLE
+                brightShadeControlView!!.visibility = View.GONE
+
+                val ruleList = arrayListOf<Int>(
+                    RelativeLayout.ALIGN_PARENT_BOTTOM,
+                    RelativeLayout.CENTER_HORIZONTAL
+                )
+                val ruleSubList = arrayListOf<Int>(-1, -1)
+                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                setAdViewWindows(ruleList, ruleSubList, margins)
+
+                threePointClickPreStatus = 4
+                Toast.makeText(context, "4", Toast.LENGTH_SHORT).show()
             }
-            bottomMenuLayout.visibility = View.INVISIBLE
-            pinchZoomLinearLayout.visibility = View.INVISIBLE
         } else {
-
-            if ( topMenuLayout.visibility == View.GONE &&  bottomMenuLayout.visibility == View.INVISIBLE) {
-                topMenuLayout.visibility = View.VISIBLE
-                bottomMenuLayout.visibility = View.VISIBLE
-                val ruleList = arrayListOf<Int>(
-                    RelativeLayout.ABOVE,
-                    RelativeLayout.CENTER_HORIZONTAL
-                )
-                val ruleSubList = arrayListOf<Int>(R.id.pinchZoomLinearLayout, -1)
-                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
-                setAdViewWindows(ruleList, ruleSubList, margins)
+            when (threePointClickPreStatus) {
+                1 -> {
+                    topMenuLayout.visibility = View.VISIBLE
+                    bottomMenuLayout.visibility = View.VISIBLE
+                    pinchZoomLinearLayout.visibility = View.VISIBLE
+                    val ruleList = arrayListOf<Int>(
+                        RelativeLayout.ABOVE,
+                        RelativeLayout.CENTER_HORIZONTAL
+                    )
+                    val ruleSubList = arrayListOf<Int>(R.id.pinchZoomLinearLayout, -1)
+                    val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                    setAdViewWindows(ruleList, ruleSubList, margins)
+                }
+                2 -> {
+                    shareFrameLayout.visibility = View.VISIBLE
+                    bottomMenuLayout.visibility = View.VISIBLE
+                    val ruleList = arrayListOf<Int>(
+                        RelativeLayout.ABOVE,
+                        RelativeLayout.CENTER_HORIZONTAL
+                    )
+                    val ruleSubList = arrayListOf<Int>(R.id.bottomMenuLayout, -1)
+                    val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                    setAdViewWindows(ruleList, ruleSubList, margins)
+                }
+                3 -> {
+                    if (freezeMode){
+                        shareFrameLayout.visibility = View.VISIBLE
+                    }
+                    else{
+                        topMenuLayout.visibility = View.VISIBLE
+                    }
+                    brightShadeControlView!!.visibility = View.VISIBLE
+                    val ruleList = arrayListOf<Int>(
+                        RelativeLayout.BELOW,
+                        RelativeLayout.CENTER_HORIZONTAL
+                    )
+                    val ruleSubList = arrayListOf<Int>(R.id.topMenuLayout, -1)
+                    val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                    setAdViewWindows(ruleList, ruleSubList, margins)
+                }
+                4 -> {
+                    topMenuLayout.visibility = View.VISIBLE
+                    brightShadeControlView!!.visibility = View.VISIBLE
+                    val ruleList = arrayListOf<Int>(
+                        RelativeLayout.BELOW,
+                        RelativeLayout.CENTER_HORIZONTAL
+                    )
+                    val ruleSubList = arrayListOf<Int>(R.id.shareFrameLayout, -1)
+                    val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                    setAdViewWindows(ruleList, ruleSubList, margins)
+                }
             }
-            else if( topMenuLayout.visibility == View.GONE &&  brightShadeControlView.visibility == View.GONE){
-                topMenuLayout.visibility = View.VISIBLE
-                brightShadeControlView.visibility = View.VISIBLE
-                val ruleList = arrayListOf<Int>(
-                    RelativeLayout.BELOW,
-                    RelativeLayout.CENTER_HORIZONTAL
-                )
-                val ruleSubList = arrayListOf<Int>(R.id.topMenuLayout, -1)
-                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
-                setAdViewWindows(ruleList, ruleSubList, margins)
-            }
-
-            else if (freezeMode) {
-                bottomMenuLayout.visibility = View.VISIBLE
-                shareFrameLayout.visibility = View.VISIBLE
-
-                val ruleList = arrayListOf<Int>(
-                    RelativeLayout.ABOVE,
-                    RelativeLayout.CENTER_HORIZONTAL
-                )
-                val ruleSubList = arrayListOf<Int>(R.id.bottomMenuLayout, -1)
-                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
-                setAdViewWindows(ruleList, ruleSubList, margins)
-            } else {
-                bottomMenuLayout.visibility = View.VISIBLE
-                topMenuLayout.visibility = View.VISIBLE
-                val ruleList = arrayListOf<Int>(
-                    RelativeLayout.ABOVE,
-                    RelativeLayout.CENTER_HORIZONTAL
-                )
-                val ruleSubList = arrayListOf<Int>(R.id.pinchZoomLinearLayout, -1)
-                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
-                setAdViewWindows(ruleList, ruleSubList, margins)
-            }
-
-            if (cameraMode == "flowy" || freezeMode)
-                pinchZoomLinearLayout.visibility = View.GONE
-            else
-                pinchZoomLinearLayout.visibility = View.VISIBLE
         }
+
+
         threePointClickFlag = !threePointClickFlag
     }
 
@@ -754,6 +803,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 CoroutineScope(Dispatchers.Main).launch {
                     if (freezeMode) {
                         topMenuLayout.visibility = View.INVISIBLE
+                        pinchZoomLinearLayout.visibility = View.INVISIBLE
                         shareFrameLayout.visibility = View.VISIBLE
 
                         cameraMode = "flowy"
@@ -813,27 +863,26 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             }
             R.id.controlToggleBtn -> {
 
-                if (!this::brightShadeControlView.isInitialized){
-                    // 밝기, 대비 조절 레이아웃 생성
-                    brightShadeControlView = LayoutInflateUtil().layoutViewCreate(
-                        context = THIS_CONTEXT!!,
-                        parentViewId = parentLayout,
-                        addLayout = R.layout.bright_shade_control_layout
+                CoroutineScope(Dispatchers.Main).launch {
+                    brightShadeControlView!!.visibility = View.VISIBLE
+                    bottomMenuLayout.visibility = View.GONE
+                    pinchZoomLinearLayout.visibility = View.GONE
+                    brightShadeAdapter.notifyDataSetChanged()
+
+                    val ruleList = arrayListOf<Int>(
+                        RelativeLayout.BELOW,
+                        RelativeLayout.CENTER_HORIZONTAL
                     )
-                    brightShadeLayoutRelocation()
+
+                    val ruleSubList = if (freezeMode) {
+                        arrayListOf<Int>(R.id.shareFrameLayout, -1)
+                    } else{
+                        arrayListOf<Int>(R.id.topMenuLayout, -1)
+                    }
+
+                    val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                    setAdViewWindows(ruleList, ruleSubList, margins)
                 }
-
-                brightShadeControlView.visibility = View.VISIBLE
-                brightShadeAdapter.notifyDataSetChanged()
-
-                val ruleList = arrayListOf<Int>(
-                    RelativeLayout.ALIGN_PARENT_TOP,
-                    RelativeLayout.CENTER_HORIZONTAL
-                )
-                val ruleSubList = arrayListOf<Int>(-1, -1)
-                val margins = arrayListOf<Int>(0, topMenuLayout.height, 0, 0) // 왼, 위, 오른, 아래
-                setAdViewWindows(ruleList, ruleSubList, margins)
-                bottomMenuLayout.visibility = View.INVISIBLE
             }
 
             /** 공유하기 버튼 */
@@ -1168,24 +1217,24 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** 밝기, 대비 버튼을 눌렀을때 나오는 뷰 크기 재조정 */
     private fun brightShadeLayoutRelocation() {
 
-        val brightLayout = brightShadeControlView.findViewById<LinearLayout>(R.id.brightLayout)
-        val binaryLayout = brightShadeControlView.findViewById<LinearLayout>(R.id.binaryLayout)
+        val brightLayout = brightShadeControlView!!.findViewById<LinearLayout>(R.id.brightLayout)
+        val binaryLayout = brightShadeControlView!!.findViewById<LinearLayout>(R.id.binaryLayout)
         val controlMenuLayout =
-            brightShadeControlView.findViewById<RelativeLayout>(R.id.controlMenuLayout)
+            brightShadeControlView!!.findViewById<RelativeLayout>(R.id.controlMenuLayout)
         val recyclerviewLinearLayout =
-            brightShadeControlView.findViewById<LinearLayout>(R.id.recyclerviewLinearLayout)
+            brightShadeControlView!!.findViewById<LinearLayout>(R.id.recyclerviewLinearLayout)
         val contrastItemRecyclerView =
-            brightShadeControlView.findViewById<RecyclerView>(R.id.contrastItemRecyclerView)
+            brightShadeControlView!!.findViewById<RecyclerView>(R.id.contrastItemRecyclerView)
         val inverseToggleBtn =
-            brightShadeControlView.findViewById<ToggleButton>(R.id.inverseToggleBtn)
+            brightShadeControlView!!.findViewById<ToggleButton>(R.id.inverseToggleBtn)
         val binaryToggleBtn =
-            brightShadeControlView.findViewById<ToggleButton>(R.id.binaryToggleBtn)
+            brightShadeControlView!!.findViewById<ToggleButton>(R.id.binaryToggleBtn)
         val controlChildToggleBtn =
-            brightShadeControlView.findViewById<ToggleButton>(R.id.controlChildToggleBtn)
-        val brightSeekbar = brightShadeControlView.findViewById<SeekBar>(R.id.brightSeekbar)
-        val contrastSeekbar = brightShadeControlView.findViewById<SeekBar>(R.id.contrastSeekbar)
+            brightShadeControlView!!.findViewById<ToggleButton>(R.id.controlChildToggleBtn)
+        val brightSeekbar = brightShadeControlView!!.findViewById<SeekBar>(R.id.brightSeekbar)
+        val contrastSeekbar = brightShadeControlView!!.findViewById<SeekBar>(R.id.contrastSeekbar)
         val defaultColorImgView =
-            brightShadeControlView.findViewById<ImageView>(R.id.defaultColorImgView)
+            brightShadeControlView!!.findViewById<ImageView>(R.id.defaultColorImgView)
 
         brightSeekbarListener(brightSeekbar)
         contrastSeekbarListener(contrastSeekbar)
@@ -1256,8 +1305,9 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         contrastItemRecyclerView.adapter = brightShadeAdapter
 
         controlChildToggleBtn.setOnClickListener {
-            brightShadeControlView.visibility = View.GONE
+            brightShadeControlView!!.visibility = View.GONE
             bottomMenuLayout.visibility = View.VISIBLE
+            pinchZoomLinearLayout.visibility = View.VISIBLE
 
             val ruleList = arrayListOf<Int>(RelativeLayout.ABOVE, RelativeLayout.CENTER_HORIZONTAL)
             val ruleSubList = arrayListOf<Int>(R.id.pinchZoomLinearLayout, -1)
@@ -1286,11 +1336,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             alertToast.show()
         }
 
-        val ruleList =
-            arrayListOf<Int>(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.CENTER_HORIZONTAL)
-        val ruleSubList = arrayListOf<Int>(-1, -1)
-        val margins = arrayListOf<Int>(0, topMenuLayout.height, 0, 0) // 왼, 위, 오른, 아래
-        setAdViewWindows(ruleList, ruleSubList, margins)
+        brightShadeControlView!!.visibility = View.GONE
     }
     /** #############################################################################################*/
 
@@ -1447,13 +1493,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 val byteArray = byteArrayOutputStream.toByteArray()
                 val encoded: String = Base64.encodeToString(byteArray, Base64.DEFAULT)
                 imageUpload(encodeBitmap = encoded, baseURL = OVERFLOW_TEST_API_IMAGE_UPLOAD)
-//                delay(20)
-//                val filePath = Environment.getExternalStorageDirectory().toString()
-//                val folderName = "Flowy"
-//                val fileName = "uploadImage.jpeg"
-//                val file = File("$filePath/$folderName/$fileName")
-//                imageUpload(file = file, baseURL = OVERFLOW_TEST_API_IMAGE_UPLOAD)
-
             }
         }
     }
