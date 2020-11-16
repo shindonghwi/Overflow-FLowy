@@ -8,6 +8,7 @@ import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.util.Base64
 import android.util.Log
 import android.view.*
 import android.widget.*
@@ -36,9 +37,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import okhttp3.MediaType
-import okhttp3.MultipartBody
-import okhttp3.RequestBody
+import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -60,7 +63,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private lateinit var topMenuLayout: LinearLayout
     private lateinit var bottomMenuLayout: LinearLayout
     private lateinit var pinchZoomLinearLayout: LinearLayout
-    private var twoPointClickFlag: Boolean = true
+    private var threePointClickFlag: Boolean = true
 
     /** 메뉴바 상단에 있는 버튼 */
     private lateinit var focusToggleBtn: ToggleButton
@@ -73,11 +76,12 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private lateinit var menuToggleBtn: ToggleButton
     private lateinit var flowyCastToggleBtn: ToggleButton
     private lateinit var freezeToggleBtn: ToggleButton
-//    private lateinit var luminanceToggleBtn: ToggleButton // companion object
+
+    //    private lateinit var luminanceToggleBtn: ToggleButton // companion object
     private lateinit var controlToggleBtn: ToggleButton
 
     /** 밝기 대비 조절 버튼을 눌렀을때 나오는 뷰 */
-    private lateinit var brightShadeControlView : View
+    private lateinit var brightShadeControlView: View
 
     /** 공유 버튼 */
     private lateinit var shareImgBtn: ImageButton
@@ -97,10 +101,11 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private var pinchZoomFlag: Boolean = true
 
     // 고대비 어댑터 생성
-    private lateinit var brightShadeAdapter : AdapterBrightShadeControl
+    private lateinit var brightShadeAdapter: AdapterBrightShadeControl
 
     // test
-    private lateinit var testBtn : Button
+    private lateinit var testBtn: Button
+    private lateinit var busNumText: TextView
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -172,6 +177,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         //test
         testBtn = view.findViewById(R.id.testBtn)
         testBtnListener()
+        busNumText = view.findViewById(R.id.busNumText)
     }
 
     /** ui 버튼 크기 변경 메서드 추가 */
@@ -191,7 +197,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         if (userLuminancePref) {
             contrastPrefEditor.putBoolean("userLuminanceInitFlag", false)
             contrastPrefEditor.commit()
-            SharedPreferenceUtil().saveArrayListData(
+            SharedPreferenceUtil().saveArrayListData<ContrastData>(
                 contrastPref,
                 "userLumincanceData",
                 contrastInitData
@@ -202,9 +208,14 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         // 처음 사용하는 사람이 아니라면, 이전에 사용하던 luminance 데이터를 가져온다.
         else {
             val contrastMutableListData =
-                SharedPreferenceUtil().loadArrayListData(contrastPref, "userLumincanceData")
+                SharedPreferenceUtil().loadArrayListData<ContrastData>(
+                    contrastPref,
+                    "userLumincanceData"
+                )
             userContrastData = contrastMutableListData
             Log.d("lumiinit", "처음아님")
+
+
         }
     }
 
@@ -219,7 +230,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             topMenuLayout.post {
 
                 // 상단 메뉴바 높이 조정
-                val tLayout = RelativeLayout.LayoutParams( LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 1.5).toInt() )
+                val tLayout = RelativeLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    (focusToggleBtn.height * 1.5).toInt()
+                )
                 tLayout.addRule(RelativeLayout.ALIGN_PARENT_TOP)
                 topMenuLayout.layoutParams = tLayout
                 topMenuLayout.requestLayout()
@@ -246,7 +260,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 mirroringToggleBtn.requestLayout()
 
                 // 하단 메뉴바 높이 조정
-                val bLayout = RelativeLayout.LayoutParams( LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 1.5).toInt())
+                val bLayout = RelativeLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    (focusToggleBtn.height * 1.5).toInt()
+                )
                 bLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
                 bottomMenuLayout.layoutParams = bLayout
                 bottomMenuLayout.requestLayout()
@@ -264,12 +281,18 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 controlToggleBtn.requestLayout()
 
                 // 공유버튼 레이아웃 높이 조정
-                val sLayout = RelativeLayout.LayoutParams( LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 1.5).toInt() )
+                val sLayout = RelativeLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    (focusToggleBtn.height * 1.5).toInt()
+                )
                 sLayout.addRule(RelativeLayout.ALIGN_PARENT_TOP)
                 shareFrameLayout.layoutParams = sLayout
                 shareFrameLayout.requestLayout()
 
-                val imgBtnParams = FrameLayout.LayoutParams( FrameLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 1.2).toInt())
+                val imgBtnParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    (focusToggleBtn.height * 1.2).toInt()
+                )
                     .apply {
                         gravity = Gravity.CENTER
                     }
@@ -545,68 +568,90 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     /** 화면을 트리플 터치 했을떄 메뉴가 사라지고 나타나게 만드는 기능 */
     private fun threePointClick() {
-        if (twoPointClickFlag) {
-            if (topMenuLayout.visibility == View.VISIBLE)
+        if (threePointClickFlag) {
+
+            if (this::brightShadeControlView.isInitialized && brightShadeControlView.visibility == View.VISIBLE){
+
                 topMenuLayout.visibility = View.GONE
-            else
-                shareFrameLayout.visibility = View.GONE
-            bottomMenuLayout.visibility = View.GONE
+                brightShadeControlView.visibility = View.GONE
 
-            pinchZoomLinearLayout.visibility = View.GONE
+                val ruleList = arrayListOf<Int>(
+                    RelativeLayout.ALIGN_PARENT_BOTTOM,
+                    RelativeLayout.CENTER_HORIZONTAL
+                )
+                val ruleSubList = arrayListOf<Int>(-1, -1)
+                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                setAdViewWindows(ruleList, ruleSubList, margins)
+            }
+            else if (topMenuLayout.visibility == View.VISIBLE || shareFrameLayout.visibility == View.VISIBLE) {
 
-            // 애드몹 배너 광고 위치 조정
-            val bannerAdmobViewLayout = RelativeLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                (bannerAdView.height)
-            )
-            bannerAdmobViewLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
-            bannerAdmobViewLayout.addRule(RelativeLayout.CENTER_HORIZONTAL)
-            bannerAdView.layoutParams = bannerAdmobViewLayout
-            bannerAdView.requestLayout()
+                val ruleList = arrayListOf<Int>(
+                    RelativeLayout.ALIGN_PARENT_BOTTOM,
+                    RelativeLayout.CENTER_HORIZONTAL
+                )
+                val ruleSubList = arrayListOf<Int>(-1, -1)
+                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                setAdViewWindows(ruleList, ruleSubList, margins)
 
-            // 회사 배너 광고 위치 조정
-            val bannerVersaViewLayout = RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT,
-                (bannerVersaAD.height)
-            )
-            bannerVersaViewLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
-            bannerVersaViewLayout.addRule(RelativeLayout.CENTER_HORIZONTAL)
-            bannerVersaAD.layoutParams = bannerVersaViewLayout
-            bannerVersaAD.requestLayout()
-
+                if (topMenuLayout.visibility == View.VISIBLE) topMenuLayout.visibility = View.GONE
+                else if (shareFrameLayout.visibility == View.VISIBLE) shareFrameLayout.visibility =  View.GONE
+            }
+            bottomMenuLayout.visibility = View.INVISIBLE
+            pinchZoomLinearLayout.visibility = View.INVISIBLE
         } else {
-            if (shareFrameLayout.visibility == View.GONE)
-                shareFrameLayout.visibility = View.VISIBLE
-            else
+
+            if ( topMenuLayout.visibility == View.GONE &&  bottomMenuLayout.visibility == View.INVISIBLE) {
                 topMenuLayout.visibility = View.VISIBLE
-            bottomMenuLayout.visibility = View.VISIBLE
+                bottomMenuLayout.visibility = View.VISIBLE
+                val ruleList = arrayListOf<Int>(
+                    RelativeLayout.ABOVE,
+                    RelativeLayout.CENTER_HORIZONTAL
+                )
+                val ruleSubList = arrayListOf<Int>(R.id.pinchZoomLinearLayout, -1)
+                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                setAdViewWindows(ruleList, ruleSubList, margins)
+            }
+            else if( topMenuLayout.visibility == View.GONE &&  brightShadeControlView.visibility == View.GONE){
+                topMenuLayout.visibility = View.VISIBLE
+                brightShadeControlView.visibility = View.VISIBLE
+                val ruleList = arrayListOf<Int>(
+                    RelativeLayout.BELOW,
+                    RelativeLayout.CENTER_HORIZONTAL
+                )
+                val ruleSubList = arrayListOf<Int>(R.id.topMenuLayout, -1)
+                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                setAdViewWindows(ruleList, ruleSubList, margins)
+            }
+
+            else if (freezeMode) {
+                bottomMenuLayout.visibility = View.VISIBLE
+                shareFrameLayout.visibility = View.VISIBLE
+
+                val ruleList = arrayListOf<Int>(
+                    RelativeLayout.ABOVE,
+                    RelativeLayout.CENTER_HORIZONTAL
+                )
+                val ruleSubList = arrayListOf<Int>(R.id.bottomMenuLayout, -1)
+                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                setAdViewWindows(ruleList, ruleSubList, margins)
+            } else {
+                bottomMenuLayout.visibility = View.VISIBLE
+                topMenuLayout.visibility = View.VISIBLE
+                val ruleList = arrayListOf<Int>(
+                    RelativeLayout.ABOVE,
+                    RelativeLayout.CENTER_HORIZONTAL
+                )
+                val ruleSubList = arrayListOf<Int>(R.id.pinchZoomLinearLayout, -1)
+                val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                setAdViewWindows(ruleList, ruleSubList, margins)
+            }
 
             if (cameraMode == "flowy" || freezeMode)
                 pinchZoomLinearLayout.visibility = View.GONE
             else
                 pinchZoomLinearLayout.visibility = View.VISIBLE
-
-            // 애드몹 광고 위치 조정
-            val bannerAdmobViewLayout = RelativeLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                (bannerAdView.height)
-            )
-            bannerAdmobViewLayout.addRule(RelativeLayout.ABOVE, R.id.pinchZoomLinearLayout)
-            bannerAdmobViewLayout.addRule(RelativeLayout.CENTER_HORIZONTAL)
-            bannerAdView.layoutParams = bannerAdmobViewLayout
-            bannerAdView.requestLayout()
-
-            // 회사 배너 광고 위치 조정
-            val bannerVersaViewLayout = RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT,
-                (bannerVersaAD.height)
-            )
-            bannerVersaViewLayout.addRule(RelativeLayout.ABOVE, R.id.pinchZoomLinearLayout)
-            bannerVersaViewLayout.addRule(RelativeLayout.CENTER_HORIZONTAL)
-            bannerVersaAD.layoutParams = bannerVersaViewLayout
-            bannerVersaAD.requestLayout()
         }
-        twoPointClickFlag = !twoPointClickFlag
+        threePointClickFlag = !threePointClickFlag
     }
 
     /** 클릭 이벤트 처리 */
@@ -673,7 +718,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     cameraSubMode = "longClick"
 
                     // 서버에 플로위 줌 시작 api를 보낸다.
-                    sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL,  3)
+                    sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, 3)
                     pinchZoomLinearLayout.visibility = View.GONE
                 }
 
@@ -693,7 +738,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 alertToast.show()
             }
             R.id.menuToggleBtn -> {
-                (activity as MainActivity).replaceFragment("add", FragmentMenu() .newInstance())
+                (activity as MainActivity).replaceFragment("add", FragmentMenu().newInstance())
             }
             R.id.flowyCastToggleBtn -> {
                 if (alertToast != null) alertToast.cancel()
@@ -715,6 +760,12 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                         cameraSubMode = "longClick"
                         pinchZoomLinearLayout.visibility = View.GONE
 
+                        val ruleList =
+                            arrayListOf<Int>(RelativeLayout.ABOVE, RelativeLayout.CENTER_HORIZONTAL)
+                        val ruleSubList = arrayListOf<Int>(R.id.bottomMenuLayout, -1)
+                        val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                        setAdViewWindows(ruleList, ruleSubList, margins)
+
                     } else {
                         topMenuLayout.visibility = View.VISIBLE
                         shareFrameLayout.visibility = View.INVISIBLE
@@ -722,6 +773,12 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                         cameraMode = "default"
                         cameraSubMode = "default"
                         pinchZoomLinearLayout.visibility = View.VISIBLE
+
+                        val ruleList =
+                            arrayListOf<Int>(RelativeLayout.ABOVE, RelativeLayout.CENTER_HORIZONTAL)
+                        val ruleSubList = arrayListOf<Int>(R.id.pinchZoomLinearLayout, -1)
+                        val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                        setAdViewWindows(ruleList, ruleSubList, margins)
                     }
                 }
             }
@@ -756,18 +813,26 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             }
             R.id.controlToggleBtn -> {
 
-                try{
-                    brightShadeControlView.visibility = View.VISIBLE
-                }
-                catch (e : UninitializedPropertyAccessException){
-
+                if (!this::brightShadeControlView.isInitialized){
                     // 밝기, 대비 조절 레이아웃 생성
                     brightShadeControlView = LayoutInflateUtil().layoutViewCreate(
                         context = THIS_CONTEXT!!,
                         parentViewId = parentLayout,
-                        addLayout = R.layout.bright_shade_control_layout)
+                        addLayout = R.layout.bright_shade_control_layout
+                    )
                     brightShadeLayoutRelocation()
                 }
+
+                brightShadeControlView.visibility = View.VISIBLE
+                brightShadeAdapter.notifyDataSetChanged()
+
+                val ruleList = arrayListOf<Int>(
+                    RelativeLayout.ALIGN_PARENT_TOP,
+                    RelativeLayout.CENTER_HORIZONTAL
+                )
+                val ruleSubList = arrayListOf<Int>(-1, -1)
+                val margins = arrayListOf<Int>(0, topMenuLayout.height, 0, 0) // 왼, 위, 오른, 아래
+                setAdViewWindows(ruleList, ruleSubList, margins)
                 bottomMenuLayout.visibility = View.INVISIBLE
             }
 
@@ -824,9 +889,9 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     override fun onResume() {
         super.onResume()
-        Log.d("life", "camera resume")
-        togBtnStatusCheck() // 버튼 상태 불러오기
 
+        Log.d("life", "camera resume")
+        togBtnStatusLoad() // 버튼 상태 불러오기
         /** 화면 방향 체크 */
         deviceRotationCheck()
 
@@ -834,7 +899,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         loadAdMob()
 
         /** 카메라 사용시작 로그를 서버에 보낸다. */
-        sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL,  1)
+        sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, 1)
 
 
     }
@@ -843,9 +908,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         Log.d("lifeCycle", "onPause")
         super.onPause()
         togBtnStatusSave() // 버튼의 상태 저장
-
         /** 카메라 사용종료 로그를 서버에 보낸다. */
-        sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL,  2)
+        sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, 2)
     }
 
     /** 기기의 방향 체크 - 카메라 프래그먼트에서 화면 방향에 따라서 UI 버튼도 회전이 되어야한다. */
@@ -953,18 +1017,17 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** --------------------------------------------------------------------------*/
 
     /** 메뉴바에 있는 토글버튼 상태 가져오기 */
-    private fun togBtnStatusCheck() {
+    private fun togBtnStatusLoad() {
 
         // 플로위줌 버튼 상태 및
         flowyZoomToggleBtn.isChecked = pref.getBoolean("flowyZoomToggleBtn", false)
 
         // 고대비 모드 설정
         luminanceIndex = pref.getInt("luminanceIndex", 0)
-        if(luminanceIndex == 0){
+        if (luminanceIndex == 0) {
             luminanceToggleBtn.isChecked = false
             fragmentType = "default"
-        }
-        else{
+        } else {
             luminanceToggleBtn.isChecked = true
             fragmentType = "luminance"
         }
@@ -979,9 +1042,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private fun togBtnStatusSave() {
         prefEditor.putBoolean("flowyZoomToggleBtn", flowyZoomToggleBtn.isChecked)
         prefEditor.putBoolean("lensChangeToggleBtn", lensChangeToggleBtn.isChecked)
-        prefEditor.putInt("luminanceIndex",
-            luminanceIndex
-        )
+        prefEditor.putInt("luminanceIndex", luminanceIndex)
         prefEditor.commit()
     }
     /** #############################################################################################*/
@@ -1055,27 +1116,96 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     }
 
+    /** 광고 위치 조정 */
+    private fun setAdViewWindows(
+        ruleArrayList: ArrayList<Int>,
+        ruleSubArrayList: ArrayList<Int>,
+        margins: ArrayList<Int>
+    ) {
+        // 회사 배너 광고 위치 조정
+        val bannerVersaViewLayout = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            bannerVersaAD.height
+        )
+        // 애드몹 광고 위치 조정
+        val bannerAdmobViewLayout =
+            RelativeLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, bannerAdView.height)
+
+        CoroutineScope(Dispatchers.Default).launch {
+            bannerVersaAD.visibility = View.INVISIBLE
+            bannerAdView.visibility = View.INVISIBLE
+            delay(100)
+            CoroutineScope(Dispatchers.Main).launch {
+                bannerVersaViewLayout.apply {
+
+                    for (idx in ruleArrayList.indices) {
+                        if (ruleSubArrayList[idx] != -1)
+                            addRule(ruleArrayList[idx], ruleSubArrayList[idx])
+                        else
+                            addRule(ruleArrayList[idx])
+                    }
+                    setMargins(margins[0], margins[1], margins[2], margins[3])
+                }
+                bannerAdmobViewLayout.apply {
+                    for (idx in ruleArrayList.indices) {
+                        if (ruleSubArrayList[idx] != -1)
+                            addRule(ruleArrayList[idx], ruleSubArrayList[idx])
+                        else
+                            addRule(ruleArrayList[idx])
+                    }
+                    setMargins(margins[0], margins[1], margins[2], margins[3])
+                }
+                bannerVersaAD.visibility = View.VISIBLE
+                bannerAdView.visibility = View.VISIBLE
+                bannerVersaAD.layoutParams = bannerVersaViewLayout
+                bannerVersaAD.requestLayout()
+                bannerAdView.layoutParams = bannerAdmobViewLayout
+                bannerAdView.requestLayout()
+            }
+        }
+    }
+
     /** 밝기, 대비 버튼을 눌렀을때 나오는 뷰 크기 재조정 */
-    private fun brightShadeLayoutRelocation(){
+    private fun brightShadeLayoutRelocation() {
 
         val brightLayout = brightShadeControlView.findViewById<LinearLayout>(R.id.brightLayout)
         val binaryLayout = brightShadeControlView.findViewById<LinearLayout>(R.id.binaryLayout)
-        val controlMenuLayout = brightShadeControlView.findViewById<RelativeLayout>(R.id.controlMenuLayout)
-        val recyclerviewLinearLayout = brightShadeControlView.findViewById<LinearLayout>(R.id.recyclerviewLinearLayout)
-        val contrastItemRecyclerView = brightShadeControlView.findViewById<RecyclerView>(R.id.contrastItemRecyclerView)
-        val inverseToggleBtn = brightShadeControlView.findViewById<ToggleButton>(R.id.inverseToggleBtn)
-        val binaryToggleBtn = brightShadeControlView.findViewById<ToggleButton>(R.id.binaryToggleBtn)
-        val controlChildToggleBtn = brightShadeControlView.findViewById<ToggleButton>(R.id.controlChildToggleBtn)
+        val controlMenuLayout =
+            brightShadeControlView.findViewById<RelativeLayout>(R.id.controlMenuLayout)
+        val recyclerviewLinearLayout =
+            brightShadeControlView.findViewById<LinearLayout>(R.id.recyclerviewLinearLayout)
+        val contrastItemRecyclerView =
+            brightShadeControlView.findViewById<RecyclerView>(R.id.contrastItemRecyclerView)
+        val inverseToggleBtn =
+            brightShadeControlView.findViewById<ToggleButton>(R.id.inverseToggleBtn)
+        val binaryToggleBtn =
+            brightShadeControlView.findViewById<ToggleButton>(R.id.binaryToggleBtn)
+        val controlChildToggleBtn =
+            brightShadeControlView.findViewById<ToggleButton>(R.id.controlChildToggleBtn)
         val brightSeekbar = brightShadeControlView.findViewById<SeekBar>(R.id.brightSeekbar)
         val contrastSeekbar = brightShadeControlView.findViewById<SeekBar>(R.id.contrastSeekbar)
+        val defaultColorImgView =
+            brightShadeControlView.findViewById<ImageView>(R.id.defaultColorImgView)
 
         brightSeekbarListener(brightSeekbar)
         contrastSeekbarListener(contrastSeekbar)
 
-        val controlMenuLayoutParams = RelativeLayout.LayoutParams( FrameLayout.LayoutParams.MATCH_PARENT, (bottomMenuLayout.height))
-        val binaryLayoutParams = RelativeLayout.LayoutParams( LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 0.8).toInt())
-        val brightLayoutParams = RelativeLayout.LayoutParams( LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 0.8).toInt())
-        val recyclerviewLinearLayoutParams = RelativeLayout.LayoutParams( LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 0.8).toInt())
+        val controlMenuLayoutParams = RelativeLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            (bottomMenuLayout.height)
+        )
+        val binaryLayoutParams = RelativeLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            (focusToggleBtn.height * 0.8).toInt()
+        )
+        val brightLayoutParams = RelativeLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            (focusToggleBtn.height * 0.8).toInt()
+        )
+        val recyclerviewLinearLayoutParams = RelativeLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            (focusToggleBtn.height * 0.8).toInt()
+        )
 
         controlMenuLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
         controlMenuLayout.layoutParams = controlMenuLayoutParams
@@ -1120,16 +1250,19 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         controlChildToggleBtn.layoutParams = controlToggleBtnParams
         controlChildToggleBtn.requestLayout()
 
-
-
-
         // 리니어 레이아웃 매니저 설정 및 어댑터 연결
-        contrastItemRecyclerView.layoutManager = LinearLayoutManager(THIS_CONTEXT, LinearLayoutManager.HORIZONTAL, false)
+        contrastItemRecyclerView.layoutManager =
+            LinearLayoutManager(THIS_CONTEXT, LinearLayoutManager.HORIZONTAL, false)
         contrastItemRecyclerView.adapter = brightShadeAdapter
 
         controlChildToggleBtn.setOnClickListener {
             brightShadeControlView.visibility = View.GONE
             bottomMenuLayout.visibility = View.VISIBLE
+
+            val ruleList = arrayListOf<Int>(RelativeLayout.ABOVE, RelativeLayout.CENTER_HORIZONTAL)
+            val ruleSubList = arrayListOf<Int>(R.id.pinchZoomLinearLayout, -1)
+            val margins = arrayListOf<Int>(0, topMenuLayout.height, 0, 0) // 왼, 위, 오른, 아래
+            setAdViewWindows(ruleList, ruleSubList, margins)
         }
 
         binaryToggleBtn.setOnClickListener {
@@ -1142,6 +1275,22 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             inverseFlag = inverseToggleBtn.isChecked
         }
 
+        defaultColorImgView.setOnClickListener {
+            luminanceIndex = 0
+            luminanceFlag = true
+            fragmentType = "default"
+            luminanceToggleBtn.isChecked = false
+            brightShadeAdapter.notifyDataSetChanged()
+            if (alertToast != null) alertToast.cancel()
+            alertToast = Toast.makeText(context, "기본색상으로 변경되었습니다", Toast.LENGTH_SHORT)
+            alertToast.show()
+        }
+
+        val ruleList =
+            arrayListOf<Int>(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.CENTER_HORIZONTAL)
+        val ruleSubList = arrayListOf<Int>(-1, -1)
+        val margins = arrayListOf<Int>(0, topMenuLayout.height, 0, 0) // 왼, 위, 오른, 아래
+        setAdViewWindows(ruleList, ruleSubList, margins)
     }
     /** #############################################################################################*/
 
@@ -1153,35 +1302,75 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** 서버에 플로위 줌 신호를 보낸다. - 사용시작 : 1, 사용정지 : 2, FlowyZoom 시작 : 3, FlowyZoom 종료 : 4 */
     private fun sendFlowyDataToServer(baseURL: String, userAction: Int) {
 
-        try{
-            val sendLogData:HashMap<String, Any> = HashMap()
+        try {
+            val sendLogData: HashMap<String, Any> = HashMap()
             sendLogData["api_key"] = API_KEY
             sendLogData["device_id"] = USER_UUID
             sendLogData["action_code"] = userAction
 
-            val retrofit = Retrofit2Util().getRetrofit2Builder(baseURL).create(RetrofitAPI::class.java)
+            val retrofit =
+                Retrofit2Util().getRetrofit2Builder(baseURL).create(RetrofitAPI::class.java)
             retrofit.postFlowyZoomLogData(sendLogData)
-        }
-        catch (e : Exception){
-            Log.d("retrofitError","error : " + e.message.toString())
+        } catch (e: Exception) {
+            Log.d("retrofitError", "error : " + e.message.toString())
         }
 
     }
     /** #############################################################################################*/
 
     /** 서버에 이미지를 올린다. */
-    private fun imageUpload(file: File, baseURL: String) {
+    private fun imageUpload(encodeBitmap: String, baseURL: String) {
 
-        val imageFile = MultipartBody.Part.createFormData(
-            "file",
-            file.name,
-            RequestBody.create(MediaType.parse("image/*"), file)
-        )
+//        val imageFile = MultipartBody.Part.createFormData(
+//            "file",
+//            file.name,
+//            RequestBody.create(MediaType.parse("image/*"), file)
+//        )
+
+        val sendLogData: HashMap<String, Any> = HashMap()
+        sendLogData["image_data"] = encodeBitmap
 
         val retrofit = Retrofit2Util().getRetrofit2Builder(baseURL).create(RetrofitAPI::class.java)
-        retrofit.uploadFile(image = imageFile)
-    }
 
+        val start = System.currentTimeMillis()
+
+
+        retrofit.uploadImage(sendLogData).enqueue(object : Callback<Any> {
+            override fun onFailure(call: Call<Any>, t: Throwable) {
+                Log.d("uploadImageTest", "onFailure: ${t.message}")
+                val end = System.currentTimeMillis()
+                Log.d("timer", ((end - start) / 1000).toString())
+            }
+
+            override fun onResponse(call: Call<Any>, response: Response<Any>) {
+                val jsonData = JSONObject(response.body().toString())
+
+                try {
+
+                    val code = jsonData.getString("code");
+                    Log.d("uploadImageTest", "onResponse: ${code}")
+
+                    if (code == "0.0") {
+                        Log.d("uploadImageTest", "그대로 출력 : $jsonData")
+                        val busNum = jsonData.getJSONArray("result");
+                        Log.d("uploadImageTest", "onResponse: ${busNum.toString()}")
+                        CoroutineScope(Dispatchers.Main).launch {
+                            busNumText.text = busNum.toString()
+                        }
+                        for (i in 0 until busNum.length()) {
+                            val jsonDataArray = busNum.getJSONArray(i)
+                            Log.d("uploadImageTest", "onResponse1111 : ${jsonDataArray.toString()}")
+                        }
+                    } else {
+                        Log.d("uploadImageTest", jsonData.toString())
+                    }
+                } catch (e: Exception) {
+
+                }
+            }
+
+        })
+    }
 
     /** --------------------------------------------------------------------------*/
     /** ---------------------------- Companion Object ----------------------------*/
@@ -1233,29 +1422,38 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         var userContrastData = arrayListOf<ContrastData>()
 
         /** 밝기, 대비 조절기능의 시크바 */
-        var brightSeekbarProgress : Int = 50
-        var contrastSeekbarProgress : Int = 50
+        var brightSeekbarProgress: Int = 50
+        var contrastSeekbarProgress: Int = 50
 
         /** 고대비 토글버튼 */
         lateinit var luminanceToggleBtn: ToggleButton
-
-
     }
     /** #############################################################################################*/
 
 
     /** test */
-    private fun testBtnListener(){
+    private fun testBtnListener() {
         testBtn.setOnClickListener {
-            Toast.makeText(context, "ㅋㄹ",Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "ㅋㄹ", Toast.LENGTH_SHORT).show()
             CoroutineScope(Dispatchers.Default).launch {
                 BitmapUtil().textureBitmapToFile(glTextureView.bitmap)
-                delay(20)
-                val filePath = Environment.getExternalStorageDirectory().toString()
-                val folderName = "Flowy"
-                val fileName = "uploadImage.jpeg"
-                val file = File("$filePath/$folderName/$fileName")
-                imageUpload(file = file, baseURL = OVERFLOW_TEST_API_BASE_URL)
+
+                val byteArrayOutputStream = ByteArrayOutputStream()
+                glTextureView.bitmap!!.compress(
+                    Bitmap.CompressFormat.JPEG,
+                    50,
+                    byteArrayOutputStream
+                )
+                val byteArray = byteArrayOutputStream.toByteArray()
+                val encoded: String = Base64.encodeToString(byteArray, Base64.DEFAULT)
+                imageUpload(encodeBitmap = encoded, baseURL = OVERFLOW_TEST_API_IMAGE_UPLOAD)
+//                delay(20)
+//                val filePath = Environment.getExternalStorageDirectory().toString()
+//                val folderName = "Flowy"
+//                val fileName = "uploadImage.jpeg"
+//                val file = File("$filePath/$folderName/$fileName")
+//                imageUpload(file = file, baseURL = OVERFLOW_TEST_API_IMAGE_UPLOAD)
+
             }
         }
     }

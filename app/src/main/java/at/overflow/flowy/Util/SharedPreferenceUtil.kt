@@ -1,9 +1,11 @@
 package at.overflow.flowy.Util
 
 import android.content.SharedPreferences
+import at.overflow.flowy.Adapter.AdapterBrightShadeControl
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import at.overflow.flowy.DTO.ContrastData
+import org.json.JSONArray
 
 class SharedPreferenceUtil {
 
@@ -34,7 +36,7 @@ class SharedPreferenceUtil {
     }
 
     /** ArrayList 데이터 저장 */
-    fun saveArrayListData(preferences: SharedPreferences, key : String, arrayList: ArrayList<ContrastData>) {
+    fun <T> saveArrayListData(preferences: SharedPreferences, key : String, arrayList: ArrayList<T>) {
         val editor = preferences.edit()
         val gson = Gson()
         val json = gson.toJson(arrayList)
@@ -43,7 +45,7 @@ class SharedPreferenceUtil {
     }
 
     /** ArrayList 데이터 불러오기 */
-    fun loadArrayListData(preferences: SharedPreferences, key : String) : ArrayList<ContrastData> {
+    fun <T> loadArrayListData(preferences: SharedPreferences, key : String) : ArrayList<T> {
         val gson = Gson()
         val json = preferences.getString(key, "")
         val type = object: TypeToken<ArrayList<ContrastData>>() {

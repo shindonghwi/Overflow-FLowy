@@ -31,7 +31,7 @@ class BitmapUtil {
 
             //Convert bitmap to byte array
             val bos = ByteArrayOutputStream()
-            bitmap!!.compress(Bitmap.CompressFormat.JPEG, 100, bos) // YOU can also save it in JPEG
+            bitmap!!.compress(Bitmap.CompressFormat.JPEG, 50, bos) // YOU can also save it in JPEG
             val bitmapData = bos.toByteArray()
 
             //write the bytes in file

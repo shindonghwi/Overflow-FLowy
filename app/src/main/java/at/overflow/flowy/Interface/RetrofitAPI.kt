@@ -1,10 +1,12 @@
 package at.overflow.flowy.Interface
 
-import okhttp3.MultipartBody
-import okhttp3.RequestBody
+import at.overflow.flowy.DTO.ContrastData
 import okhttp3.ResponseBody
 import retrofit2.Call
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.Field
+import retrofit2.http.POST
+import retrofit2.http.Query
 
 
 interface RetrofitAPI {
@@ -18,8 +20,7 @@ interface RetrofitAPI {
     @POST("putActLog")
     fun postFlowyZoomLogData(@Body param:HashMap<String, Any>)
 
-    @Multipart
-    @POST("info")
-    fun uploadFile(@Part image : MultipartBody.Part):Call<ResponseBody>
+    @POST("detect")
+    fun uploadImage(@Body param:HashMap<String, Any>):Call<Any>
 
 }

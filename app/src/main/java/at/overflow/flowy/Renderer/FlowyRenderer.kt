@@ -310,6 +310,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
                    SurfaceTextureProvider()
                 previewBuilder = Preview.Builder()
                 previewBuilder.setTargetAspectRatio(aspectRatio)
+//                previewBuilder.setTargetResolution(Size(480,640))
                 preview = previewBuilder.build()
                 preview.setSurfaceProvider(
                     surfaceTextureProvider.createSurfaceTextureProvider(

@@ -2,31 +2,29 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/parentRelative"
-    android:clickable="true"
-    android:focusable="true"
-    android:background="@color/black"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    android:clickable="true"
+    android:focusable="true">
 
     <!-- 애드몹 광고   -->
-    <com.google.android.gms.ads.AdView
-        xmlns:ads="http://schemas.android.com/apk/res-auto"
+    <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
         android:id="@+id/bannerAdView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
         android:layout_above="@+id/pinchZoomLinearLayout"
+        android:layout_centerHorizontal="true"
         ads:adSize="BANNER"
-        ads:adUnitId="@string/banner_ad_unit_id">
-    </com.google.android.gms.ads.AdView>
+        ads:adUnitId="@string/banner_ad_unit_id"></com.google.android.gms.ads.AdView>
 
     <ImageView
         android:id="@+id/bannerVersaAD"
         android:layout_width="wrap_content"
-        android:scaleType="fitCenter"
         android:layout_height="50dp"
+        android:layout_above="@+id/pinchZoomLinearLayout"
         android:layout_centerHorizontal="true"
-        android:layout_above="@+id/pinchZoomLinearLayout" />
+        android:scaleType="fitCenter" />
 
     <at.overflow.flowy.View.FlowyGLTextureView
         android:id="@+id/glSurfaceView"
@@ -44,19 +42,19 @@
         tools:ignore="NotSibling" />
 
     <FrameLayout
-        android:visibility="invisible"
         android:id="@+id/shareFrameLayout"
         android:layout_width="match_parent"
         android:layout_height="80dp"
-        android:background="@drawable/menu_bar_top">
+        android:background="@drawable/menu_bar_top"
+        android:visibility="invisible">
 
         <ImageButton
             android:id="@+id/shareImgBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
-            android:layout_margin="10dp"
             android:layout_gravity="center"
+            android:layout_margin="10dp"
+            android:background="@android:color/transparent"
             android:scaleType="centerInside"
             android:src="@drawable/share" />
 
@@ -118,7 +116,6 @@
 
         <!-- 구현되면 bg 수정해야함 -->
         <ToggleButton
-            android:visibility="gone"
             android:id="@+id/mirroringToggleBtn"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -126,7 +123,8 @@
             android:layout_weight="0.20"
             android:background="@drawable/mirroring_menu_on_off"
             android:textOff="@string/textClear"
-            android:textOn="@string/textClear" />
+            android:textOn="@string/textClear"
+            android:visibility="gone" />
 
     </LinearLayout>
 
@@ -152,7 +150,6 @@
             android:textOn="@string/textClear" />
 
         <ToggleButton
-            android:visibility="gone"
             android:id="@+id/flowyCastToggleBtn"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -160,7 +157,8 @@
             android:layout_weight="0.20"
             android:background="@drawable/flowy_cast_menu_on_off"
             android:textOff="@string/textClear"
-            android:textOn="@string/textClear" />
+            android:textOn="@string/textClear"
+            android:visibility="gone" />
 
         <ToggleButton
             android:id="@+id/freezeToggleBtn"
@@ -242,9 +240,21 @@
     <Button
         android:id="@+id/testBtn"
         android:layout_width="wrap_content"
-        android:layout_centerVertical="true"
         android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
         android:text="Image Send" />
+
+    <TextView
+        android:id="@+id/busNumText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/yellow"
+        android:textSize="20dp"
+        android:textStyle="bold"
+        android:layout_above="@id/testBtn"
+        android:layout_centerVertical="true"
+        android:layout_marginEnd="353dp"
+        android:text="TextView" />
 
 
 </RelativeLayout>

@@ -7,10 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
-import at.overflow.flowy.DTO.ContrastData
-import at.overflow.flowy.Fragment.FragmentCamera
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceFlag
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceIndex
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceToggleBtn
@@ -27,18 +24,30 @@ class AdapterBrightShadeControl(
     val context: Context
 ) :
     RecyclerView.Adapter<AdapterBrightShadeControl.brightShadeViewHolder>() {
+    var holderHashSet: LinkedHashSet<AdapterBrightShadeControl.brightShadeViewHolder> = LinkedHashSet<AdapterBrightShadeControl.brightShadeViewHolder>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): brightShadeViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(
             R.layout.bright_shade_item_view,
             parent, false
         )
-        return brightShadeViewHolder(view)
+
+        val holder = brightShadeViewHolder(view)
+        holderHashSet.add(holder)
+        return holder
     }
 
     override fun getItemCount(): Int = userContrastData.size
 
     override fun onBindViewHolder(holder: brightShadeViewHolder, position: Int) {
+
+        val itr = holderHashSet.iterator()
+        var itrIdx = 0
+        while (itr.hasNext()){
+            if (itrIdx != luminanceIndex - 1) itr.next().brightShadeItemViewLayout.background = null
+            else itr.next().brightShadeItemViewLayout.background = THIS_CONTEXT!!.getDrawable(R.drawable.bright_shade_border)
+            itrIdx += 1
+        }
 
         holder.contrastLeftImage.setBackgroundColor(
             THIS_CONTEXT!!.resources.getColor(
@@ -52,16 +61,19 @@ class AdapterBrightShadeControl(
         )
 
         holder.brightShadeItemViewLayout.setOnClickListener {
-            try {
-                if (holder.brightShadeItemViewLayout.background == null) {
-                    holder.brightShadeItemViewLayout.background =
-                        THIS_CONTEXT!!.getDrawable(R.drawable.bright_shade_border)
+
+            val itr = holderHashSet.iterator()
+            var itrIdx = 0
+            while (itr.hasNext()){
+                if (itrIdx != position) itr.next().brightShadeItemViewLayout.background = null
+                else {
+                    itr.next().brightShadeItemViewLayout.background = THIS_CONTEXT!!.getDrawable(R.drawable.bright_shade_border)
                     luminanceIndex = holder.adapterPosition + 1
                     luminanceFlag = true
                     fragmentType = "luminance"
                     luminanceToggleBtn.isChecked = true
                 }
-            } catch (e: Exception) {
+                itrIdx += 1
             }
         }
     }
