@@ -4,7 +4,7 @@
     <string name="next">Next</string>
     <string name="close">Close</string>
     <string name="complete">완료</string>
-    <string name="FlowyVersion">Flowy 1.0.0</string>
+    <string name="FlowyVersion">Flowy 1.0.3</string>
 
 
     <string name="textClear"> </string>
@@ -25,10 +25,10 @@
     <string name="init_back_up_text">기본값으로 복원</string>
     <string name="menu_contrast_default_color_text">흑/백</string>
 
-    <string name="inquire_text">문의하기</string>
-    <string name="share_text">공유하기</string>
-    <string name="evaluate_text">평가하기</string>
-    <string name="opensource_text">오픈소스 라이선스</string>
+    <string name="inquire_text">Flowy 문의하기</string>
+    <string name="share_text">Flowy 공유하기</string>
+    <string name="evaluate_text">Flowy 평가하기</string>
+    <string name="opensource_text">OpenSource License</string>
 
     <string name="new_message">새로운 메시지</string>
     <string name="email_hint">이메일을 입력하세요</string>

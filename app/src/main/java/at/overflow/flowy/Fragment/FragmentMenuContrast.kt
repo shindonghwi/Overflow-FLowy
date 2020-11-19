@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -13,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import at.overflow.flowy.Adapter.AdapterFlowyMenuContrast
 import at.overflow.flowy.Adapter.ItemTouchHelperCallback
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.userContrastData
+import at.overflow.flowy.MainActivity
 import at.overflow.flowy.R
 import at.overflow.flowy.Util.SharedPreferenceUtil
 import at.overflow.flowy.Util.THIS_CONTEXT
@@ -24,7 +26,7 @@ class FragmentMenuContrast : Fragment(){
 
     private lateinit var menuContrastRecyclerView: RecyclerView
     private lateinit var initBackupBtn: Button
-
+    private lateinit var alertToast: Toast
     private lateinit var flowyMenuContrastAdapter: AdapterFlowyMenuContrast
 
     fun newInstance(): FragmentMenuContrast {
@@ -44,6 +46,8 @@ class FragmentMenuContrast : Fragment(){
 
         THIS_CONTEXT = context
         initId(view)
+
+        alertToast = Toast(THIS_CONTEXT)
 
         // 고대비 어댑터 생성
         flowyMenuContrastAdapter =
@@ -80,6 +84,10 @@ class FragmentMenuContrast : Fragment(){
             userContrastData.clear()
             userContrastData.addAll(contrastInitData)
             flowyMenuContrastAdapter.notifyDataSetChanged()
+
+            if (alertToast != null) alertToast.cancel()
+            alertToast = Toast.makeText(context, "기본값으로 복원되었습니다", Toast.LENGTH_SHORT)
+            alertToast.show()
         }
     }
 
@@ -99,4 +107,15 @@ class FragmentMenuContrast : Fragment(){
         SharedPreferenceUtil().saveArrayListData(contrastPref, "userLumincanceData", userContrastData)
         super.onDestroyView()
     }
+
+    override fun onResume() {
+        (activity as MainActivity).enableSoftKey()
+        super.onResume()
+    }
+
+    override fun onAttach(context: Context) {
+        (activity as MainActivity).enableSoftKey()
+        super.onAttach(context)
+    }
+
 }

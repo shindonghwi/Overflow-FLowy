@@ -13,6 +13,7 @@ import android.util.Log
 import android.view.*
 import android.widget.*
 import androidx.core.content.FileProvider
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -186,6 +187,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         super.onStart()
         uiRelocation()
 
+        Log.d("sdfsdfdf","onStart")
+
         if (brightShadeControlView == null) {
             CoroutineScope(Dispatchers.Main).launch {
                 // 밝기, 대비 조절 레이아웃 생성
@@ -227,8 +230,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 )
             userContrastData = contrastMutableListData
             Log.d("lumiinit", "처음아님")
-
-
         }
     }
 
@@ -327,6 +328,27 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 topMenuLayout.layoutParams = tLayout
                 topMenuLayout.requestLayout()
 
+                val weight = 0.25f
+                val menuMargin = 40
+                val topToggleBtnParams = LinearLayout.LayoutParams(0, focusToggleBtn.width, weight)
+                    .apply {
+                        gravity = Gravity.CENTER_VERTICAL
+                        leftMargin = menuMargin
+                        rightMargin = menuMargin
+                    }
+
+                focusToggleBtn.layoutParams = topToggleBtnParams
+                flashToggleBtn.layoutParams = topToggleBtnParams
+                lensChangeToggleBtn.layoutParams = topToggleBtnParams
+                flowyZoomToggleBtn.layoutParams = topToggleBtnParams
+                mirroringToggleBtn.layoutParams = topToggleBtnParams
+
+                focusToggleBtn.requestLayout()
+                flashToggleBtn.requestLayout()
+                lensChangeToggleBtn.requestLayout()
+                flowyZoomToggleBtn.requestLayout()
+                mirroringToggleBtn.requestLayout()
+
                 // 하단 메뉴바 높이 조정
                 val bLayout = RelativeLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, (focusToggleBtn.height * 2.2).toInt()
@@ -334,6 +356,38 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 bLayout.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
                 bottomMenuLayout.layoutParams = bLayout
                 bottomMenuLayout.requestLayout()
+
+                menuToggleBtn.layoutParams = topToggleBtnParams
+                flowyCastToggleBtn.layoutParams = topToggleBtnParams
+                freezeToggleBtn.layoutParams = topToggleBtnParams
+                luminanceToggleBtn.layoutParams = topToggleBtnParams
+                controlToggleBtn.layoutParams = topToggleBtnParams
+
+                menuToggleBtn.requestLayout()
+                flowyCastToggleBtn.requestLayout()
+                freezeToggleBtn.requestLayout()
+                luminanceToggleBtn.requestLayout()
+                controlToggleBtn.requestLayout()
+
+                // 공유버튼 레이아웃 높이 조정
+                val sLayout = RelativeLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    (focusToggleBtn.height * 2.2).toInt()
+                )
+                sLayout.addRule(RelativeLayout.ALIGN_PARENT_TOP)
+                shareFrameLayout.layoutParams = sLayout
+                shareFrameLayout.requestLayout()
+
+                val imgBtnParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    (focusToggleBtn.height * 1.2).toInt()
+                )
+                    .apply {
+                        gravity = Gravity.CENTER
+                    }
+                shareImgBtn.layoutParams = imgBtnParams
+                shareImgBtn.requestLayout()
+
             }
         }
 
@@ -597,7 +651,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 setAdViewWindows(ruleList, ruleSubList, margins)
 
                 threePointClickPreStatus = 1
-                Toast.makeText(context, "1", Toast.LENGTH_SHORT).show()
             } else if (freezeMode && brightShadeControlView!!.visibility == View.GONE) {
                 shareFrameLayout.visibility = View.INVISIBLE
                 bottomMenuLayout.visibility = View.INVISIBLE
@@ -612,7 +665,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 setAdViewWindows(ruleList, ruleSubList, margins)
 
                 threePointClickPreStatus = 2
-                Toast.makeText(context, "2", Toast.LENGTH_SHORT).show()
             } else if (freezeMode && brightShadeControlView!!.visibility == View.VISIBLE) {
                 topMenuLayout.visibility = View.INVISIBLE
                 shareFrameLayout.visibility = View.INVISIBLE
@@ -628,7 +680,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 setAdViewWindows(ruleList, ruleSubList, margins)
 
                 threePointClickPreStatus = 3
-                Toast.makeText(context, "3", Toast.LENGTH_SHORT).show()
             } else if (!freezeMode && brightShadeControlView!!.visibility == View.VISIBLE) {
                 topMenuLayout.visibility = View.INVISIBLE
                 brightShadeControlView!!.visibility = View.GONE
@@ -642,7 +693,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 setAdViewWindows(ruleList, ruleSubList, margins)
 
                 threePointClickPreStatus = 4
-                Toast.makeText(context, "4", Toast.LENGTH_SHORT).show()
             }
         } else {
             when (threePointClickPreStatus) {
@@ -863,25 +913,28 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             }
             R.id.controlToggleBtn -> {
 
-                CoroutineScope(Dispatchers.Main).launch {
-                    brightShadeControlView!!.visibility = View.VISIBLE
-                    bottomMenuLayout.visibility = View.GONE
-                    pinchZoomLinearLayout.visibility = View.GONE
-                    brightShadeAdapter.notifyDataSetChanged()
+                CoroutineScope(Dispatchers.Default).launch {
+                    CoroutineScope(Dispatchers.Main).launch {
+                        bottomMenuLayout.visibility = View.GONE
+                        pinchZoomLinearLayout.visibility = View.GONE
+                        brightShadeControlView!!.visibility = View.VISIBLE
+                        Log.d("sdfsdf", (brightShadeControlView!!.visibility).toString())
+                        brightShadeAdapter.notifyDataSetChanged()
 
-                    val ruleList = arrayListOf<Int>(
-                        RelativeLayout.BELOW,
-                        RelativeLayout.CENTER_HORIZONTAL
-                    )
+                        val ruleList = arrayListOf<Int>(
+                            RelativeLayout.BELOW,
+                            RelativeLayout.CENTER_HORIZONTAL
+                        )
 
-                    val ruleSubList = if (freezeMode) {
-                        arrayListOf<Int>(R.id.shareFrameLayout, -1)
-                    } else{
-                        arrayListOf<Int>(R.id.topMenuLayout, -1)
+                        val ruleSubList = if (freezeMode) {
+                            arrayListOf<Int>(R.id.shareFrameLayout, -1)
+                        } else{
+                            arrayListOf<Int>(R.id.topMenuLayout, -1)
+                        }
+
+                        val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
+                        setAdViewWindows(ruleList, ruleSubList, margins)
                     }
-
-                    val margins = arrayListOf<Int>(0, 0, 0, 0) // 왼, 위, 오른, 아래
-                    setAdViewWindows(ruleList, ruleSubList, margins)
                 }
             }
 
@@ -922,7 +975,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 val uri = FileProvider.getUriForFile(
                     THIS_CONTEXT!!,
-                    "com.overflow.flowy.fileprovider",
+                    "at.overflow.flowy.fileprovider",
                     shareFile
                 )
                 intent.putExtra(Intent.EXTRA_STREAM, uri)
@@ -1084,7 +1137,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         // 카메라 렌즈 방향
         lensChangeToggleBtn.isChecked = pref.getBoolean("lensChangeToggleBtn", false)
         cameraLensMode = if (lensChangeToggleBtn.isChecked) 0 else 1
-        Log.d("sdfsfd", "$luminanceIndex")
     }
 
     /** 메뉴바에 있는 토글버튼 상태 저장하기 */
@@ -1367,12 +1419,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** 서버에 이미지를 올린다. */
     private fun imageUpload(encodeBitmap: String, baseURL: String) {
 
-//        val imageFile = MultipartBody.Part.createFormData(
-//            "file",
-//            file.name,
-//            RequestBody.create(MediaType.parse("image/*"), file)
-//        )
-
         val sendLogData: HashMap<String, Any> = HashMap()
         sendLogData["image_data"] = encodeBitmap
 
@@ -1480,7 +1526,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** test */
     private fun testBtnListener() {
         testBtn.setOnClickListener {
-            Toast.makeText(context, "ㅋㄹ", Toast.LENGTH_SHORT).show()
             CoroutineScope(Dispatchers.Default).launch {
                 BitmapUtil().textureBitmapToFile(glTextureView.bitmap)
 

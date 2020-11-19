@@ -10,8 +10,8 @@ android {
         applicationId "at.overflow.flowy"
         minSdkVersion 24
         targetSdkVersion 30
-        versionCode 3
-        versionName "1.0.2"
+        versionCode 4
+        versionName "1.0.3"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
@@ -102,5 +102,9 @@ dependencies {
     // retrofit2
     implementation 'com.squareup.retrofit2:retrofit:2.6.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.6.0'
+
+    // cardView
+    implementation "androidx.cardview:cardview:1.0.0"
+
 }
 

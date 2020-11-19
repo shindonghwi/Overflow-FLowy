@@ -1,5 +1,6 @@
 package at.overflow.flowy.Fragment
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -71,20 +72,30 @@ class FragmentMenuInfo : Fragment(), View.OnClickListener {
                 msg.addCategory(Intent.CATEGORY_DEFAULT)
                 msg.putExtra(
                     Intent.EXTRA_TEXT,
-                    "https://play.google.com/store/apps/details?id=패키지명"
+                    "https://play.google.com/store/apps/details?id=at.overflow.flowy"
                 )
-                msg.putExtra(Intent.EXTRA_TITLE, "제목")
+                msg.putExtra(Intent.EXTRA_TITLE, "Flowy를 공유하세요!")
                 msg.type = "text/plain"
-                startActivity(Intent.createChooser(msg, "앱을 선택해 주세요"))
+                startActivity(Intent.createChooser(msg, "친구에게 공유하기"))
             }
             R.id.evaluateBtn -> {
             }
             R.id.openSourceBtn -> {
                 (activity as MainActivity).replaceFragment(
-                    "add", FragmentMenuLicense()
+                    "replace", FragmentMenuLicense()
                         .newInstance()
                 )
             }
         }
+    }
+
+    override fun onResume() {
+        (activity as MainActivity).enableSoftKey()
+        super.onResume()
+    }
+
+    override fun onAttach(context: Context) {
+        (activity as MainActivity).enableSoftKey()
+        super.onAttach(context)
     }
 }
