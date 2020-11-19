@@ -105,9 +105,9 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     // 고대비 어댑터 생성
     private lateinit var brightShadeAdapter: AdapterBrightShadeControl
 
-    // test
-    private lateinit var testBtn: Button
-    private lateinit var busNumText: TextView
+//    // test
+//    private lateinit var testBtn: Button
+//    private lateinit var busNumText: TextView
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -176,10 +176,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         brightShadeAdapter = AdapterBrightShadeControl(THIS_CONTEXT!!)
 
-        //test
-        testBtn = view.findViewById(R.id.testBtn)
-        testBtnListener()
-        busNumText = view.findViewById(R.id.busNumText)
+//        //test
+//        testBtn = view.findViewById(R.id.testBtn)
+//        testBtnListener()
+//        busNumText = view.findViewById(R.id.busNumText)
     }
 
     /** ui 버튼 크기 변경 메서드 추가 */
@@ -1416,54 +1416,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     }
     /** #############################################################################################*/
 
-    /** 서버에 이미지를 올린다. */
-    private fun imageUpload(encodeBitmap: String, baseURL: String) {
-
-        val sendLogData: HashMap<String, Any> = HashMap()
-        sendLogData["image_data"] = encodeBitmap
-
-        val retrofit = Retrofit2Util().getRetrofit2Builder(baseURL).create(RetrofitAPI::class.java)
-
-        val start = System.currentTimeMillis()
-
-
-        retrofit.uploadImage(sendLogData).enqueue(object : Callback<Any> {
-            override fun onFailure(call: Call<Any>, t: Throwable) {
-                Log.d("uploadImageTest", "onFailure: ${t.message}")
-                val end = System.currentTimeMillis()
-                Log.d("timer", ((end - start) / 1000).toString())
-            }
-
-            override fun onResponse(call: Call<Any>, response: Response<Any>) {
-                val jsonData = JSONObject(response.body().toString())
-
-                try {
-
-                    val code = jsonData.getString("code");
-                    Log.d("uploadImageTest", "onResponse: ${code}")
-
-                    if (code == "0.0") {
-                        Log.d("uploadImageTest", "그대로 출력 : $jsonData")
-                        val busNum = jsonData.getJSONArray("result");
-                        Log.d("uploadImageTest", "onResponse: ${busNum.toString()}")
-                        CoroutineScope(Dispatchers.Main).launch {
-                            busNumText.text = busNum.toString()
-                        }
-                        for (i in 0 until busNum.length()) {
-                            val jsonDataArray = busNum.getJSONArray(i)
-                            Log.d("uploadImageTest", "onResponse1111 : ${jsonDataArray.toString()}")
-                        }
-                    } else {
-                        Log.d("uploadImageTest", jsonData.toString())
-                    }
-                } catch (e: Exception) {
-
-                }
-            }
-
-        })
-    }
-
     /** --------------------------------------------------------------------------*/
     /** ---------------------------- Companion Object ----------------------------*/
     /** --------------------------------------------------------------------------*/
@@ -1523,22 +1475,70 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** #############################################################################################*/
 
 
-    /** test */
-    private fun testBtnListener() {
-        testBtn.setOnClickListener {
-            CoroutineScope(Dispatchers.Default).launch {
-                BitmapUtil().textureBitmapToFile(glTextureView.bitmap)
-
-                val byteArrayOutputStream = ByteArrayOutputStream()
-                glTextureView.bitmap!!.compress(
-                    Bitmap.CompressFormat.JPEG,
-                    50,
-                    byteArrayOutputStream
-                )
-                val byteArray = byteArrayOutputStream.toByteArray()
-                val encoded: String = Base64.encodeToString(byteArray, Base64.DEFAULT)
-                imageUpload(encodeBitmap = encoded, baseURL = OVERFLOW_TEST_API_IMAGE_UPLOAD)
-            }
-        }
-    }
+//    /** test */
+//    private fun testBtnListener() {
+//        testBtn.setOnClickListener {
+//            CoroutineScope(Dispatchers.Default).launch {
+//                BitmapUtil().textureBitmapToFile(glTextureView.bitmap)
+//
+//                val byteArrayOutputStream = ByteArrayOutputStream()
+//                glTextureView.bitmap!!.compress(
+//                    Bitmap.CompressFormat.JPEG,
+//                    50,
+//                    byteArrayOutputStream
+//                )
+//                val byteArray = byteArrayOutputStream.toByteArray()
+//                val encoded: String = Base64.encodeToString(byteArray, Base64.DEFAULT)
+//                imageUpload(encodeBitmap = encoded, baseURL = OVERFLOW_TEST_API_IMAGE_UPLOAD)
+//            }
+//        }
+//    }
+//
+//    /** 서버에 이미지를 올린다. */
+//    private fun imageUpload(encodeBitmap: String, baseURL: String) {
+//
+//        val sendLogData: HashMap<String, Any> = HashMap()
+//        sendLogData["image_data"] = encodeBitmap
+//
+//        val retrofit = Retrofit2Util().getRetrofit2Builder(baseURL).create(RetrofitAPI::class.java)
+//
+//        val start = System.currentTimeMillis()
+//
+//
+//        retrofit.uploadImage(sendLogData).enqueue(object : Callback<Any> {
+//            override fun onFailure(call: Call<Any>, t: Throwable) {
+//                Log.d("uploadImageTest", "onFailure: ${t.message}")
+//                val end = System.currentTimeMillis()
+//                Log.d("timer", ((end - start) / 1000).toString())
+//            }
+//
+//            override fun onResponse(call: Call<Any>, response: Response<Any>) {
+//                val jsonData = JSONObject(response.body().toString())
+//
+//                try {
+//
+//                    val code = jsonData.getString("code");
+//                    Log.d("uploadImageTest", "onResponse: ${code}")
+//
+//                    if (code == "0.0") {
+//                        Log.d("uploadImageTest", "그대로 출력 : $jsonData")
+//                        val busNum = jsonData.getJSONArray("result");
+//                        Log.d("uploadImageTest", "onResponse: ${busNum.toString()}")
+//                        CoroutineScope(Dispatchers.Main).launch {
+//                            busNumText.text = busNum.toString()
+//                        }
+//                        for (i in 0 until busNum.length()) {
+//                            val jsonDataArray = busNum.getJSONArray(i)
+//                            Log.d("uploadImageTest", "onResponse1111 : ${jsonDataArray.toString()}")
+//                        }
+//                    } else {
+//                        Log.d("uploadImageTest", jsonData.toString())
+//                    }
+//                } catch (e: Exception) {
+//
+//                }
+//            }
+//
+//        })
+//    }
 }

@@ -236,25 +236,25 @@
 
     </LinearLayout>
 
-    <!--    테스트     -->
-    <Button
-        android:id="@+id/testBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:text="Image Send" />
+<!--    테스트     -->
+<!--    <Button-->
+<!--        android:id="@+id/testBtn"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_centerVertical="true"-->
+<!--        android:text="Image Send" />-->
 
-    <TextView
-        android:id="@+id/busNumText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="@color/yellow"
-        android:textSize="20dp"
-        android:textStyle="bold"
-        android:layout_above="@id/testBtn"
-        android:layout_centerVertical="true"
-        android:layout_marginEnd="353dp"
-        android:text="TextView" />
+<!--    <TextView-->
+<!--        android:id="@+id/busNumText"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:textColor="@color/yellow"-->
+<!--        android:textSize="20dp"-->
+<!--        android:textStyle="bold"-->
+<!--        android:layout_above="@id/testBtn"-->
+<!--        android:layout_centerVertical="true"-->
+<!--        android:layout_marginEnd="353dp"-->
+<!--        android:text="TextView" />-->
 
 
 </RelativeLayout>
