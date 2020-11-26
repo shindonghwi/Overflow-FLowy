@@ -16,7 +16,7 @@
         android:layout_above="@+id/pinchZoomLinearLayout"
         android:layout_centerHorizontal="true"
         ads:adSize="BANNER"
-        ads:adUnitId="@string/banner_ad_unit_id"></com.google.android.gms.ads.AdView>
+        ads:adUnitId="@string/banner_ad_unit_id"/>
 
     <ImageView
         android:id="@+id/bannerVersaAD"
@@ -236,7 +236,7 @@
 
     </LinearLayout>
 
-<!--    테스트     -->
+    <!--    테스트     -->
 <!--    <Button-->
 <!--        android:id="@+id/testBtn"-->
 <!--        android:layout_width="wrap_content"-->

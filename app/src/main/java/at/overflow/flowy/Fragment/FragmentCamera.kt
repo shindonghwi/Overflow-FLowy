@@ -1233,10 +1233,13 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             RelativeLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, bannerAdView.height)
 
         CoroutineScope(Dispatchers.Default).launch {
-            bannerVersaAD.visibility = View.INVISIBLE
-            bannerAdView.visibility = View.INVISIBLE
             delay(100)
             CoroutineScope(Dispatchers.Main).launch {
+
+
+                bannerVersaAD.visibility = View.INVISIBLE
+                bannerAdView.visibility = View.INVISIBLE
+
                 bannerVersaViewLayout.apply {
 
                     for (idx in ruleArrayList.indices) {
