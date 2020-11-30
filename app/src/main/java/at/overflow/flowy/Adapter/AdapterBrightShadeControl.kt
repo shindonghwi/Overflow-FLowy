@@ -41,6 +41,8 @@ class AdapterBrightShadeControl(
 
     override fun onBindViewHolder(holder: brightShadeViewHolder, position: Int) {
 
+        Log.d("asdasdsadsd", "onBindViewHolder: $userContrastData")
+
         val itr = holderHashSet.iterator()
         var itrIdx = 0
         while (itr.hasNext()){

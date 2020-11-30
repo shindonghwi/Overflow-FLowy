@@ -17,8 +17,11 @@ import at.overflow.flowy.DTO.FlowyMenuData
 import at.overflow.flowy.MainActivity
 import at.overflow.flowy.R
 import at.overflow.flowy.Util.THIS_CONTEXT
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-class FragmentMenu : Fragment(){
+class FragmentMenu : Fragment() {
 
     private lateinit var menuRecyclerView: RecyclerView
     private lateinit var completeBtn: Button
@@ -51,26 +54,32 @@ class FragmentMenu : Fragment(){
         menuRecyclerView.layoutManager = LinearLayoutManager(THIS_CONTEXT)
         menuRecyclerView.adapter = flowyMenuAdapter
 
-        flowyMenuAdapter.setOnClick(object : AdapterFlowyMenu.OnItemClicked{
+        flowyMenuAdapter.setOnClick(object : AdapterFlowyMenu.OnItemClicked {
             override fun onItemClick(position: Int) {
 
-                when(position){
+                when (position) {
                     // 대비 메뉴
-                    0 -> (activity as MainActivity).replaceFragment("add", FragmentMenuContrast()
-                        .newInstance())
+                    0 -> (activity as MainActivity).replaceFragment(
+                        "add", FragmentMenuContrast()
+                            .newInstance()
+                    )
 
                     // 자습서
-                    1 -> (activity as MainActivity).replaceFragment("add", FragmentDescription()
-                        .newInstance())
+                    1 -> (activity as MainActivity).replaceFragment(
+                        "add", FragmentDescription()
+                            .newInstance()
+                    )
 
                     // 정보
-                    2 -> (activity as MainActivity).replaceFragment("add", FragmentMenuInfo()
-                        .newInstance())
+                    2 -> (activity as MainActivity).replaceFragment(
+                        "add", FragmentMenuInfo()
+                            .newInstance()
+                    )
                 }
             }
         })
 
-        flowyLogoImgVIew.setOnClickListener{
+        flowyLogoImgVIew.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://flowy.kr/")))
         }
 
@@ -104,18 +113,17 @@ class FragmentMenu : Fragment(){
         )
     }
 
-    override fun onResume() {
-        (activity as MainActivity).enableSoftKey()
-        super.onResume()
-    }
-
     override fun onAttach(context: Context) {
-        (activity as MainActivity).enableSoftKey()
+        CoroutineScope(Dispatchers.Main).launch {
+            (activity as MainActivity).enableSoftKey()
+        }
         super.onAttach(context)
     }
 
     override fun onDestroyView() {
-        (activity as MainActivity).disableSoftKey()
+        CoroutineScope(Dispatchers.Main).launch {
+            (activity as MainActivity).disableSoftKey()
+        }
         super.onDestroyView()
     }
 }

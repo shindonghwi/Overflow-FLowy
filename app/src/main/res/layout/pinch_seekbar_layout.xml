@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/pinch_seek_layout_height"
+    android:background="@drawable/control_bar_bg"
+    android:weightSum="1">
+
+    <ImageButton
+        android:id="@+id/pinchZoomMinusImgBtn"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.1"
+        android:background="@android:color/transparent"
+        android:scaleType="fitXY"
+        android:src="@drawable/pinchzoom_minus" />
+
+    <SeekBar
+        android:id="@+id/pinchZoomSeekbar"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.8"
+        android:max="100"
+        android:maxHeight="10dp"
+        android:progress="0"
+        android:progressDrawable="@drawable/seekbar_custom_style"
+        android:thumb="@drawable/seekbar_thumb_style" />
+
+    <ImageButton
+        android:id="@+id/pinchZoomPlusImgBtn"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.1"
+        android:background="@android:color/transparent"
+        android:scaleType="fitXY"
+        android:src="@drawable/pinchzoom_plus" />
+
+</LinearLayout>

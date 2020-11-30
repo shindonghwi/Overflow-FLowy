@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/b_layout"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/menu_bar_height"
+    android:background="@drawable/menu_bar_bottom"
+    android:paddingTop="@dimen/menu_bar_top_padding">
+
+    <ToggleButton
+        android:id="@+id/menuToggleBtn"
+        android:layout_width="@dimen/toggle_btn_width"
+        android:layout_height="@dimen/toggle_btn_height"
+        android:background="@drawable/menu_on_off"
+        android:textOff="@string/textClear"
+        android:textOn="@string/textClear"
+        app:layout_constraintEnd_toStartOf="@+id/flowyCastToggleBtn"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/b_layout" />
+
+    <ToggleButton
+        android:id="@+id/flowyCastToggleBtn"
+        android:layout_width="@dimen/toggle_btn_width"
+        android:layout_height="@dimen/toggle_btn_height"
+        android:background="@drawable/flowy_cast_menu_on_off"
+        android:textOff="@string/textClear"
+        android:textOn="@string/textClear"
+        android:visibility="gone"
+        app:layout_constraintEnd_toStartOf="@+id/freezeToggleBtn"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/menuToggleBtn"
+        app:layout_constraintTop_toTopOf="@+id/b_layout" />
+
+
+    <ToggleButton
+        android:id="@+id/freezeToggleBtn"
+        android:layout_width="@dimen/toggle_btn_width"
+        android:layout_height="@dimen/toggle_btn_height"
+        android:background="@drawable/freeze_menu_on_off"
+        android:textOff="@string/textClear"
+        android:textOn="@string/textClear"
+        app:layout_constraintEnd_toStartOf="@+id/luminanceToggleBtn"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/flowyCastToggleBtn"
+        app:layout_constraintTop_toTopOf="@+id/b_layout" />
+
+    <ToggleButton
+        android:id="@+id/luminanceToggleBtn"
+        android:layout_width="@dimen/toggle_btn_width"
+        android:layout_height="@dimen/toggle_btn_height"
+        android:background="@drawable/luminance_menu_on_off"
+        android:textOff="@string/textClear"
+        android:textOn="@string/textClear"
+        app:layout_constraintEnd_toStartOf="@+id/controlToggleBtn"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/freezeToggleBtn"
+        app:layout_constraintTop_toTopOf="@+id/b_layout" />
+
+
+    <ToggleButton
+        android:id="@+id/controlToggleBtn"
+        android:layout_width="@dimen/toggle_btn_width"
+        android:layout_height="@dimen/toggle_btn_height"
+        android:background="@drawable/control_menu_on_off"
+        android:textOff="@string/textClear"
+        android:textOn="@string/textClear"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/luminanceToggleBtn"
+        app:layout_constraintTop_toTopOf="@+id/b_layout" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,7 +2,6 @@ package at.overflow.flowy
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -25,6 +24,9 @@ import com.google.android.play.core.appupdate.AppUpdateManager
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -52,7 +54,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 앱 업데이트 체크
         inAppUpdate()
 
         // user UUID 가져오기 or UUID 생성
@@ -82,6 +83,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun inAppUpdate() {
+
         appUpdateManager = AppUpdateManagerFactory.create(applicationContext)
         val appUpdateInfoTask = appUpdateManager.appUpdateInfo
         appUpdateInfoTask.addOnSuccessListener { // appUpdateManager이 추가되는데 성공하면 발생하는 이벤트
@@ -155,7 +157,6 @@ class MainActivity : AppCompatActivity() {
         Log.d("mainLifeCycle", "onResume")
         super.onResume()
 
-        // 업데이트 체크
         appUpdateCheck()
 
         /** 화면 하단에 소프트 키 없애는 코드 */
@@ -180,7 +181,6 @@ class MainActivity : AppCompatActivity() {
             cameraLifecycle.doOnResume()
             cameraLifecycle.doOnStarted()
         } catch (e: UninitializedPropertyAccessException) {
-
         }
     }
 
@@ -326,6 +326,7 @@ class MainActivity : AppCompatActivity() {
             R.anim.slide_out_right,
             R.anim.slide_in_right
         )
+
         if (type == "replace") {
             fragmentTransaction.replace(R.id.container, fragment).commit()
         } else if (type == "add") {

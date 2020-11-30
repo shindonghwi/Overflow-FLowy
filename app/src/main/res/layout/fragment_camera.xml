@@ -1,30 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/parentRelative"
+    android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black"
     android:clickable="true"
     android:focusable="true">
-
-    <!-- 애드몹 광고   -->
-    <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/bannerAdView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/pinchZoomLinearLayout"
-        android:layout_centerHorizontal="true"
-        ads:adSize="BANNER"
-        ads:adUnitId="@string/banner_ad_unit_id"/>
-
-    <ImageView
-        android:id="@+id/bannerVersaAD"
-        android:layout_width="wrap_content"
-        android:layout_height="50dp"
-        android:layout_above="@+id/pinchZoomLinearLayout"
-        android:layout_centerHorizontal="true"
-        android:scaleType="fitCenter" />
 
     <at.overflow.flowy.View.FlowyGLTextureView
         android:id="@+id/glSurfaceView"
@@ -35,226 +18,94 @@
         android:id="@+id/blackScreen"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_above="@+id/pinchZoomLinearLayout"
-        android:layout_below="@+id/topMenuLayout"
         android:background="@color/black"
         android:visibility="invisible"
-        tools:ignore="NotSibling" />
+        app:layout_constraintBottom_toBottomOf="@+id/glSurfaceView"
+        app:layout_constraintTop_toTopOf="@+id/glSurfaceView" />
 
     <FrameLayout
-        android:id="@+id/shareFrameLayout"
+        android:id="@+id/top_f_layout"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
+        android:layout_height="@dimen/menu_bar_height"
         android:background="@drawable/menu_bar_top"
-        android:visibility="invisible">
+        app:layout_constraintTop_toTopOf="parent">
+
+        <include
+            android:id="@+id/tm_layout"
+            layout="@layout/top_menu_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/menu_bar_height" />
 
         <ImageButton
             android:id="@+id/shareImgBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="@dimen/toggle_btn_width"
+            android:layout_height="@dimen/toggle_btn_height"
             android:layout_gravity="center"
-            android:layout_margin="10dp"
-            android:background="@android:color/transparent"
+            android:background="@drawable/menu_bar_top"
             android:scaleType="centerInside"
-            android:src="@drawable/share" />
+            android:src="@drawable/share"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/bottom_f_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <include
+                android:id="@+id/ps_layout"
+                layout="@layout/pinch_seekbar_layout"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/pinch_seek_layout_height"/>
+
+            <include
+                android:id="@+id/bm_layout"
+                layout="@layout/bottom_menu_layout"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/menu_bar_height"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+        </LinearLayout>
+
+        <include
+            android:id="@+id/bs_layout"
+            layout="@layout/bright_shade_control_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/ad_height"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_f_layout">
+
+        <!-- 애드몹 광고   -->
+        <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/bannerAdView"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="center|bottom"
+            ads:adSize="BANNER"
+            ads:adUnitId="@string/banner_ad_unit_id" />
+
+        <ImageView
+            android:id="@+id/bannerVersaAD"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:scaleType="fitCenter" />
 
     </FrameLayout>
 
 
-    <!-- 상단 메뉴바 -->
-    <LinearLayout
-        android:id="@+id/topMenuLayout"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:layout_alignParentTop="true"
-        android:background="@drawable/menu_bar_top"
-        android:orientation="horizontal"
-        android:padding="10dp"
-        android:weightSum="1"
-        tools:ignore="NotSibling">
-
-        <!-- 구현되면 bg 수정해야함 -->
-        <ToggleButton
-            android:id="@+id/focusToggleBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:layout_weight="0.20"
-            android:background="@drawable/focus_menu_on_off"
-            android:textOff="@string/textClear"
-            android:textOn="@string/textClear" />
-
-        <ToggleButton
-            android:id="@+id/flashToggleBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:layout_weight="0.20"
-            android:background="@drawable/flash_menu_on_off"
-            android:textOff="@string/textClear"
-            android:textOn="@string/textClear" />
-
-        <ToggleButton
-            android:id="@+id/lensChangeToggleBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:layout_weight="0.20"
-            android:background="@drawable/lens_change_menu_on_off"
-            android:textOff="@string/textClear"
-            android:textOn="@string/textClear" />
-
-        <ToggleButton
-            android:id="@+id/flowyZoomToggleBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:layout_weight="0.20"
-            android:background="@drawable/flowy_zoom_menu_on_off"
-            android:textOff="@string/textClear"
-            android:textOn="@string/textClear" />
-
-        <!-- 구현되면 bg 수정해야함 -->
-        <ToggleButton
-            android:id="@+id/mirroringToggleBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:layout_weight="0.20"
-            android:background="@drawable/mirroring_menu_on_off"
-            android:textOff="@string/textClear"
-            android:textOn="@string/textClear"
-            android:visibility="gone" />
-
-    </LinearLayout>
-
-    <!-- 하단 메뉴바   -->
-    <LinearLayout
-        android:id="@+id/bottomMenuLayout"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:layout_alignParentBottom="true"
-        android:background="@drawable/menu_bar_bottom"
-        android:orientation="horizontal"
-        android:padding="10dp"
-        android:weightSum="1">
-
-        <ToggleButton
-            android:id="@+id/menuToggleBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:layout_weight="0.20"
-            android:background="@drawable/menu_on_off"
-            android:textOff="@string/textClear"
-            android:textOn="@string/textClear" />
-
-        <ToggleButton
-            android:id="@+id/flowyCastToggleBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:layout_weight="0.20"
-            android:background="@drawable/flowy_cast_menu_on_off"
-            android:textOff="@string/textClear"
-            android:textOn="@string/textClear"
-            android:visibility="gone" />
-
-        <ToggleButton
-            android:id="@+id/freezeToggleBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:layout_weight="0.20"
-            android:background="@drawable/freeze_menu_on_off"
-            android:textOff="@string/textClear"
-            android:textOn="@string/textClear" />
-
-        <ToggleButton
-            android:id="@+id/luminanceToggleBtn"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_margin="10dp"
-            android:layout_weight="0.20"
-            android:background="@drawable/contrast_menu_on_off"
-            android:textOff="@string/textClear"
-            android:textOn="@string/textClear" />
-
-        <!-- 구현되면 bg 수정해야함 -->
-        <ToggleButton
-            android:id="@+id/controlToggleBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:layout_weight="0.20"
-            android:background="@drawable/control_menu_on_off"
-            android:textOff="@string/textClear"
-            android:textOn="@string/textClear" />
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/pinchZoomLinearLayout"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_above="@+id/bottomMenuLayout"
-        android:background="@drawable/control_bar_bg"
-        android:paddingLeft="10dp"
-        android:paddingTop="5dp"
-        android:paddingRight="10dp"
-        android:paddingBottom="5dp"
-        android:weightSum="1">
-
-        <ImageButton
-            android:id="@+id/pinchZoomMinusImgBtn"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.1"
-            android:background="@android:color/transparent"
-            android:scaleType="fitXY"
-            android:src="@drawable/pinchzoom_minus" />
-
-        <SeekBar
-            android:id="@+id/pinchZoomSeekbar"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.8"
-            android:max="100"
-            android:maxHeight="10dp"
-            android:progress="0"
-            android:progressDrawable="@drawable/seekbar_custom_style"
-            android:thumb="@drawable/seekbar_thumb_style" />
-
-        <ImageButton
-            android:id="@+id/pinchZoomPlusImgBtn"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.1"
-            android:background="@android:color/transparent"
-            android:scaleType="fitXY"
-            android:src="@drawable/pinchzoom_plus" />
-
-    </LinearLayout>
-
-    <!--    테스트     -->
-<!--    <Button-->
-<!--        android:id="@+id/testBtn"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_centerVertical="true"-->
-<!--        android:text="Image Send" />-->
-
-<!--    <TextView-->
-<!--        android:id="@+id/busNumText"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:textColor="@color/yellow"-->
-<!--        android:textSize="20dp"-->
-<!--        android:textStyle="bold"-->
-<!--        android:layout_above="@id/testBtn"-->
-<!--        android:layout_centerVertical="true"-->
-<!--        android:layout_marginEnd="353dp"-->
-<!--        android:text="TextView" />-->
-
-
-</RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

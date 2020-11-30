@@ -1,144 +1,140 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/brightShadeParentLayout"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/c_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:gravity="bottom">
+    android:layout_height="match_parent">
 
     <LinearLayout
-        android:id="@+id/recyclerviewLinearLayout"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_above="@+id/brightLayout"
-        android:background="@drawable/control_bar_bg"
-        android:orientation="horizontal"
-        android:weightSum="1">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-        <ImageView
-            android:id="@+id/defaultColorImgView"
-            android:layout_width="0dp"
-            android:layout_weight="0.10"
-            android:layout_margin="10dp"
-            android:scaleType="fitCenter"
-            android:layout_height="match_parent"
-            android:layout_gravity="center_vertical"
-            android:src="@drawable/refresh" />
+        <LinearLayout
+            android:id="@+id/recyclerviewLinearLayout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/bs_control_height"
+            android:background="@drawable/control_bar_bg"
+            android:orientation="horizontal"
+            android:weightSum="1">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/contrastItemRecyclerView"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_gravity="center_vertical"
-            android:layout_weight="0.9" />
+            <ImageButton
+                android:id="@+id/defaultColorImgView"
+                android:layout_width="@dimen/bs_control_item_width"
+                android:layout_height="@dimen/bs_control_item_height"
+                android:layout_gravity="center_vertical"
+                android:layout_margin="@dimen/bs_control_item_margin"
+                android:background="@drawable/transparent"
+                android:scaleType="fitCenter"
+                android:src="@drawable/refresh" />
 
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/contrastItemRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/brightLayout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/bs_control_height"
+            android:background="@drawable/control_bar_bg"
+            app:layout_constraintBottom_toTopOf="@+id/binaryLayout">
+
+            <ImageButton
+                android:id="@+id/brightImage"
+                android:layout_width="@dimen/bs_control_item_width"
+                android:layout_height="@dimen/bs_control_item_height"
+                android:layout_gravity="center_vertical"
+                android:layout_margin="@dimen/bs_control_item_margin"
+                android:background="@android:color/transparent"
+                android:scaleType="fitXY"
+                android:src="@drawable/bright" />
+
+            <SeekBar
+                android:id="@+id/brightSeekbar"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:max="100"
+                android:maxHeight="10dp"
+                android:progress="50"
+                android:progressDrawable="@drawable/seekbar_custom_style"
+                android:thumb="@drawable/seekbar_thumb_style" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/binaryLayout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/bs_control_height"
+            android:background="@drawable/control_bar_bg"
+            app:layout_constraintBottom_toTopOf="@+id/controlMenuLayout">
+
+            <ImageButton
+                android:id="@+id/contrastImage"
+                android:layout_width="@dimen/bs_control_item_width"
+                android:layout_height="@dimen/bs_control_item_height"
+                android:layout_gravity="center_vertical"
+                android:layout_margin="@dimen/bs_control_item_margin"
+                android:background="@android:color/transparent"
+                android:scaleType="fitXY"
+                android:src="@drawable/contrast" />
+
+            <SeekBar
+                android:id="@+id/contrastSeekbar"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:max="100"
+                android:maxHeight="10dp"
+                android:progress="50"
+                android:progressDrawable="@drawable/seekbar_custom_style"
+                android:thumb="@drawable/seekbar_thumb_style" />
+
+        </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/controlMenuLayout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/menu_bar_height"
+            android:background="@drawable/menu_bar_bottom"
+            android:paddingStart="@dimen/bs_control_padding"
+            android:paddingTop="@dimen/menu_bar_top_padding"
+            android:paddingEnd="@dimen/bs_control_padding"
+            app:layout_constraintBottom_toBottomOf="@+id/c_layout">
+
+            <ToggleButton
+                android:id="@+id/inverseToggleBtn"
+                android:layout_width="@dimen/toggle_btn_width"
+                android:layout_height="@dimen/toggle_btn_height"
+                android:layout_alignParentStart="true"
+                android:background="@drawable/inverse_on_off"
+                android:textOff="@string/textClear"
+                android:textOn="@string/textClear" />
+
+            <ToggleButton
+                android:id="@+id/binaryToggleBtn"
+                android:layout_width="@dimen/toggle_btn_width"
+                android:layout_height="@dimen/toggle_btn_height"
+                android:layout_centerHorizontal="true"
+                android:background="@drawable/binary_on_off"
+                android:checked="true"
+                android:textOff="@string/textClear"
+                android:textOn="@string/textClear" />
+
+            <ToggleButton
+                android:id="@+id/controlChildToggleBtn"
+                android:layout_width="@dimen/toggle_btn_width"
+                android:layout_height="@dimen/toggle_btn_height"
+                android:layout_alignParentEnd="true"
+                android:background="@drawable/control_on"
+                android:checked="true"
+                android:textOff="@string/textClear"
+                android:textOn="@string/textClear" />
+        </RelativeLayout>
     </LinearLayout>
-
-
-    <LinearLayout
-        android:id="@+id/brightLayout"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_above="@+id/binaryLayout"
-        android:background="@drawable/control_bar_bg"
-        android:padding="10dp"
-        android:weightSum="1">
-
-        <ImageButton
-            android:id="@+id/brightImage"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.1"
-            android:background="@android:color/transparent"
-            android:paddingLeft="5dp"
-            android:paddingRight="5dp"
-            android:scaleType="fitXY"
-            android:src="@drawable/bright" />
-
-        <SeekBar
-            android:id="@+id/brightSeekbar"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.9"
-            android:max="100"
-            android:maxHeight="10dp"
-            android:progress="50"
-            android:progressDrawable="@drawable/seekbar_custom_style"
-            android:thumb="@drawable/seekbar_thumb_style" />
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/binaryLayout"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_above="@+id/controlMenuLayout"
-        android:background="@drawable/control_bar_bg"
-        android:padding="10dp"
-        android:weightSum="1">
-
-        <ImageButton
-            android:id="@+id/contrastImage"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.1"
-            android:background="@android:color/transparent"
-            android:paddingLeft="5dp"
-            android:paddingRight="5dp"
-            android:scaleType="fitXY"
-            android:src="@drawable/contrast" />
-
-        <SeekBar
-            android:id="@+id/contrastSeekbar"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.9"
-            android:max="100"
-            android:maxHeight="10dp"
-            android:progress="50"
-            android:progressDrawable="@drawable/seekbar_custom_style"
-            android:thumb="@drawable/seekbar_thumb_style" />
-
-    </LinearLayout>
-
-    <RelativeLayout
-        android:id="@+id/controlMenuLayout"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_alignParentBottom="true"
-        android:background="@drawable/menu_bar_bottom"
-        android:paddingLeft="10dp"
-        android:paddingRight="10dp">
-
-        <ToggleButton
-            android:id="@+id/inverseToggleBtn"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_alignParentLeft="true"
-            android:background="@drawable/inverse_on_off"
-            android:textOff="@string/textClear"
-            android:textOn="@string/textClear" />
-
-        <ToggleButton
-            android:id="@+id/binaryToggleBtn"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_centerHorizontal="true"
-            android:background="@drawable/binary_on_off"
-            android:checked="true"
-            android:textOff="@string/textClear"
-            android:textOn="@string/textClear" />
-
-        <ToggleButton
-            android:id="@+id/controlChildToggleBtn"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_alignParentRight="true"
-            android:background="@drawable/control_on"
-            android:checked="true"
-            android:textOff="@string/textClear"
-            android:textOn="@string/textClear" />
-
-    </RelativeLayout>
-
-
-</RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

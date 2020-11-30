@@ -11,6 +11,9 @@ import androidx.fragment.app.Fragment
 import at.overflow.flowy.MainActivity
 import at.overflow.flowy.R
 import at.overflow.flowy.Util.THIS_CONTEXT
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class FragmentMenuInfo : Fragment(), View.OnClickListener {
 
@@ -82,20 +85,17 @@ class FragmentMenuInfo : Fragment(), View.OnClickListener {
             }
             R.id.openSourceBtn -> {
                 (activity as MainActivity).replaceFragment(
-                    "replace", FragmentMenuLicense()
+                    "add", FragmentMenuLicense()
                         .newInstance()
                 )
             }
         }
     }
 
-    override fun onResume() {
-        (activity as MainActivity).enableSoftKey()
-        super.onResume()
-    }
-
     override fun onAttach(context: Context) {
-        (activity as MainActivity).enableSoftKey()
+        CoroutineScope(Dispatchers.Main).launch {
+            (activity as MainActivity).enableSoftKey()
+        }
         super.onAttach(context)
     }
 }

@@ -19,6 +19,9 @@ import at.overflow.flowy.R
 import at.overflow.flowy.Util.SharedPreferenceUtil
 import at.overflow.flowy.Util.THIS_CONTEXT
 import at.overflow.flowy.Util.contrastInitData
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /** 메뉴 - 대비 : 기본 대비 색상을 편집 할 수 있는 화면이다. */
 
@@ -108,14 +111,10 @@ class FragmentMenuContrast : Fragment(){
         super.onDestroyView()
     }
 
-    override fun onResume() {
-        (activity as MainActivity).enableSoftKey()
-        super.onResume()
-    }
-
     override fun onAttach(context: Context) {
-        (activity as MainActivity).enableSoftKey()
+        CoroutineScope(Dispatchers.Main).launch {
+            (activity as MainActivity).enableSoftKey()
+        }
         super.onAttach(context)
     }
-
 }

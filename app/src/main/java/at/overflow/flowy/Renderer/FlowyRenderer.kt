@@ -14,20 +14,21 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.blackScreen
+import at.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceFlag
+import at.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceIndex
+import at.overflow.flowy.Fragment.FragmentCamera.Companion.lensChangeFlag
+import at.overflow.flowy.Fragment.FragmentCamera.Companion.userContrastData
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.brightSeekbarProgress
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.contrastSeekbarProgress
+
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointX
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.doubleTapPointY
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.isDoubleTapFirstTouched
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.isTouching
-import at.overflow.flowy.Fragment.FragmentCamera.Companion.lensChangeFlag
-import at.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceFlag
-import at.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceIndex
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.touchFirstX
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.touchFirstY
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointX
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.touchPointY
-import at.overflow.flowy.Fragment.FragmentCamera.Companion.userContrastData
 import at.overflow.flowy.Provider.SurfaceTextureProvider
 import at.overflow.flowy.Util.*
 import at.overflow.flowy.View.FlowyGLTextureView
@@ -86,6 +87,9 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
 
     /** NDC 및 OPENGL 좌표계 설정 */
     private fun setNDCandOPENGL(cameraMode: String) {
+
+        Log.d("cameraMode", cameraMode)
+        Log.d("cameraSubMode", cameraSubMode)
 
         when {
             cameraMode == "default" -> {
@@ -360,6 +364,8 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         val yMin = ((screenHeight - adjustHeight) / 2).toDouble()
         val yMax = (((screenHeight - adjustHeight) / 2) + adjustHeight).toDouble()
 
+        Log.d("FragmentRender", "$touchFirstX : $touchFirstY")
+
         // 터치를 안했을때는 기본 모드로 보여준다.
         if (!isTouching) {
             varNDC = NDC_VERTICE // 기본 모드로 설정한다.
@@ -480,7 +486,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
             /** 더블 탭을 하여, 확대된 이미지가 보이는 상태이다.
              * 여기서는 사용자의 터치포인터를 인식하여 사용자가 움직이는 곳으로 화면을 이동시켜줘야한다. */
             else {
-                val scrollSpeed = 200 // 값을 올릴수록 스크롤 속도가 느려진다.
+                val scrollSpeed = 300 // 값을 올릴수록 스크롤 속도가 느려진다.
 
                 if (touchPointX != 0.0 && touchPointY != 0.0 && touchFirstX != 0.0 && touchFirstY != 0.0) {
 

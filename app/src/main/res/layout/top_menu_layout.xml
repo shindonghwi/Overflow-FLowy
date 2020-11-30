@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/t_layout"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/menu_bar_height"
+    android:background="@drawable/menu_bar_top"
+    android:paddingTop="@dimen/menu_bar_top_padding">
+
+    <ToggleButton
+        android:id="@+id/focusToggleBtn"
+        android:layout_width="@dimen/toggle_btn_width"
+        android:layout_height="@dimen/toggle_btn_height"
+        android:background="@drawable/focus_menu_on_off"
+        android:textOff="@string/textClear"
+        android:textOn="@string/textClear"
+        app:layout_constraintEnd_toStartOf="@+id/flashToggleBtn"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/t_layout" />
+
+    <ToggleButton
+        android:id="@+id/flashToggleBtn"
+        android:layout_width="@dimen/toggle_btn_width"
+        android:layout_height="@dimen/toggle_btn_height"
+        android:background="@drawable/flash_menu_on_off"
+        android:textOff="@string/textClear"
+        android:textOn="@string/textClear"
+        app:layout_constraintEnd_toStartOf="@+id/lensChangeToggleBtn"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/focusToggleBtn"
+        app:layout_constraintTop_toTopOf="@+id/t_layout" />
+
+    <ToggleButton
+        android:id="@+id/lensChangeToggleBtn"
+        android:layout_width="@dimen/toggle_btn_width"
+        android:layout_height="@dimen/toggle_btn_height"
+        android:background="@drawable/lens_change_menu_on_off"
+        android:textOff="@string/textClear"
+        android:textOn="@string/textClear"
+        app:layout_constraintEnd_toStartOf="@+id/flowyZoomToggleBtn"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/flashToggleBtn"
+        app:layout_constraintTop_toTopOf="@+id/t_layout" />
+
+    <ToggleButton
+        android:id="@+id/flowyZoomToggleBtn"
+        android:layout_width="@dimen/toggle_btn_width"
+        android:layout_height="@dimen/toggle_btn_height"
+        android:background="@drawable/flowy_zoom_menu_on_off"
+        android:textOff="@string/textClear"
+        android:textOn="@string/textClear"
+        app:layout_constraintEnd_toStartOf="@+id/mirroringToggleBtn"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/lensChangeToggleBtn"
+        app:layout_constraintTop_toTopOf="@+id/t_layout" />
+
+    <ToggleButton
+        android:id="@+id/mirroringToggleBtn"
+        android:layout_width="@dimen/toggle_btn_width"
+        android:layout_height="@dimen/toggle_btn_height"
+        android:background="@drawable/mirroring_menu_on_off"
+        android:textOff="@string/textClear"
+        android:textOn="@string/textClear"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/flowyZoomToggleBtn"
+        app:layout_constraintTop_toTopOf="@+id/t_layout" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
