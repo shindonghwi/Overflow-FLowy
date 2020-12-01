@@ -28,10 +28,10 @@ class FragmentMenuLicense : Fragment() {
         return inflater.inflate(R.layout.fragment_menu_license, container, false)
     }
 
-    override fun onAttach(context: Context) {
+    override fun onResume() {
         CoroutineScope(Dispatchers.Main).launch {
             (activity as MainActivity).enableSoftKey()
         }
-        super.onAttach(context)
+        super.onResume()
     }
 }

@@ -92,10 +92,10 @@ class FragmentMenuInfo : Fragment(), View.OnClickListener {
         }
     }
 
-    override fun onAttach(context: Context) {
+    override fun onResume() {
         CoroutineScope(Dispatchers.Main).launch {
             (activity as MainActivity).enableSoftKey()
         }
-        super.onAttach(context)
+        super.onResume()
     }
 }

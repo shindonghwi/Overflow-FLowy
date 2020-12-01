@@ -1,7 +1,9 @@
 package at.overflow.flowy.Fragment
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageInfo
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -9,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -26,6 +29,7 @@ class FragmentMenu : Fragment() {
     private lateinit var menuRecyclerView: RecyclerView
     private lateinit var completeBtn: Button
     private lateinit var flowyLogoImgVIew: ImageView
+    private lateinit var flowyVersionText: TextView
 
     fun newInstance(): FragmentMenu {
         return FragmentMenu()
@@ -39,6 +43,7 @@ class FragmentMenu : Fragment() {
         return inflater.inflate(R.layout.fragment_menu, container, false)
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -79,6 +84,10 @@ class FragmentMenu : Fragment() {
             }
         })
 
+        CoroutineScope(Dispatchers.Main).launch {
+            flowyVersionText.append(" "+getVersionInfo())
+        }
+
         flowyLogoImgVIew.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://flowy.kr/")))
         }
@@ -92,6 +101,7 @@ class FragmentMenu : Fragment() {
         menuRecyclerView = view.findViewById(R.id.menuRecyclerView)
         completeBtn = view.findViewById(R.id.completeBtn)
         flowyLogoImgVIew = view.findViewById(R.id.flowyLogoImgVIew)
+        flowyVersionText = view.findViewById(R.id.flowyVersionText)
     }
 
     private fun loadFlowyMenuData(): Array<FlowyMenuData> {
@@ -113,11 +123,16 @@ class FragmentMenu : Fragment() {
         )
     }
 
-    override fun onAttach(context: Context) {
+    fun getVersionInfo(): String? {
+        val info: PackageInfo = context!!.packageManager.getPackageInfo(THIS_CONTEXT!!.packageName, 0)
+        return info.versionName
+    }
+
+    override fun onResume() {
         CoroutineScope(Dispatchers.Main).launch {
             (activity as MainActivity).enableSoftKey()
         }
-        super.onAttach(context)
+        super.onResume()
     }
 
     override fun onDestroyView() {
