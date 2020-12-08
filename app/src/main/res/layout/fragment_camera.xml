@@ -63,7 +63,7 @@
                 android:id="@+id/ps_layout"
                 layout="@layout/pinch_seekbar_layout"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/pinch_seek_layout_height"/>
+                android:layout_height="@dimen/pinch_seek_layout_height" />
 
             <include
                 android:id="@+id/bm_layout"
@@ -81,6 +81,13 @@
             android:layout_height="wrap_content"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent" />
+
+        <include
+            android:id="@+id/bus_layout"
+            layout="@layout/bus_action_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
 
     </FrameLayout>
 
@@ -106,6 +113,5 @@
             android:scaleType="fitCenter" />
 
     </FrameLayout>
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

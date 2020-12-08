@@ -14,19 +14,18 @@
         android:background="@drawable/menu_on_off"
         android:textOff="@string/textClear"
         android:textOn="@string/textClear"
-        app:layout_constraintEnd_toStartOf="@+id/flowyCastToggleBtn"
+        app:layout_constraintEnd_toStartOf="@+id/busToggleBtn"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/b_layout" />
 
     <ToggleButton
-        android:id="@+id/flowyCastToggleBtn"
+        android:id="@+id/busToggleBtn"
         android:layout_width="@dimen/toggle_btn_width"
         android:layout_height="@dimen/toggle_btn_height"
-        android:background="@drawable/flowy_cast_menu_on_off"
+        android:background="@drawable/bus_on_off"
         android:textOff="@string/textClear"
         android:textOn="@string/textClear"
-        android:visibility="gone"
         app:layout_constraintEnd_toStartOf="@+id/freezeToggleBtn"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/menuToggleBtn"
@@ -42,7 +41,7 @@
         android:textOn="@string/textClear"
         app:layout_constraintEnd_toStartOf="@+id/luminanceToggleBtn"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/flowyCastToggleBtn"
+        app:layout_constraintStart_toEndOf="@+id/busToggleBtn"
         app:layout_constraintTop_toTopOf="@+id/b_layout" />
 
     <ToggleButton

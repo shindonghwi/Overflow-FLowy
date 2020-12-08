@@ -11,15 +11,11 @@ import retrofit2.http.Query
 
 interface RetrofitAPI {
 
-
-    // @GET( EndPoint-자원위치(URI) )
-//    @GET("posts/{post}")
-//    fun getPosts(@Path("post") post: String?): Call<PostResult?>?
-
     /** 플로위 줌 로그데이터를 서버로 보낸다. */
     @POST("putActLog")
     fun postFlowyZoomLogData(@Body param:HashMap<String, Any>)
 
+    /** 버스 번호 인식 - lightVision */
     @POST("detect")
     fun uploadImage(@Body param:HashMap<String, Any>):Call<Any>
 
