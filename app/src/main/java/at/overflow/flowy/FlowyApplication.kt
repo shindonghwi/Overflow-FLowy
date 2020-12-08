@@ -35,7 +35,8 @@ class FlowyApplication : Application(), LifecycleObserver {
                     "code INTEGER, " +
                     "receiveBusNumber VARCHAR(20), " +
                     "realBusNumber VARCHAR(20), " +
-                    "result VARCHAR(20) " +
+                    "result VARCHAR(20), " +
+                    "imagePath VARCHAR(100) " +
                     ");"
         );
 

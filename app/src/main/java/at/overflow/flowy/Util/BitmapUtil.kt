@@ -2,6 +2,7 @@ package at.overflow.flowy.Util
 
 import android.graphics.Bitmap
 import android.os.Environment
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -12,12 +13,25 @@ import java.io.FileOutputStream
 import java.util.*
 
 class BitmapUtil {
-    fun textureBitmapToFile(bitmap: Bitmap?): File? {
 
-        val filePath = Environment.getExternalStorageDirectory().toString()
-        val folderName = "Flowy"
-        val fileName = "uploadImage.jpeg"
-        val dirs = File(filePath, folderName)
+    val filePath = Environment.getExternalStorageDirectory().toString()
+    val folderName = "Flowy"
+
+    fun saveImage(bitmap: Bitmap?, saveFileName : String, code : Int): File? {
+
+        var classification : String = ""
+
+        when (code){
+            0 -> classification = "Success"
+            1 -> classification = "SourceEmpty"
+            2 -> classification = "ProcessorBusy"
+            3 -> classification = "DecodeError"
+            4 -> classification = "NotFoundBus"
+            5 -> classification = "NotFoundBusNumber"
+        }
+
+        val fileName = "$saveFileName.jpg"
+        val dirs = File(filePath, "$folderName/$classification")
 
         // Flowy 폴더가 없으면 만든다.
         if (!dirs.exists()) {
@@ -26,7 +40,7 @@ class BitmapUtil {
 
         var file: File? = null
         return try {
-            file = File("$filePath/$folderName/$fileName")
+            file = File("$filePath/$folderName/$classification/$fileName")
             file.createNewFile()
 
             //Convert bitmap to byte array

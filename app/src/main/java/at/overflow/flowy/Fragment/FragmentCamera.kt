@@ -49,6 +49,11 @@ import java.io.FileOutputStream
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class FragmentCamera : Fragment(), View.OnClickListener {
 
@@ -96,6 +101,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private lateinit var busResultText: TextView
     private lateinit var busLayoutCloseBtn: Button
     private var busNumberData: ArrayList<String> = ArrayList<String>()
+    private var ocrBitmap: Bitmap? = null
 
     /** 시크바 */
     private lateinit var pinchZoomSeekbar: SeekBar
@@ -621,7 +627,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
                 CoroutineScope(Dispatchers.Default).launch {
                     val byteArrayOutputStream = ByteArrayOutputStream()
-                    glTextureView.bitmap!!.compress(
+
+                    ocrBitmap = glTextureView.bitmap
+
+                    ocrBitmap!!.compress(
                         Bitmap.CompressFormat.JPEG,
                         50,
                         byteArrayOutputStream
@@ -654,22 +663,35 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                         }
 
                         val result =
-                            if (busNumberVal.toString() == busRealNumberEtext.text.toString()) "correct" else "incorrect"
+                            if (busNumberVal == busRealNumberEtext.text.toString()) "correct" else "incorrect"
 
-                        try{
+                        try {
+
+                            val currentDateTime = Calendar.getInstance().time
+                            val currentDate =
+                                SimpleDateFormat("HH:mm:ss", Locale.KOREA).format(
+                                    currentDateTime
+                                )
+                            val imagePath: String =
+                                BitmapUtil().filePath + "/" + BitmapUtil().folderName + "/${result}_R_${busNumberVal}_U_${busRealNumberEtext.text}_" + currentDate.toString() + ".jpg"
+
+                            BitmapUtil().saveImage(bitmap = ocrBitmap, saveFileName = "${result}_R_${busNumberVal}_U_${busRealNumberEtext.text}_" + currentDate.toString(), code = 0)
+
                             AI_DB.execSQL(
                                 "INSERT INTO busDetection " +
-                                        "(code, receiveBusNumber, realBusNumber, result) VALUES " +
-                                        "(${0}, '${busNumberVal}', '${busRealNumberEtext.text.toString()}', '$result')"
+                                        "(code, receiveBusNumber, realBusNumber, result, imagePath) VALUES " +
+                                        "(${0}, '${busNumberVal}', '${busRealNumberEtext.text.toString()}', '$result', '$imagePath')"
                             )
 
                             Toast.makeText(context, "Save Success", Toast.LENGTH_SHORT).show()
                             CoroutineScope(Dispatchers.Main).launch {
                                 busResultInit()
                             }
-                        }
-                        catch (e : Exception){
+                        } catch (e: Exception) {
                             Toast.makeText(context, "Input Error", Toast.LENGTH_SHORT).show()
+                        } finally {
+                            ocrBitmap!!.recycle()
+                            ocrBitmap = null
                         }
                     }
 
@@ -1182,11 +1204,30 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 val codeNum = code.toString().split(".")[0].toInt()
 
                 if (codeNum != 0) {
-                    AI_DB.execSQL(
-                        "INSERT INTO busDetection " +
-                                "(code, receiveBusNumber, realBusNumber, result) VALUES " +
-                                "(${codeNum}, 'N/A', 'N/A', 'N/A')"
-                    )
+
+                    val currentDateTime = Calendar.getInstance().time
+                    val currentDate = SimpleDateFormat(
+                        "HH:mm:ss",
+                        Locale.KOREA
+                    ).format(currentDateTime)
+                    val imagePath: String =
+                        BitmapUtil().filePath + "/" + BitmapUtil().folderName + "/" + currentDate.toString() + ".jpg"
+
+                    BitmapUtil().saveImage(bitmap = ocrBitmap, saveFileName = currentDate, code = codeNum)
+
+                    try {
+                        AI_DB.execSQL(
+                            "INSERT INTO busDetection " +
+                                    "(code, receiveBusNumber, realBusNumber, result, imagePath) VALUES " +
+                                    "(${codeNum}, 'N/A', 'N/A', 'N/A', '$imagePath')"
+                        )
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Save Fail", Toast.LENGTH_SHORT).show()
+                    } finally {
+                        ocrBitmap!!.recycle()
+                        ocrBitmap = null
+                    }
+
                 }
             }
         }
