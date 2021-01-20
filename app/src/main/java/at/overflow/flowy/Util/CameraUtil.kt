@@ -3,8 +3,8 @@ package at.overflow.flowy.Util
 import android.util.Log
 import androidx.camera.core.*
 import androidx.core.content.ContextCompat
-import at.overflow.flowy.Fragment.FragmentCamera.Companion.touchFocusPointX
-import at.overflow.flowy.Fragment.FragmentCamera.Companion.touchFocusPointY
+import at.overflow.flowy.Fragment.FragmentCamera
+import at.overflow.flowy.Fragment.FragmentCamera.Companion.touchDataUtil
 import at.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
 import at.overflow.flowy.View.FlowyGLTextureView
 import java.util.concurrent.TimeUnit
@@ -45,13 +45,13 @@ class CameraUtil {
 
         Log.d("widthHeight", "${glTextureView.width} : ${glTextureView.height}")
 
-        autoFocusPoint = if (touchFocusPointX == 0f && touchFocusPointY == 0f) {
+        autoFocusPoint = if (touchDataUtil.touchFocusPointX == 0f && touchDataUtil.touchFocusPointY == 0f) {
             factory.createPoint(
                 (glTextureView.width.toDouble() / 2).toFloat(),
                 (glTextureView.height.toDouble() / 2).toFloat()
             )
         } else {
-            factory.createPoint(touchFocusPointX, touchFocusPointY)
+            factory.createPoint(touchDataUtil.touchFocusPointX, touchDataUtil.touchFocusPointY)
         }
 
         val action = FocusMeteringAction.Builder(autoFocusPoint, FocusMeteringAction.FLAG_AF)

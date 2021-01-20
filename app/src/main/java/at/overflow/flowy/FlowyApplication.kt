@@ -1,8 +1,6 @@
 package at.overflow.flowy
 
 import android.app.Application
-import android.content.Context
-import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
@@ -20,25 +18,10 @@ class FlowyApplication : Application(), LifecycleObserver {
     private var backgroundTimeCheck: Long = 0L
     private var backgroundFlag: Boolean = false
 
-
     override fun onCreate() {
         super.onCreate()
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         Log.d("LifecycleAPp", "onCreate")
-
-        AI_DB = openOrCreateDatabase("AI_DB", Context.MODE_PRIVATE, null)
-
-        AI_DB.execSQL(
-            "CREATE TABLE IF NOT EXISTS " + "busDetection"
-                    + " (" +
-                    "idx INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    "code INTEGER, " +
-                    "receiveBusNumber VARCHAR(20), " +
-                    "realBusNumber VARCHAR(20), " +
-                    "result VARCHAR(20) " +
-                    ");"
-        );
-
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
@@ -126,7 +109,8 @@ class FlowyApplication : Application(), LifecycleObserver {
         autoFocusMode = true
     }
 
-    companion object {
-        lateinit var AI_DB: SQLiteDatabase
+    companion object{
+        @kotlin.jvm.JvmField
+        var DIRECTORY_NAME: String = "USBCamera"
     }
 }

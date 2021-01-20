@@ -89,4 +89,5 @@ import at.overflow.flowy.R
 @JvmField val API_KEY : String = "f077d9dedeb7d1de5a12449ed3aa56b9b0855829c087de33da9d942ed42248a25711a9b8ef8964530b37773e8ed322843b916a2de7594b4830f3f6c7aa3408fd"
 @JvmField var USER_UUID : String = ""
 @JvmField var OVERFLOW_TEST_API_BASE_URL : String = "https://at.flowy.kr/"
-@JvmField var OVERFLOW_TEST_API_IMAGE_UPLOAD : String = "http://faitest.flowy.kr:12000/"
+@JvmField var OVERFLOW_TEST_API_IMAGE_UPLOAD : String = "http://121.161.228.253:12000/"
+//@JvmField var OVERFLOW_TEST_API_IMAGE_UPLOAD : String = "http://faitest.flowy.kr:12000/"

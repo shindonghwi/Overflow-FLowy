@@ -5,8 +5,8 @@
     <dimen name="toggle_btn_width">60dp</dimen>
     <dimen name="toggle_btn_height">60dp</dimen>
 
-    <dimen name="pinch_plus_minus_width">20dp</dimen>
-    <dimen name="pinch_plus_minus_height">20dp</dimen>
+    <dimen name="pinch_minus_left_padding">6dp</dimen>
+    <dimen name="pinch_minus_right_padding">6dp</dimen>
     <dimen name="pinch_seek_layout_height">40dp</dimen>
 
     <dimen name="ad_height">50dp</dimen>

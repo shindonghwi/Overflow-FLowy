@@ -20,10 +20,10 @@
         app:layout_constraintTop_toTopOf="@+id/b_layout" />
 
     <ToggleButton
-        android:id="@+id/busToggleBtn"
+        android:id="@+id/flowyCastToggleBtn"
         android:layout_width="@dimen/toggle_btn_width"
         android:layout_height="@dimen/toggle_btn_height"
-        android:background="@drawable/bus_on_off"
+        android:background="@drawable/flowy_cast_menu_on_off"
         android:textOff="@string/textClear"
         android:textOn="@string/textClear"
         app:layout_constraintEnd_toStartOf="@+id/freezeToggleBtn"
@@ -41,7 +41,7 @@
         android:textOn="@string/textClear"
         app:layout_constraintEnd_toStartOf="@+id/luminanceToggleBtn"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/busToggleBtn"
+        app:layout_constraintStart_toEndOf="@+id/flowyCastToggleBtn"
         app:layout_constraintTop_toTopOf="@+id/b_layout" />
 
     <ToggleButton

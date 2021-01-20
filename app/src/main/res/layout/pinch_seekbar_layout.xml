@@ -11,6 +11,7 @@
         android:layout_height="match_parent"
         android:layout_weight="0.1"
         android:background="@android:color/transparent"
+        android:paddingLeft="@dimen/pinch_minus_left_padding"
         android:scaleType="fitXY"
         android:src="@drawable/pinchzoom_minus" />
 
@@ -31,6 +32,7 @@
         android:layout_height="match_parent"
         android:layout_weight="0.1"
         android:background="@android:color/transparent"
+        android:paddingRight="@dimen/pinch_minus_right_padding"
         android:scaleType="fitXY"
         android:src="@drawable/pinchzoom_plus" />
 
