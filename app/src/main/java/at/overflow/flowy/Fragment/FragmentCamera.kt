@@ -1,19 +1,15 @@
 package at.overflow.flowy.Fragment
 
 import android.annotation.SuppressLint
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.hardware.SensorManager
-import android.hardware.usb.UsbDevice
-import android.hardware.usb.UsbManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.os.Parcelable
+import android.text.Html
+import android.util.Base64
 import android.util.Log
 import android.view.*
 import android.widget.*
@@ -24,11 +20,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import at.overflow.flowy.Adapter.AdapterBrightShadeControl
 import at.overflow.flowy.DTO.ContrastData
+import at.overflow.flowy.FlowyApplication.Companion.AI_DB
 import at.overflow.flowy.Interface.RetrofitAPI
 import at.overflow.flowy.MainActivity
 import at.overflow.flowy.MainActivity.Companion.pref
 import at.overflow.flowy.MainActivity.Companion.prefEditor
 import at.overflow.flowy.R
+import at.overflow.flowy.Renderer.FlowyRenderer.Companion.adjustHeight
 import at.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
 import at.overflow.flowy.Util.*
 import at.overflow.flowy.View.FlowyGLTextureView
@@ -41,15 +39,23 @@ import com.google.android.gms.ads.MobileAds
 import com.google.gson.JsonParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class FragmentCamera : Fragment(), View.OnClickListener {
 
+
     private lateinit var rootLayout: ConstraintLayout
     private lateinit var alertToast: Toast
+
 
     private lateinit var glTextureView: FlowyGLTextureView // 카메라 미리보기가 나올 화면
     private var flowyZoomLongClickEvent: Boolean = false // 롱클릭 이벤트 콜백을 위한 변수, 이벤트 발생시 플로위 줌 시작
@@ -62,6 +68,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private lateinit var bm_layout: View
     private lateinit var ps_layout: View
     private lateinit var bs_layout: View
+    private lateinit var bus_layout: View
 
     /** 메뉴 버튼 */
     private lateinit var focusToggleBtn: ToggleButton
@@ -71,7 +78,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private lateinit var mirroringToggleBtn: ToggleButton
     private lateinit var menuToggleBtn: ToggleButton
 
-    private lateinit var flowyCastToggleBtn: ToggleButton
+    //    private lateinit var flowyCastToggleBtn: ToggleButton
+    private lateinit var busToggleBtn: ToggleButton
     private lateinit var freezeToggleBtn: ToggleButton
     private lateinit var controlToggleBtn: ToggleButton
     private lateinit var controlChildToggleBtn: ToggleButton
@@ -79,6 +87,15 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private lateinit var defaultColorImgView: ImageButton
     private lateinit var binaryToggleBtn: ToggleButton
     private lateinit var inverseToggleBtn: ToggleButton
+
+    /** 버스 ocr */
+    private lateinit var busDetectBtn: Button
+    private lateinit var busRealNumberEtext: EditText
+    private lateinit var busDataSaveBtn: Button
+    private lateinit var busResponseNumberText: TextView
+    private lateinit var busResultText: TextView
+    private lateinit var busLayoutCloseBtn: Button
+    private var busNumberData: ArrayList<String> = ArrayList<String>()
 
     /** 시크바 */
     private lateinit var pinchZoomSeekbar: SeekBar
@@ -90,6 +107,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** 광고 */
     private lateinit var bannerAdView: AdView
     private lateinit var bannerVersaAD: ImageView
+
 
     private lateinit var contrastItemRecyclerView: RecyclerView
     private lateinit var brightShadeAdapter: AdapterBrightShadeControl
@@ -143,6 +161,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         bm_layout = view.findViewById(R.id.bm_layout)
         bs_layout = view.findViewById(R.id.bs_layout)
         ps_layout = view.findViewById(R.id.ps_layout)
+        bus_layout = view.findViewById(R.id.bus_layout)
 
         glTextureView = view.findViewById(R.id.glSurfaceView)
         blackScreen = view.findViewById(R.id.blackScreen)
@@ -154,7 +173,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         flowyZoomToggleBtn = view.findViewById(R.id.flowyZoomToggleBtn)
         mirroringToggleBtn = view.findViewById(R.id.mirroringToggleBtn)
         menuToggleBtn = view.findViewById(R.id.menuToggleBtn)
-        flowyCastToggleBtn = view.findViewById(R.id.flowyCastToggleBtn)
+//        flowyCastToggleBtn = view.findViewById(R.id.flowyCastToggleBtn)
+        busToggleBtn = view.findViewById(R.id.busToggleBtn)
         freezeToggleBtn = view.findViewById(R.id.freezeToggleBtn)
         luminanceToggleBtn = view.findViewById(R.id.luminanceToggleBtn)
         controlToggleBtn = view.findViewById(R.id.controlToggleBtn)
@@ -164,6 +184,15 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         defaultColorImgView = view.findViewById(R.id.defaultColorImgView)
         binaryToggleBtn = view.findViewById(R.id.binaryToggleBtn)
         inverseToggleBtn = view.findViewById(R.id.inverseToggleBtn)
+
+        /** 버스 ocr */
+        busDetectBtn = view.findViewById(R.id.busDetectBtn)
+        busDataSaveBtn = view.findViewById(R.id.busDataSaveBtn)
+        busRealNumberEtext = view.findViewById(R.id.busRealNumberEtext)
+        busResponseNumberText = view.findViewById(R.id.busResponseNumberText)
+        busResultText = view.findViewById(R.id.busResultText)
+        busLayoutCloseBtn = view.findViewById(R.id.busLayoutCloseBtn)
+
 
         /** 시크바 */
         pinchZoomSeekbar = view.findViewById(R.id.pinchZoomSeekbar)
@@ -183,6 +212,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     }
 
+
     /** 클릭 리스너 관리 */
     private fun setClickListener() {
         focusToggleBtn.setOnClickListener(this)
@@ -191,7 +221,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         flowyZoomToggleBtn.setOnClickListener(this)
         mirroringToggleBtn.setOnClickListener(this)
         menuToggleBtn.setOnClickListener(this)
-        flowyCastToggleBtn.setOnClickListener(this)
+//        flowyCastToggleBtn.setOnClickListener(this)
+        busToggleBtn.setOnClickListener(this)
         freezeToggleBtn.setOnClickListener(this)
         luminanceToggleBtn.setOnClickListener(this)
         controlToggleBtn.setOnClickListener(this)
@@ -201,6 +232,11 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         defaultColorImgView.setOnClickListener(this)
         binaryToggleBtn.setOnClickListener(this)
         inverseToggleBtn.setOnClickListener(this)
+
+        /** 버스 ocr */
+        busDetectBtn.setOnClickListener(this)
+        busDataSaveBtn.setOnClickListener(this)
+        busLayoutCloseBtn.setOnClickListener(this)
     }
 
     override fun onResume() {
@@ -263,7 +299,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         menuButtonAnimation(flowyZoomToggleBtn, deviceSensorDirection)
         menuButtonAnimation(mirroringToggleBtn, deviceSensorDirection)
         menuButtonAnimation(menuToggleBtn, deviceSensorDirection)
-        menuButtonAnimation(flowyCastToggleBtn, deviceSensorDirection)
+//        menuButtonAnimation(flowyCastToggleBtn, deviceSensorDirection)
+        menuButtonAnimation(busToggleBtn, deviceSensorDirection)
         menuButtonAnimation(freezeToggleBtn, deviceSensorDirection)
         menuButtonAnimation(freezeToggleBtn, deviceSensorDirection)
         menuButtonAnimation(luminanceToggleBtn, deviceSensorDirection)
@@ -412,12 +449,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             R.id.menuToggleBtn -> {
                 (activity as MainActivity).replaceFragment("add", FragmentMenu().newInstance())
             }
-
-            R.id.flowyCastToggleBtn ->{
-                alertToast = Toast.makeText(THIS_CONTEXT, "Flowy Cast 기능은 구독 사용자만 이용 가능합니다.", Toast.LENGTH_SHORT)
-                alertToast.show()
-            }
-
             /** 화면 멈춤 기능 완료 */
             R.id.freezeToggleBtn -> {
                 // 눌렀는데 체크가 되어있다면
@@ -524,6 +555,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
                 CoroutineScope(Dispatchers.Main).launch {
                     bm_layout.visibility = View.GONE
+                    bus_layout.visibility = View.GONE
                     bs_layout.visibility = View.VISIBLE
                     brightShadeAdapter.notifyDataSetChanged()
                 }
@@ -533,6 +565,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             R.id.controlChildToggleBtn -> {
                 CoroutineScope(Dispatchers.Main).launch {
                     bm_layout.visibility = View.VISIBLE
+                    bus_layout.visibility = View.GONE
                     bs_layout.visibility = View.GONE
                 }
             }
@@ -559,6 +592,91 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             /** 회사 광고를 누르면 회사페이지로 ~ */
             R.id.bannerVersaAD -> {
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://atoverflow.com/")))
+            }
+
+            /** 버스 ocr */
+            R.id.busToggleBtn -> {
+                CoroutineScope(Dispatchers.Main).launch {
+                    bus_layout.visibility = View.VISIBLE
+                    bm_layout.visibility = View.GONE
+                    bs_layout.visibility = View.GONE
+                }
+            }
+            R.id.busLayoutCloseBtn -> {
+                CoroutineScope(Dispatchers.Main).launch {
+                    bus_layout.visibility = View.GONE
+                    bm_layout.visibility = View.VISIBLE
+                    bs_layout.visibility = View.GONE
+                }
+            }
+
+            R.id.busDetectBtn -> {
+
+                CoroutineScope(Dispatchers.Main).launch {
+                    busResultText.text = "waiting..."
+                    busRealNumberEtext.setText("")
+                    busRealNumberEtext.hint = "Input Bus Number"
+                    busResponseNumberText.text = "waiting..."
+                }
+
+                CoroutineScope(Dispatchers.Default).launch {
+                    val byteArrayOutputStream = ByteArrayOutputStream()
+                    glTextureView.bitmap!!.compress(
+                        Bitmap.CompressFormat.JPEG,
+                        50,
+                        byteArrayOutputStream
+                    )
+                    val byteArray = byteArrayOutputStream.toByteArray()
+                    val encoded: String = Base64.encodeToString(byteArray, Base64.DEFAULT)
+                    imageUpload(encodeBitmap = encoded, baseURL = OVERFLOW_TEST_API_IMAGE_UPLOAD)
+                }
+            }
+
+            R.id.busDataSaveBtn -> {
+
+                if (busRealNumberEtext.text.toString() == "") {
+                    alertToast = Toast.makeText(context, "버스번호를 입력해주세요", Toast.LENGTH_SHORT)
+                    alertToast.show()
+                    return
+                }
+
+                when (busResultText.text.toString()) {
+
+                    "Success" -> {
+                        var busNumberVal = ""
+
+                        for (index in busNumberData.indices) {
+                            busNumberVal += if (index == busNumberData.size - 1) {
+                                busNumberData[index]
+                            } else {
+                                "${busNumberData[index]},"
+                            }
+                        }
+
+                        val result =
+                            if (busNumberVal.toString() == busRealNumberEtext.text.toString()) "correct" else "incorrect"
+
+                        try{
+                            AI_DB.execSQL(
+                                "INSERT INTO busDetection " +
+                                        "(code, receiveBusNumber, realBusNumber, result) VALUES " +
+                                        "(${0}, '${busNumberVal}', '${busRealNumberEtext.text.toString()}', '$result')"
+                            )
+
+                            Toast.makeText(context, "Save Success", Toast.LENGTH_SHORT).show()
+                            CoroutineScope(Dispatchers.Main).launch {
+                                busResultInit()
+                            }
+                        }
+                        catch (e : Exception){
+                            Toast.makeText(context, "Input Error", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
+                    else -> {
+                        Toast.makeText(context, "Save Fail", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
     }
@@ -650,7 +768,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private fun brightSeekbarListener(brightSeekbar: SeekBar) {
         brightSeekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                touchDataUtil.brightSeekbarProgress = progress
+                brightSeekbarProgress = progress
                 if (progress == 0) brightSeekbar.progress = 1
             }
 
@@ -666,7 +784,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private fun contrastSeekbarListener(contrastSeekbar: SeekBar) {
         contrastSeekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                touchDataUtil.contrastSeekbarProgress = progress
+                contrastSeekbarProgress = progress
                 if (progress == 0) contrastSeekbar.progress = 1
             }
 
@@ -702,8 +820,12 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         })
     }
 
+
+    /** Touch */
+
     @SuppressLint("ClickableViewAccessibility")
     private fun screenTouchListener() {
+
         glTextureView.setOnTouchListener(object : View.OnTouchListener {
 
             private val gestureDetector =
@@ -720,17 +842,16 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                         // 더블 탭 모드로 변경
                         if (cameraSubMode == "longClick") {
                             cameraSubMode = "flowyDoubleTap"
-                            touchDataUtil.setDoubleTapTouchPoint(e.x.toDouble(), e.y.toDouble())
+                            setDoubleTapTouchPoint(e.x.toDouble(), e.y.toDouble())
                             Log.d("doubleTapPoint", "${e.x} : ${e.y} ")
-                            touchDataUtil.isDoubleTapFirstTouched = true
-                            touchDataUtil.setFirstTouchPoint(e.x.toDouble(), e.y.toDouble())
+                            isDoubleTapFirstTouched = true
                         }
 
                         // 롱 클릭 모드로 변경
                         else {
                             cameraSubMode = "longClick"
-                            touchDataUtil.setDoubleTapTouchPoint(0.0, 0.0)
-                            touchDataUtil.isDoubleTapFirstTouched = false
+                            setDoubleTapTouchPoint(0.0, 0.0)
+                            isDoubleTapFirstTouched = false
                         }
                         return super.onDoubleTap(e)
                     }
@@ -752,18 +873,18 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                         override fun onScale(detector: ScaleGestureDetector): Boolean {
                             Log.d("onScale", cameraMode)
 
-                            // zoomRatio의 범위는 1~8배 까지이다.
-                            var currentZoomRatio: Float =
-                                camera!!.cameraInfo.zoomState.value?.zoomRatio ?: 0F
-                            var currentZoomLinear: Float =
-                                camera!!.cameraInfo.zoomState.value?.linearZoom ?: 0F
-                            val delta = detector.scaleFactor
-                            var scale = currentZoomRatio * delta
-                            Log.d("scaleValue123", "$currentZoomRatio : $currentZoomLinear : $scale")
-
                             // 일반 확대를 사용하는 경우
                             if (cameraMode != "flowy") {
+
+                                // zoomRatio의 범위는 1~8배 까지이다.
+                                var currentZoomRatio: Float =
+                                    camera!!.cameraInfo.zoomState.value?.zoomRatio ?: 0F
+                                var currentZoomLinear: Float =
+                                    camera!!.cameraInfo.zoomState.value?.linearZoom ?: 0F
+                                val delta = detector.scaleFactor
+                                var scale = currentZoomRatio * delta
                                 camera!!.cameraControl.setZoomRatio(scale)
+                                Log.d("scaleValue123", "$currentZoomRatio : $currentZoomLinear")
 
                                 scale -= 1
                                 if (scale <= 0) scale = 0f
@@ -783,6 +904,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                                         "scaleValue",
                                         " 2: $currentZoomRatio : $scale : ${pinchZoomSeekbar.progress}"
                                     )
+//                            Log.d("progress", pinchZoomSeekbar.progress.toString())
                                 }
                             }
                             return true
@@ -812,67 +934,41 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 Log.d("onTouch", "${event.x} : ${event.y} ")
 
                 // 사용자가 찎은 좌표를 항상 기록한다.
-                touchDataUtil.setAlwaysTouchPoint(event.x.toDouble(), event.y.toDouble())
+                setAlwaysTouchPoint(event.x.toDouble(), event.y.toDouble())
 
                 // 롱클릭 이벤트를 받아, 플로위 롱클릭 모드에서 움직이는 경우
                 if (flowyZoomLongClickEvent && cameraMode == "flowy" && (event.action == MotionEvent.ACTION_MOVE || event.action == MotionEvent.ACTION_DOWN)) {
                     Log.d("motion", "onTouch: ${event.action}")
                     // 첫번째로 터치한 좌표를 받아 firstTouchX , Y 에 할당한다. 화면 여백을 클릭하는걸 방지 하기 위함.
-                    if (touchDataUtil.touchFirstX == 0.0 && touchDataUtil.touchFirstY == 0.0)
-                        touchDataUtil.setFirstTouchPoint(event.x.toDouble(), event.y.toDouble())
+                    if (touchFirstX == 0.0 && touchFirstY == 0.0)
+                        setFirstTouchPoint(event.x.toDouble(), event.y.toDouble())
                     // 터치한 포인트를 기록한다.
-                    touchDataUtil.setTouchPoint(event.x.toDouble(), event.y.toDouble())
+                    setTouchPoint(event.x.toDouble(), event.y.toDouble())
                     // 현재 상태를 터치중으로 변경한다.
-                    touchDataUtil.isTouching = true
+                    isTouching = true
                 } else if (cameraSubMode == "flowyDoubleTap") {
 
-                    if (event.action == MotionEvent.ACTION_DOWN) {
-                        touchDataUtil.setFirstTouchPoint(event.x.toDouble(), event.y.toDouble())
-                        touchDataUtil.isScreenPointSave = false
-
+                    if (touchFirstX == 0.0 && touchFirstY == 0.0 && event.action == MotionEvent.ACTION_DOWN) {
+                        setFirstTouchPoint(event.x.toDouble(), event.y.toDouble())
                     } else {
-                        touchDataUtil.setTouchPoint(event.x.toDouble(), event.y.toDouble())
+                        setTouchPoint(event.x.toDouble(), event.y.toDouble())
                     }
                 }
 
                 // 사용자가 화면에서 손을 땠을때
                 if (event.action == MotionEvent.ACTION_UP) {
-                    touchDataUtil.setTouchPoint(0.0, 0.0) // 터치한 포인트를 0,0 으로 초기화한다.
-                    touchDataUtil.setFirstTouchPoint(0.0, 0.0) // 첫번째로 터치한 포인트를 0,0으로 초기화한다.
-                    touchDataUtil.setFocusTouchPoint(glTextureView, event.x, event.y)
-                    touchDataUtil.isScreenPointSave = true // 더블탭 모드에 사용
-                    touchDataUtil.flowyPinchFlag = false // 핀치줌
-
+                    setTouchPoint(0.0, 0.0) // 터치한 포인트를 0,0 으로 초기화한다.
+                    setFirstTouchPoint(0.0, 0.0) // 첫번째로 터치한 포인트를 0,0으로 초기화한다.
+                    setFocusTouchPoint(event.x, event.y)
                     Log.d("ClickEvent", "action up")
-                    touchDataUtil.isTouching = false // 현재 상태를 터치중 아님으로 변경한다.
+                    isTouching = false // 현재 상태를 터치중 아님으로 변경한다.
                     flowyZoomLongClickEvent = false // 플로위줌을 사용하기 다시 사용하기 위해 롱클릭 이벤트를 false로 만듦
                     CameraUtil().cameraTapFocus(glTextureView)
                 }
 
-                // 손가락 2개로 터치를 했을때, 메뉴를 보이게 / 안보이게 처리를 한다.
+                // 손가락 3개로 터치를 했을때, 메뉴를 보이게 / 안보이게 처리를 한다.
                 if (event.action == MotionEvent.ACTION_POINTER_3_DOWN && event.pointerCount == 3) {
                     threePointClick()
-                }
-
-                if (event.action == MotionEvent.ACTION_MOVE){
-                    /** flowy pinch zoom 포인트 */
-                    if (event.pointerCount == 1){
-                        touchDataUtil.pinchFirstTouchX = event.getX(0)
-                        touchDataUtil.pinchFirstTouchY = event.getY(0)
-                        touchDataUtil.flowyPinchFlag = false
-                    }
-                    else if (event.pointerCount == 2){
-                        touchDataUtil.pinchSecondTouchX = event.getX(1)
-                        touchDataUtil.pinchSecondTouchY = event.getY(1)
-                        touchDataUtil.flowyPinchFlag = true
-                    }
-
-                    Log.d("asdasdadszxczvcxlkm",
-                        "pinchFirstTouchX : ${touchDataUtil.pinchFirstTouchX} / " +
-                                "pinchFirstTouchY : ${touchDataUtil.pinchFirstTouchY} / " +
-                                "pinchSecondTouchX : ${touchDataUtil.pinchSecondTouchX} / " +
-                                "pinchSecondTouchY : ${touchDataUtil.pinchSecondTouchY} / "
-                    )
                 }
 
                 gestureDetector.onTouchEvent(event)
@@ -882,7 +978,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         })
     }
 
-    /** 화면을 손가락 3개 이상으로 터치했을때, 화면 상단, 하단에 있는 메뉴를 보임, 숨김 처리한다. */
     fun threePointClick() {
         if (threePointClickFlag) {
 
@@ -899,6 +994,52 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         }
 
         threePointClickFlag = !threePointClickFlag
+    }
+
+    /** 사용자가 화면을 터치했을때 좌표를 항상 기록한다. */
+    fun setAlwaysTouchPoint(x: Double, y: Double) {
+        touchAlwaysTouchPointX = x
+        touchAlwaysTouchPointY = y
+    }
+
+    /** ------------ 플로위 - 롱 클릭 모드-------------- */
+
+    /** 사용자가 롱 클릭 모드에서 터치한 좌표값 설정 - FLowy Zoom 기능에 활용 */
+    fun setTouchPoint(x: Double, y: Double) {
+        touchPointX = x
+        touchPointY = y
+        Log.d("touch", "onViewCreated: ${touchPointX} , ${touchPointY}")
+    }
+
+    /** 사용자가 롱 클릭 모드에서 처음 터치한 좌표값 설정 - 화면 여백을 클릭하는걸 방지하기 위함 */
+    fun setFirstTouchPoint(x: Double, y: Double) {
+        touchFirstX = x
+        touchFirstY = y
+        Log.d("FragmentCamera1", "$touchFirstX : $touchFirstY")
+    }
+
+    /** ------------ 플로위 - 더블탭 모드 -------------- */
+
+    /** camera mode 가 default 이고, 더블탭했을때 좌표값 설정 */
+    fun setDoubleTapTouchPoint(x: Double, y: Double) {
+        doubleTapPointX = x
+        doubleTapPointY = y
+    }
+
+    /** ------------ 포커스 기능 -------------- */
+
+    fun setFocusTouchPoint(x: Float, y: Float) {
+        touchFocusPointX = x
+        touchFocusPointY = y
+
+        // 90도 회전하기때문에 x,y값을 바꾸어서 넣어준다.
+        val rotateX = glTextureView.width * touchFocusPointY / adjustHeight
+        val rotateY = adjustHeight * touchFocusPointX / glTextureView.width
+
+        touchFocusPointX = rotateX
+        touchFocusPointY = glTextureView.height - rotateY
+
+        Log.d("focusPoint", "${touchFocusPointX} : ${touchFocusPointY}")
     }
 
     /** 서버에 플로위 줌 신호를 보낸다. - 사용시작 : 1, 사용정지 : 2, FlowyZoom 시작 : 3, FlowyZoom 종료 : 4 */
@@ -930,7 +1071,43 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         lateinit var luminanceToggleBtn: ToggleButton
 
-        var touchDataUtil: TouchDataUtil = TouchDataUtil()
+        /** 밝기, 대비 조절기능의 시크바 */
+        var brightSeekbarProgress: Int = 50
+        var contrastSeekbarProgress: Int = 50
+
+        /** 사용자가 찍은 좌표값 (항상 갱신됨) */
+        var touchAlwaysTouchPointX = 0.0
+        var touchAlwaysTouchPointY = 0.0
+
+        /** --------------------- 플로위 롱 클릭 모드 --------------------- */
+
+        /** 사용자가 터치중인지 여부 판단함 */
+        var isTouching: Boolean = false
+        var isDoubleTapFirstTouched: Boolean = false // 더블탭을 처음 클릭했는가?
+
+        /** 사용자가 플로위 롱 클릭 모드에서 터치한 좌표 값 ( 지속적으로 바뀜 ) */
+        var touchPointX: Double = 0.0
+        var touchPointY: Double = 0.0
+
+        /** 사용자가 플로위 롱 클릭 모드에서 처음으로 터치한 좌표 값 ( 화면 여백을 클릭하는걸 방지하기 위함 ) */
+        var touchFirstX: Double = 0.0
+        var touchFirstY: Double = 0.0
+
+        /** --------------------- 플로위 더블 탭 모드 --------------------- */
+
+        /** 사용자가 더블 탭모드에서 찍은 위치의 좌표 값 */
+        var doubleTapPointX: Double = 0.0
+        var doubleTapPointY: Double = 0.0
+
+        /** 포커스 기능 */
+        var touchFocusPointX: Float = 0f
+        var touchFocusPointY: Float = 0f
+    }
+
+    private fun busResultInit() {
+        busResultText.text = ""
+        busResponseNumberText.text = ""
+        busRealNumberEtext.setText("")
     }
 
     //    /** 서버에 이미지를 올린다. */
@@ -950,6 +1127,70 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         Log.d("uploadImageTest", "jsonData: $jsonData")
         Log.d("uploadImageTest", "code: $code")
+
+        CoroutineScope(Dispatchers.Main).launch {
+            busResultInit()
+
+            when (code.toString()) {
+                "0.0" -> {
+                    busResultText.text = "Success"
+                    busNumberData.clear()
+
+                    for (i in 0 until result.asJsonArray.size()) {
+                        val jsonObject = JSONObject(result.asJsonArray[i].toString())
+                        val busNumber = jsonObject.getString("num")
+                        val busAc = jsonObject.getString("conf")
+                        val busRect = jsonObject.getString("rect")
+                        Log.d("uploadImageTest", "busNumber: $busNumber")
+                        Log.d("uploadImageTest", "busAc: $busAc")
+                        Log.d("uploadImageTest", "busRect: $busRect")
+
+                        busNumberData.add(busNumber.toString())
+                        busResponseNumberText.append(busNumber + "\n")
+                    }
+                }
+
+                "1.0" -> {
+                    busResultText.text = "Source is Empty"
+                    busResponseNumberText.text = "N/A"
+                    busRealNumberEtext.setText("N/A")
+                }
+                "2.0" -> {
+                    busResultText.text = "Detection processor is busy"
+                    busResponseNumberText.text = "N/A"
+                    busRealNumberEtext.setText("N/A")
+                }
+                "3.0" -> {
+                    busResultText.text = "Image Decode Error"
+                    busResponseNumberText.text = "N/A"
+                    busRealNumberEtext.setText("N/A")
+                }
+                "4.0" -> {
+                    busResultText.text = "Not Found Bus"
+                    busResponseNumberText.text = "N/A"
+                    busRealNumberEtext.setText("N/A")
+                }
+                "5.0" -> {
+                    busResultText.text = "Not Found Bus Number"
+                    busResponseNumberText.text = "N/A"
+                    busRealNumberEtext.setText("N/A")
+                }
+            }
+
+            CoroutineScope(Dispatchers.Default).launch {
+
+                val codeNum = code.toString().split(".")[0].toInt()
+
+                if (codeNum != 0) {
+                    AI_DB.execSQL(
+                        "INSERT INTO busDetection " +
+                                "(code, receiveBusNumber, realBusNumber, result) VALUES " +
+                                "(${codeNum}, 'N/A', 'N/A', 'N/A')"
+                    )
+                }
+            }
+        }
+
 
         /** 아래는 비동기 */
 //        retrofit.uploadImage(sendLogData).enqueue(object : Callback<Any> {
@@ -1003,5 +1244,4 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 //
 //        })
     }
-
 }
