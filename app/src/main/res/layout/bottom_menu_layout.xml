@@ -14,7 +14,7 @@
         android:background="@drawable/menu_on_off"
         android:textOff="@string/textClear"
         android:textOn="@string/textClear"
-        app:layout_constraintEnd_toStartOf="@+id/busToggleBtn"
+        app:layout_constraintEnd_toStartOf="@+id/flowyCastToggleBtn"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/b_layout" />
