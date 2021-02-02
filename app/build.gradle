@@ -110,6 +110,9 @@ dependencies {
     // webSocket
     implementation 'com.neovisionaries:nv-websocket-client:2.11'
 
+    // werRTC
+    implementation "org.webrtc:google-webrtc:1.0.27771"
+
 
 }
 
