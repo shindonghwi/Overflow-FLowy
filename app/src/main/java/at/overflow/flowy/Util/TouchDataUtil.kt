@@ -92,5 +92,7 @@ class TouchDataUtil {
     var pinchFirstTouchY : Float = 0f
     var pinchSecondTouchX : Float = 0f
     var pinchSecondTouchY : Float = 0f
+    var pinchFirstDistance : Float = 0f
+    var pinchFirstDistanceFlag : Boolean = false
     var flowyPinchFlag : Boolean = false
 }

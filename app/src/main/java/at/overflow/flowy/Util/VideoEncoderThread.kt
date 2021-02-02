@@ -1,0 +1,114 @@
+package at.overflow.flowy.Renderer
+
+import android.media.MediaCodec
+import android.media.MediaCodecInfo
+import android.media.MediaFormat
+import android.os.Environment
+import android.util.Log
+import java.io.FileOutputStream
+import java.nio.ByteBuffer
+
+
+class VideoEncoderThread(
+    private val videoW: Int,
+    private val videoH: Int,
+    private val videoBitrate: Int,
+    private val videoFrameRate: Int
+) {
+    private var codec: MediaCodec? = null
+    private var bufferCount: Int = 0
+    private fun initMediaCodec() {
+        bufferCount = 0
+        try {
+            codec = MediaCodec.createEncoderByType(MIME)
+            val format =
+                MediaFormat.createVideoFormat(MIME, videoW, videoH)
+            format.setInteger(MediaFormat.KEY_BIT_RATE, videoBitrate)
+            format.setInteger(MediaFormat.KEY_FRAME_RATE, videoFrameRate)
+            format.setInteger(
+                MediaFormat.KEY_COLOR_FORMAT,
+                MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible
+//                MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
+            )
+            format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 5)
+            codec!!.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+//            codec!!.configure(format, screenSurface, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+            codec!!.start()
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+//    var path = Environment.getExternalStorageDirectory().toString() + "/Flowy/encodingTest.txt"
+//    var fo = FileOutputStream(path)
+//    var gchannel = fo.channel
+
+    fun encoderYUV420(input: ByteArray) {
+        Log.d("sdffdsdffd","input : ${input.toString()}")
+        Log.d("sdffdsdffd","input size : ${input.size}")
+
+        try {
+            val inputBufferIndex = codec!!.dequeueInputBuffer(-1)
+            Log.d("sdffdsdffd","inputBufferIndex : ${inputBufferIndex}")
+
+            if (inputBufferIndex >= 0) {
+                val inputBuffer = codec!!.getInputBuffer(inputBufferIndex)
+                inputBuffer!!.clear()
+                inputBuffer.put(input)
+                codec!!.queueInputBuffer(
+                    inputBufferIndex,
+                    0,
+                    input.size,
+                    System.currentTimeMillis(),
+                    0
+                )
+            }
+            val bufferInfo = MediaCodec.BufferInfo()
+            var outputBufferIndex = codec!!.dequeueOutputBuffer(bufferInfo, 0)
+            Log.d("sdffdsdffd","outputBufferIndex : ${outputBufferIndex}")
+
+            while (outputBufferIndex >= 0) {
+                val outputBuffer = codec!!.getOutputBuffer(outputBufferIndex)
+                val outData = ByteArray(outputBuffer!!.remaining())
+                outputBuffer[outData, 0, outData.size] as ByteBuffer
+                codec!!.releaseOutputBuffer(outputBufferIndex, false)
+                outputBufferIndex = codec!!.dequeueOutputBuffer(bufferInfo, 0)
+                Log.d("sdffdsdffda","outputBuffer0 $outputBuffer")
+            }
+            Log.d("sdffdsdffd","outputBuffers : ${codec!!.outputBuffers}")
+            Log.d("sdffdsdffd","outputBuffers.size : ${codec!!.outputBuffers.size}")
+            bufferCount += 1
+            if (bufferCount > 2){
+                Log.d("sdffdsdffd","정상적인 outputBuffers가 생김")
+            }
+
+//            wcontent.put(outputBuffer)
+//            wcontent.flip()
+//            if (fileSaveCount > 2)
+//                gchannel.write(codec!!.outputBuffers)
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Log.d("sdffdsdffd","e.message : ${e.message}")
+        }
+    }
+
+    fun releaseMediaCodec() {
+        if (codec != null) {
+            codec!!.stop()
+            codec!!.release()
+            codec = null
+        }
+//        gchannel.close()
+//        lFileOutputStream.close()
+    }
+
+    companion object {
+        private const val TAG = "Encode"
+        private const val MIME = "Video/AVC"
+    }
+
+    init {
+        initMediaCodec()
+    }
+}

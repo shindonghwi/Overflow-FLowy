@@ -9,7 +9,9 @@ import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.core.impl.utils.executor.CameraXExecutors
 import androidx.core.util.Consumer
+import at.overflow.flowy.Util.cameraTexture
 import at.overflow.flowy.Util.textureArray
+import at.overflow.flowy.Util.textureMode
 
 /**
  * SurfaceTextureProvider는 미리 구성된 표면을 제공하는 Preview SurfaceProvider의 구현을 생성한다.
@@ -21,7 +23,9 @@ class SurfaceTextureProvider : SurfaceTexture.OnFrameAvailableListener{
         surfaceTextureCallback: SurfaceTextureCallback
     ): SurfaceProvider {
         return SurfaceProvider { surfaceRequest: SurfaceRequest ->
+            textureMode = 0 // 내장 카메라 사용
             val surfaceTexture = SurfaceTexture(textureArray[0])
+            cameraTexture = surfaceTexture
             surfaceTexture.setDefaultBufferSize(
                 surfaceRequest.resolution.width,
                 surfaceRequest.resolution.height
@@ -31,11 +35,12 @@ class SurfaceTextureProvider : SurfaceTexture.OnFrameAvailableListener{
                 surfaceTexture,
                 surfaceRequest.resolution
             )
-            val surface = Surface(surfaceTexture)
-            surfaceRequest.provideSurface(surface,
+            screenSurface = Surface(surfaceTexture)
+//            val surface = Surface(surfaceTexture)
+            surfaceRequest.provideSurface(screenSurface,
                 CameraXExecutors.directExecutor(),
                 Consumer {
-                    surface.release()
+                    screenSurface.release()
                     surfaceTextureCallback.onSafeToRelease(surfaceTexture)
                 }
             )
@@ -57,6 +62,10 @@ class SurfaceTextureProvider : SurfaceTexture.OnFrameAvailableListener{
 
     override fun onFrameAvailable(surfaceTexture: SurfaceTexture?) {
         Log.d("tetetest", "onFrameAvailable")
+    }
+
+    companion object{
+        lateinit var screenSurface : Surface
     }
 
 }

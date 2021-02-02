@@ -1,8 +1,18 @@
 package at.overflow.flowy.View;
 
+import android.content.Context;
+import android.graphics.SurfaceTexture;
+import android.opengl.GLDebugHelper;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.TextureView;
+import android.view.View;
+
 import java.io.Writer;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.logging.Handler;
+
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGL11;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -11,13 +21,6 @@ import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
 import javax.microedition.khronos.opengles.GL;
 import javax.microedition.khronos.opengles.GL10;
-import android.content.Context;
-import android.graphics.SurfaceTexture;
-import android.opengl.GLDebugHelper;
-import android.util.AttributeSet;
-import android.util.Log;
-import android.view.TextureView;
-import android.view.View;
 
 public class GLTextureView
         extends TextureView
