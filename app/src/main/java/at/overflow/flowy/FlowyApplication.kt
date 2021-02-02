@@ -25,20 +25,6 @@ class FlowyApplication : Application(), LifecycleObserver {
         super.onCreate()
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         Log.d("LifecycleAPp", "onCreate")
-
-        AI_DB = openOrCreateDatabase("AI_DB", Context.MODE_PRIVATE, null)
-
-        AI_DB.execSQL(
-            "CREATE TABLE IF NOT EXISTS " + "busDetection"
-                    + " (" +
-                    "idx INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    "code INTEGER, " +
-                    "receiveBusNumber VARCHAR(20), " +
-                    "realBusNumber VARCHAR(20), " +
-                    "result VARCHAR(20) " +
-                    ");"
-        );
-
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)

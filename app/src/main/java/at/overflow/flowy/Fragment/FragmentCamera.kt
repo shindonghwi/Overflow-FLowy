@@ -1,19 +1,13 @@
 package at.overflow.flowy.Fragment
 
 import android.annotation.SuppressLint
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.hardware.SensorManager
-import android.hardware.usb.UsbDevice
-import android.hardware.usb.UsbManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.os.Parcelable
 import android.util.Log
 import android.view.*
 import android.widget.*
@@ -30,8 +24,13 @@ import at.overflow.flowy.MainActivity.Companion.pref
 import at.overflow.flowy.MainActivity.Companion.prefEditor
 import at.overflow.flowy.R
 import at.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
+import at.overflow.flowy.Renderer.FlowyRenderer.Companion.sfTexture
+import at.overflow.flowy.Renderer.VideoEncoderThread
 import at.overflow.flowy.Util.*
 import at.overflow.flowy.View.FlowyGLTextureView
+import at.overflow.flowy.WebRTC.AppSdpObserver
+import at.overflow.flowy.WebRTC.PeerConnectionObserver
+import at.overflow.flowy.WebRTC.RTCClient
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.gms.ads.AdListener
@@ -39,14 +38,22 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import com.google.gson.JsonParser
+import io.ktor.util.*
+import kotlinx.android.synthetic.main.fragment_camera.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import me.amryousef.webrtc_demo.SignallingClient
+import me.amryousef.webrtc_demo.SignallingClientListener
+import org.json.JSONObject
+import org.webrtc.*
+import tech.thdev.mediacodecexample.video.VideoDecodeThread
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 
-class FragmentCamera : Fragment(), View.OnClickListener {
+class FragmentCamera : Fragment(), View.OnClickListener{
 
     private lateinit var rootLayout: ConstraintLayout
     private lateinit var alertToast: Toast
@@ -97,6 +104,9 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private var deviceSensorDirection = 0f
     private var threePointClickFlag: Boolean = true
 
+    private lateinit var videoDecoder: VideoDecodeThread
+    var videoFlag: Boolean = false
+
     /** 프래그먼트 인스턴스 */
     fun newInstance(): FragmentCamera {
         Log.d("newInstance", "카메라 인스턴스 생성")
@@ -108,6 +118,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+
         return inflater.inflate(R.layout.fragment_camera, container, false)
     }
 
@@ -115,7 +126,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         super.onViewCreated(view, savedInstanceState)
         THIS_CONTEXT = context
         alertToast = Toast(context)
-
 
         idInit(view = view)
         setClickListener() // 클릭 리스너 설정
@@ -127,6 +137,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         contrastItemRecyclerView.layoutManager =
             LinearLayoutManager(THIS_CONTEXT, LinearLayoutManager.HORIZONTAL, false)
         contrastItemRecyclerView.adapter = brightShadeAdapter
+
     }
 
     /** layout id 초기화하는 공간 */
@@ -145,7 +156,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         ps_layout = view.findViewById(R.id.ps_layout)
 
         glTextureView = view.findViewById(R.id.glSurfaceView)
-        blackScreen = view.findViewById(R.id.blackScreen)
+        blackWindowScreen = view.findViewById(R.id.blackScreen)
 
         /** 메뉴 버튼 */
         focusToggleBtn = view.findViewById(R.id.focusToggleBtn)
@@ -181,6 +192,35 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         contrastItemRecyclerView = view.findViewById(R.id.contrastItemRecyclerView)
         brightShadeAdapter = AdapterBrightShadeControl(THIS_CONTEXT!!)
 
+        /** 인코딩 테스트 */
+        val videoBtn: Button = view.findViewById(R.id.videoBtn)
+        videoBtn.setOnClickListener {
+
+
+            alertToast = Toast.makeText(THIS_CONTEXT, "인코딩 테스트 시작", Toast.LENGTH_SHORT)
+            alertToast.show()
+
+//            encode = VideoEncoderThread(
+//                glTextureView.bitmap!!.width, glTextureView.bitmap!!.height,
+//                8000*1000, 30
+//            )
+
+//            val webRTCUtil = WebRTCUtil(THIS_CONTEXT!!)
+            onCameraPermissionGranted()
+            flowyCastFlag = true
+
+        }
+        /** 인코딩 해제 테스트 */
+        val videoReleaseBtn: Button = view.findViewById(R.id.videoReleaseBtn)
+        videoReleaseBtn.setOnClickListener {
+
+            flowyCastFlag = false
+
+            alertToast = Toast.makeText(THIS_CONTEXT, "인코딩 해제", Toast.LENGTH_SHORT)
+            alertToast.show()
+
+//            encode.releaseMediaCodec()
+        }
     }
 
     /** 클릭 리스너 관리 */
@@ -360,7 +400,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             R.id.lensChangeToggleBtn -> {
 
                 CoroutineScope(Dispatchers.Main).launch {
-                    blackScreen.visibility = View.VISIBLE
+                    blackWindowScreen.visibility = View.VISIBLE
                 }
 
                 // 0 : 전면
@@ -413,9 +453,36 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 (activity as MainActivity).replaceFragment("add", FragmentMenu().newInstance())
             }
 
-            R.id.flowyCastToggleBtn ->{
-                alertToast = Toast.makeText(THIS_CONTEXT, "Flowy Cast 기능은 구독 사용자만 이용 가능합니다.", Toast.LENGTH_SHORT)
+            R.id.flowyCastToggleBtn -> {
+
+                alertToast =
+                    Toast.makeText(THIS_CONTEXT, "mode : ${textureMode}", Toast.LENGTH_SHORT)
                 alertToast.show()
+
+                // 만약, 내장 카메라 화면 데이터가 렌더링 중이였다면
+                if (textureMode == 0) {
+                    val videoSurface = Surface(videoTexture)
+                    sfTexture = videoTexture
+                    videoDecoder = VideoDecodeThread()
+                    videoFlag = videoDecoder.init(
+                        videoSurface,
+                        resources.openRawResourceFd(R.raw.h264video)
+                    )
+                    if (videoFlag) {
+                        videoDecoder.start()
+                    }
+                    textureMode = 1
+                }
+                // mp4 파일 스트림 데이터가 렌더링 중이였다면
+                else {
+                    sfTexture = cameraTexture
+                    videoDecoder.close()
+                    videoDecoder.decoderStop()
+                    videoDecoder.decoderRelease()
+                    videoDecoder.extractorRelease()
+                    textureMode = 0
+                }
+
             }
 
             /** 화면 멈춤 기능 완료 */
@@ -759,7 +826,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                                 camera!!.cameraInfo.zoomState.value?.linearZoom ?: 0F
                             val delta = detector.scaleFactor
                             var scale = currentZoomRatio * delta
-                            Log.d("scaleValue123", "$currentZoomRatio : $currentZoomLinear : $scale")
+                            Log.d(
+                                "scaleValue123",
+                                "$currentZoomRatio : $currentZoomLinear : $scale"
+                            )
 
                             // 일반 확대를 사용하는 경우
                             if (cameraMode != "flowy") {
@@ -842,6 +912,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     touchDataUtil.setFocusTouchPoint(glTextureView, event.x, event.y)
                     touchDataUtil.isScreenPointSave = true // 더블탭 모드에 사용
                     touchDataUtil.flowyPinchFlag = false // 핀치줌
+                    touchDataUtil.pinchFirstDistanceFlag = false
 
                     Log.d("ClickEvent", "action up")
                     touchDataUtil.isTouching = false // 현재 상태를 터치중 아님으로 변경한다.
@@ -854,20 +925,32 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     threePointClick()
                 }
 
-                if (event.action == MotionEvent.ACTION_MOVE){
+                if (event.action == MotionEvent.ACTION_MOVE) {
                     /** flowy pinch zoom 포인트 */
-                    if (event.pointerCount == 1){
+                    if (event.pointerCount == 1) {
                         touchDataUtil.pinchFirstTouchX = event.getX(0)
                         touchDataUtil.pinchFirstTouchY = event.getY(0)
                         touchDataUtil.flowyPinchFlag = false
-                    }
-                    else if (event.pointerCount == 2){
+                    } else if (event.pointerCount == 2) {
                         touchDataUtil.pinchSecondTouchX = event.getX(1)
                         touchDataUtil.pinchSecondTouchY = event.getY(1)
                         touchDataUtil.flowyPinchFlag = true
+                        if (!touchDataUtil.pinchFirstDistanceFlag) {
+                            touchDataUtil.pinchFirstDistance = Math.sqrt(
+                                Math.pow(
+                                    ((touchDataUtil.pinchSecondTouchX - touchDataUtil.pinchFirstTouchX).toDouble()),
+                                    2.0
+                                ) + Math.pow(
+                                    ((touchDataUtil.pinchSecondTouchY - touchDataUtil.pinchFirstTouchY).toDouble()),
+                                    2.0
+                                )
+                            ).toFloat()
+                            touchDataUtil.pinchFirstDistanceFlag = true
+                        }
                     }
 
-                    Log.d("asdasdadszxczvcxlkm",
+                    Log.d(
+                        "asdasdadszxczvcxlkm",
                         "pinchFirstTouchX : ${touchDataUtil.pinchFirstTouchX} / " +
                                 "pinchFirstTouchY : ${touchDataUtil.pinchFirstTouchY} / " +
                                 "pinchSecondTouchX : ${touchDataUtil.pinchSecondTouchX} / " +
@@ -920,7 +1003,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     }
 
     companion object {
-        lateinit var blackScreen: ImageView
+        lateinit var blackWindowScreen : View
         var lensChangeFlag = false
 
         /** 고대비 색상과 인덱스 */
@@ -931,6 +1014,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         lateinit var luminanceToggleBtn: ToggleButton
 
         var touchDataUtil: TouchDataUtil = TouchDataUtil()
+
+        lateinit var encode: VideoEncoderThread
     }
 
     //    /** 서버에 이미지를 올린다. */
@@ -1002,6 +1087,64 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 //            }
 //
 //        })
+    }
+
+
+    /** ------------------------------ */
+    private lateinit var signallingClient: SignallingClient
+    private lateinit var rtcClient: RTCClient
+
+    @KtorExperimentalAPI
+    @ExperimentalCoroutinesApi
+    private val sdpObserver = object : AppSdpObserver() {
+        override fun onCreateSuccess(p0: SessionDescription?) {
+            super.onCreateSuccess(p0)
+            signallingClient.send(p0)
+        }
+    }
+
+    private fun onCameraPermissionGranted() {
+        rtcClient = RTCClient(
+            activity!!.application,
+            object : PeerConnectionObserver() {
+                override fun onIceCandidate(p0: IceCandidate?) {
+                    super.onIceCandidate(p0)
+                    signallingClient.send(p0)
+                    rtcClient.addIceCandidate(p0)
+                }
+
+                override fun onAddStream(p0: MediaStream?) {
+                    super.onAddStream(p0)
+                    p0?.videoTracks?.get(0)?.addSink(remote_view)
+                }
+            }
+        )
+        rtcClient.initSurfaceView(remote_view)
+        rtcClient.initSurfaceView(local_view)
+        rtcClient.startLocalVideoCapture(local_view)
+        signallingClient = SignallingClient(createSignallingClientListener())
+        call_button.setOnClickListener { rtcClient.call(sdpObserver) }
+    }
+
+    private fun createSignallingClientListener() = object : SignallingClientListener {
+        override fun onConnectionEstablished() {
+            call_button.isClickable = true
+        }
+
+        override fun onOfferReceived(description: SessionDescription) {
+            rtcClient.onRemoteSessionReceived(description)
+            rtcClient.answer(sdpObserver)
+//            remote_view_loading.isGone = true
+        }
+
+        override fun onAnswerReceived(description: SessionDescription) {
+            rtcClient.onRemoteSessionReceived(description)
+//            remote_view_loading.isGone = true
+        }
+
+        override fun onIceCandidateReceived(iceCandidate: IceCandidate) {
+            rtcClient.addIceCandidate(iceCandidate)
+        }
     }
 
 }

@@ -1,16 +1,16 @@
 package at.overflow.flowy.Util
 
+import android.R.attr
 import android.graphics.Bitmap
 import android.os.Environment
-import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileNotFoundException
 import java.io.FileOutputStream
-import java.util.*
+import java.nio.ByteBuffer
+
 
 class BitmapUtil {
 
@@ -58,5 +58,19 @@ class BitmapUtil {
             e.printStackTrace()
             file // it will return null
         }
+    }
+
+    fun bitmapToByteArray(bitmap : Bitmap?):ByteArray {
+
+//        val size: Int = bitmap!!.width * bitmap!!.height
+//        val byteBuffer: ByteBuffer = ByteBuffer.allocate(bitmap.byteCount)
+//        bitmap.copyPixelsToBuffer(byteBuffer)
+//        return byteBuffer.array()
+
+        val stream = ByteArrayOutputStream()
+//        CoroutineScope(Dispatchers.Default).launch {
+        bitmap!!.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+//        }
+        return stream.toByteArray()
     }
 }

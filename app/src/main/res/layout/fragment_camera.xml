@@ -9,10 +9,62 @@
     android:clickable="true"
     android:focusable="true">
 
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/local_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/remote_view"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/remote_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/local_view" />
+
     <at.overflow.flowy.View.FlowyGLTextureView
         android:id="@+id/glSurfaceView"
         android:layout_width="match_parent"
+        android:visibility="invisible"
         android:layout_height="match_parent" />
+
+    <Button
+        android:id="@+id/call_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:clickable="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/videoReleaseBtn"
+        app:layout_constraintTop_toBottomOf="@+id/videoReleaseBtn"
+        app:srcCompat="@android:drawable/ic_menu_call" />
+
+
+    <Button
+        android:id="@+id/videoBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="VIDEO"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/videoReleaseBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="RELEASE"
+        app:layout_constraintBottom_toBottomOf="@+id/videoBtn"
+        app:layout_constraintEnd_toEndOf="@+id/glSurfaceView"
+        app:layout_constraintStart_toEndOf="@+id/videoBtn"
+        app:layout_constraintTop_toTopOf="@+id/videoBtn" />
 
     <ImageView
         android:id="@+id/blackScreen"

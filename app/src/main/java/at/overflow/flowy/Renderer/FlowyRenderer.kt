@@ -3,6 +3,7 @@ package at.overflow.flowy.Renderer
 import android.graphics.SurfaceTexture
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
+import android.os.Environment
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Size
@@ -13,10 +14,10 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
-import at.overflow.flowy.Fragment.FragmentCamera.Companion.blackScreen
+import at.overflow.flowy.Fragment.FragmentCamera.Companion.blackWindowScreen
+import at.overflow.flowy.Fragment.FragmentCamera.Companion.lensChangeFlag
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceFlag
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceIndex
-import at.overflow.flowy.Fragment.FragmentCamera.Companion.lensChangeFlag
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.touchDataUtil
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.userContrastData
 import at.overflow.flowy.Provider.SurfaceTextureProvider
@@ -45,7 +46,6 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
     private var pTexCoord: FloatBuffer =
         ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
-    private var sfTexture: SurfaceTexture? = null
     private var program = 0
     private lateinit var cameraProvider: ProcessCameraProvider
     private lateinit var cameraSelector: CameraSelector
@@ -83,46 +83,8 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
     /** NDC 및 OPENGL 좌표계 설정 */
     private fun setNDCandOPENGL(cameraMode: String) {
 
-        Log.d("cameraMode", cameraMode)
-        Log.d("cameraSubMode", cameraSubMode)
-
-        if (cameraMode == "flowy" && touchDataUtil.flowyPinchFlag){
-
-            val pinchXDistance = touchDataUtil.pinchSecondTouchX - touchDataUtil.pinchFirstTouchX
-            val pinchYDistance = touchDataUtil.pinchSecondTouchY - touchDataUtil.pinchFirstTouchY
-            val pinchDistance = Math.sqrt(Math.pow(pinchXDistance.toDouble(), 2.0) + Math.pow(pinchYDistance.toDouble(), 2.0))
-            var pinchScale = pinchDistance / 100.0
-            if (pinchScale <= 1) pinchScale = 1.0
-            if (pinchScale >= 8) pinchScale = 8.0
-            Log.d("sdfsdfszxcv","" +
-                    "pinch scale : $pinchScale  / " +
-                    "pinch pinchFirstTouchX : ${touchDataUtil.pinchFirstTouchX}  / " +
-                    "pinch pinchFirstTouchY : ${touchDataUtil.pinchFirstTouchY}  / " +
-                    "pinch pinchSecondTouchX : ${touchDataUtil.pinchSecondTouchX}  / " +
-                    "pinch pinchSecondTouchY : ${touchDataUtil.pinchSecondTouchY}  / "
-            )
-
-
-            // 사용자가 터치한곳의 NDK 좌표를 구한다. ( -1 ~ 1 사이값임 )
-            var pinchPointX = (touchDataUtil.pinchFirstTouchX / screenWidth).toDouble()
-            var pinchPointY = ((touchDataUtil.pinchFirstTouchY / screenHeight) * (screenHeight.toDouble() / adjustHeight.toDouble()))
-
-            Log.d(
-                "zxvbxzs", "" +
-                        "pinchPointX : ${pinchPointX}  /  " +
-                        "pinchPointY : ${pinchPointY}  /  "
-            )
-            return
-
-            /** NDC 좌표계 설정 */
-            pVertex.put(varNDC)
-            pVertex.position(0)
-
-            /** OPENGL 좌표계 설정 */
-            pTexCoord.put(OPENGL_VERTICE)
-            pTexCoord.position(0)
-            return
-        }
+//        Log.d("cameraMode", cameraMode)
+//        Log.d("cameraSubMode", cameraSubMode)
 
         when {
             cameraMode == "default" -> {
@@ -149,6 +111,14 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
 
         if (!mGLInit) return
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+
+//        if (flowyCastFlag) {
+//            try {
+//                encode.encoderYUV420(BitmapUtil().bitmapToByteArray(flowyGLTextureView.bitmap))
+//            } catch (e: UninitializedPropertyAccessException) {
+//                Log.d("safasfasfd", "not init")
+//            }
+//        }
 
         // 카메라 전환시에는 텍스처 업데이트를 중단한다.
         if (lensChangeFlag) {
@@ -248,6 +218,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
     }
 
     private fun setScreenWindow() {
+
         if (cameraXAspectRatio == 0) adjustHeight = (screenWidth * 3) / 4 // 4:3 인 경우
         else adjustHeight = (screenWidth * 16) / 9 // 16:9 인 경우
 
@@ -270,6 +241,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
 
     /** 텍스처가 업데이트 가능 할 때 업데이트 한다. */
     private fun textureUpdate() {
+
         synchronized(this) {
             if (freezeMode) {
                 Log.d("freezeMode", "$freezeMode")
@@ -277,10 +249,21 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
 //                flowyGLTextureView.requestRender()
                 return
             } else {
-                try {
-                    sfTexture?.updateTexImage()
-                } catch (e: Exception) {
-                    sfTexture?.attachToGLContext(textureArray[0])
+
+                if (textureMode == 0) {
+                    try {
+                        sfTexture?.updateTexImage()
+                    } catch (e: Exception) {
+                        sfTexture?.attachToGLContext(textureArray[0])
+                    }
+                } else if (textureMode == 1) {
+                    try {
+                        sfTexture?.updateTexImage()
+                    } catch (e: Exception) {
+                        sfTexture?.attachToGLContext(textureArray[1])
+                    }
+                } else {
+
                 }
             }
         }
@@ -367,7 +350,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
                                 Log.d("onSafeToRelease", "onSafeToRelease")
                                 CoroutineScope(Dispatchers.Main).launch {
                                     delay(900)
-                                    blackScreen.visibility = View.GONE
+                                    blackWindowScreen.visibility = View.GONE
                                 }
                             }
                         }
@@ -556,7 +539,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
             else {
                 if (touchDataUtil.touchPointX != 0.0 && touchDataUtil.touchPointY != 0.0 && touchDataUtil.touchFirstX != 0.0 && touchDataUtil.touchFirstY != 0.0) {
 
-                    if (!touchDataUtil.isScreenPointSave){
+                    if (!touchDataUtil.isScreenPointSave) {
                         dragLeftMax = newScreenLeft.toDouble()
                         dragRightMax = newScreenRight.toDouble()
                         dragBottomMax = newScreenBottom.toDouble()
@@ -574,7 +557,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
                                 "touchFirstX : ${touchDataUtil.touchFirstX}  /  " +
                                 "touchFirstY : ${touchDataUtil.touchFirstY}  /  " +
                                 "touchPointX : ${touchDataUtil.touchPointX}  /  " +
-                                "touchPointY : ${touchDataUtil.touchPointY}  /  "  +
+                                "touchPointY : ${touchDataUtil.touchPointY}  /  " +
                                 "xDistance : ${xDistance}  /  " +
                                 "yDistance : ${yDistance}  /  "
                     )
@@ -773,6 +756,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
     }
 
     companion object {
+
         var screenWidth: Int = 0
         var screenHeight: Int = 0
         var adjustWidth: Int = 0
@@ -783,6 +767,8 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         lateinit var previewBuilder: Preview.Builder
         lateinit var cameraLifecycle: CustomLifecycle
         var mUpdateST = false
+        var sfTexture: SurfaceTexture? = null
+
     }
 
 }

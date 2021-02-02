@@ -24,9 +24,19 @@ android {
         }
     }
 
+    packagingOptions {
+        exclude("META-INF/kotlinx-io.kotlin_module")
+        exclude("META-INF/atomicfu.kotlin_module")
+        exclude("META-INF/kotlinx-coroutines-io.kotlin_module")
+        exclude("META-INF/kotlinx-coroutines-core.kotlin_module")
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = "1.8"
     }
 
     buildTypes {
@@ -107,5 +117,16 @@ dependencies {
     // cardView
     implementation "androidx.cardview:cardview:1.0.0"
 
+    // webrtc
+    implementation "org.webrtc:google-webrtc:1.0.27771"
+
+    // webSocket
+    implementation 'com.neovisionaries:nv-websocket-client:2.11'
+
+    // Ktor ( retrofit 써도됨 )
+    implementation "io.ktor:ktor-client-android:1.1.4"
+    implementation "io.ktor:ktor-client-websocket:1.1.4"
+    implementation "io.ktor:ktor-client-cio:1.1.4"
+    implementation "io.ktor:ktor-client-gson:1.1.4"
 }
 

@@ -3,9 +3,11 @@
 package at.overflow.flowy.Util
 
 import android.content.Context
+import android.graphics.SurfaceTexture
 import androidx.camera.core.CameraSelector
 import at.overflow.flowy.DTO.ContrastData
 import at.overflow.flowy.R
+import java.util.concurrent.ArrayBlockingQueue
 
 @JvmField val REQUEST_PERMISSION_CODE = 1
 @JvmField val APP_UPDATE_PERMISSION_CODE = 999
@@ -46,11 +48,12 @@ import at.overflow.flowy.R
 @JvmField var binaryFlag : Boolean = true
 @JvmField var inverseFlag : Boolean = false
 @JvmField var vertexType : String = "default"
+@JvmField var flowyCastFlag : Boolean = false
+
 
 /** 부가기능 : 플래시, 포커스, 프리즈 기능 등 */
 @JvmField var freezeMode : Boolean = false
 @JvmField var autoFocusMode : Boolean = true
-
 @JvmField var deviceRotationValue : Int = 0
 
 @JvmField val contrastInitData = arrayListOf<ContrastData>(
@@ -90,4 +93,10 @@ import at.overflow.flowy.R
 @JvmField var USER_UUID : String = ""
 @JvmField var OVERFLOW_TEST_API_BASE_URL : String = "https://at.flowy.kr/"
 @JvmField var OVERFLOW_TEST_API_IMAGE_UPLOAD : String = "http://121.161.228.253:12000/"
+@JvmField var OVERFLOW_WEB_SOCKET : String = "http://st.flowy.kr:16000/openControl"
 //@JvmField var OVERFLOW_TEST_API_IMAGE_UPLOAD : String = "http://faitest.flowy.kr:12000/"
+
+var textureMode : Int = 0
+var cameraTexture : SurfaceTexture = SurfaceTexture(textureArray[0])
+var videoTexture : SurfaceTexture = SurfaceTexture(textureArray[1])
+
