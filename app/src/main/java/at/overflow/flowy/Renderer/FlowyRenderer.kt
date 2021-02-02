@@ -86,44 +86,6 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         Log.d("cameraMode", cameraMode)
         Log.d("cameraSubMode", cameraSubMode)
 
-        if (cameraMode == "flowy" && touchDataUtil.flowyPinchFlag){
-
-            val pinchXDistance = touchDataUtil.pinchSecondTouchX - touchDataUtil.pinchFirstTouchX
-            val pinchYDistance = touchDataUtil.pinchSecondTouchY - touchDataUtil.pinchFirstTouchY
-            val pinchDistance = Math.sqrt(Math.pow(pinchXDistance.toDouble(), 2.0) + Math.pow(pinchYDistance.toDouble(), 2.0))
-            var pinchScale = pinchDistance / 100.0
-            if (pinchScale <= 1) pinchScale = 1.0
-            if (pinchScale >= 8) pinchScale = 8.0
-            Log.d("sdfsdfszxcv","" +
-                    "pinch scale : $pinchScale  / " +
-                    "pinch pinchFirstTouchX : ${touchDataUtil.pinchFirstTouchX}  / " +
-                    "pinch pinchFirstTouchY : ${touchDataUtil.pinchFirstTouchY}  / " +
-                    "pinch pinchSecondTouchX : ${touchDataUtil.pinchSecondTouchX}  / " +
-                    "pinch pinchSecondTouchY : ${touchDataUtil.pinchSecondTouchY}  / "
-            )
-
-
-            // 사용자가 터치한곳의 NDK 좌표를 구한다. ( -1 ~ 1 사이값임 )
-            var pinchPointX = (touchDataUtil.pinchFirstTouchX / screenWidth).toDouble()
-            var pinchPointY = ((touchDataUtil.pinchFirstTouchY / screenHeight) * (screenHeight.toDouble() / adjustHeight.toDouble()))
-
-            Log.d(
-                "zxvbxzs", "" +
-                        "pinchPointX : ${pinchPointX}  /  " +
-                        "pinchPointY : ${pinchPointY}  /  "
-            )
-            return
-
-            /** NDC 좌표계 설정 */
-            pVertex.put(varNDC)
-            pVertex.position(0)
-
-            /** OPENGL 좌표계 설정 */
-            pTexCoord.put(OPENGL_VERTICE)
-            pTexCoord.position(0)
-            return
-        }
-
         when {
             cameraMode == "default" -> {
                 varNDC = NDC_VERTICE

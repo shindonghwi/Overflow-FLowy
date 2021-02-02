@@ -107,5 +107,9 @@ dependencies {
     // cardView
     implementation "androidx.cardview:cardview:1.0.0"
 
+    // webSocket
+    implementation 'com.neovisionaries:nv-websocket-client:2.11'
+
+
 }
 

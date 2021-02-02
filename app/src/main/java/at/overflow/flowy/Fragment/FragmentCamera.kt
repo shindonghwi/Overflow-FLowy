@@ -48,6 +48,12 @@ import java.io.FileOutputStream
 
 class FragmentCamera : Fragment(), View.OnClickListener {
 
+    /** TEST START*/
+
+    private lateinit var webSocketConnectBtn : Button
+
+    /** TEST END */
+
     private lateinit var rootLayout: ConstraintLayout
     private lateinit var alertToast: Toast
 
@@ -132,6 +138,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** layout id 초기화하는 공간 */
     private fun idInit(view: View) {
 
+        /** TEST START */
+        webSocketConnectBtn = view.findViewById(R.id.webSocketConnectBtn)
+        /** TEST END */
+
         pref = THIS_CONTEXT!!.getSharedPreferences("flowyToggleBtnStatus", Context.MODE_PRIVATE)
         prefEditor = pref.edit()
 
@@ -201,6 +211,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         defaultColorImgView.setOnClickListener(this)
         binaryToggleBtn.setOnClickListener(this)
         inverseToggleBtn.setOnClickListener(this)
+
+        /** TEST START */
+        webSocketConnectBtn.setOnClickListener(this)
+        /** TEST END */
     }
 
     override fun onResume() {
@@ -560,6 +574,14 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             R.id.bannerVersaAD -> {
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://atoverflow.com/")))
             }
+
+            /** TEST START */
+
+            R.id.webSocketConnectBtn -> {
+                WebSocketUtil()
+            }
+
+            /** TEST END */
         }
     }
 

@@ -90,4 +90,5 @@ import at.overflow.flowy.R
 @JvmField var USER_UUID : String = ""
 @JvmField var OVERFLOW_TEST_API_BASE_URL : String = "https://at.flowy.kr/"
 @JvmField var OVERFLOW_TEST_API_IMAGE_UPLOAD : String = "http://121.161.228.253:12000/"
+@JvmField var OVERFLOW_WEB_SOCKET_URL : String = "http://st.flowy.kr:16000/openControl"
 //@JvmField var OVERFLOW_TEST_API_IMAGE_UPLOAD : String = "http://faitest.flowy.kr:12000/"
