@@ -32,6 +32,7 @@ import at.overflow.flowy.R
 import at.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
 import at.overflow.flowy.Util.*
 import at.overflow.flowy.View.FlowyGLTextureView
+import at.overflow.flowy.WebRTC.RTCClient
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.gms.ads.AdListener
@@ -49,9 +50,7 @@ import java.io.FileOutputStream
 class FragmentCamera : Fragment(), View.OnClickListener {
 
     /** TEST START*/
-
-    private lateinit var webSocketConnectBtn : Button
-
+    private lateinit var webSocketCloseBtn : Button
     /** TEST END */
 
     private lateinit var rootLayout: ConstraintLayout
@@ -139,7 +138,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private fun idInit(view: View) {
 
         /** TEST START */
-        webSocketConnectBtn = view.findViewById(R.id.webSocketConnectBtn)
+        webSocketCloseBtn = view.findViewById(R.id.webSocketCloseBtn)
         /** TEST END */
 
         pref = THIS_CONTEXT!!.getSharedPreferences("flowyToggleBtnStatus", Context.MODE_PRIVATE)
@@ -213,10 +212,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         inverseToggleBtn.setOnClickListener(this)
 
         /** TEST START */
-        webSocketConnectBtn.setOnClickListener(this)
+        webSocketCloseBtn.setOnClickListener(this)
         /** TEST END */
-
-
     }
 
     override fun onResume() {
@@ -233,8 +230,9 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         /** 카메라 사용시작 로그를 서버에 보낸다. */
         sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, 1)
-    }
 
+        webSocketUtil = WebSocketUtil(activity!!.applicationContext)
+    }
 
     /** 기기의 방향 체크 - 카메라 프래그먼트에서 화면 방향에 따라서 UI 버튼도 회전이 되어야한다. */
     private fun deviceRotationCheck() {
@@ -242,7 +240,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             object : OrientationEventListener(THIS_CONTEXT, SensorManager.SENSOR_DELAY_NORMAL) {
                 override fun onOrientationChanged(orientation: Int) {
                     deviceRotationValue = orientation
-                    Log.d("orientation", "orientation = $deviceRotationValue")
+//                    Log.d("orientation", "orientation = $deviceRotationValue")
                     uiDirectionChange()
                 }
             }
@@ -579,8 +577,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
             /** TEST START */
 
-            R.id.webSocketConnectBtn -> {
-                WebSocketUtil()
+            R.id.webSocketCloseBtn ->{
+                webSocketUtil.close()
             }
 
             /** TEST END */
@@ -955,6 +953,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         lateinit var luminanceToggleBtn: ToggleButton
 
         var touchDataUtil: TouchDataUtil = TouchDataUtil()
+        lateinit var webSocketUtil : WebSocketUtil
     }
 
     //    /** 서버에 이미지를 올린다. */

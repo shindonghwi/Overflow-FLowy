@@ -83,8 +83,8 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
     /** NDC 및 OPENGL 좌표계 설정 */
     private fun setNDCandOPENGL(cameraMode: String) {
 
-        Log.d("cameraMode", cameraMode)
-        Log.d("cameraSubMode", cameraSubMode)
+//        Log.d("cameraMode", cameraMode)
+//        Log.d("cameraSubMode", cameraSubMode)
 
         when {
             cameraMode == "default" -> {
