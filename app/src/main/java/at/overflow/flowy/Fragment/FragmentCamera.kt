@@ -1,6 +1,7 @@
 package at.overflow.flowy.Fragment
 
 import android.annotation.SuppressLint
+import android.app.Application
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -24,6 +25,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import at.overflow.flowy.Adapter.AdapterBrightShadeControl
 import at.overflow.flowy.DTO.ContrastData
+import at.overflow.flowy.FlowyApplication
 import at.overflow.flowy.Interface.RetrofitAPI
 import at.overflow.flowy.MainActivity
 import at.overflow.flowy.MainActivity.Companion.pref
@@ -32,7 +34,6 @@ import at.overflow.flowy.R
 import at.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
 import at.overflow.flowy.Util.*
 import at.overflow.flowy.View.FlowyGLTextureView
-import at.overflow.flowy.WebRTC.RTCClient
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.gms.ads.AdListener
@@ -48,10 +49,6 @@ import java.io.FileNotFoundException
 import java.io.FileOutputStream
 
 class FragmentCamera : Fragment(), View.OnClickListener {
-
-    /** TEST START*/
-    private lateinit var webSocketCloseBtn : Button
-    /** TEST END */
 
     private lateinit var rootLayout: ConstraintLayout
     private lateinit var alertToast: Toast
@@ -137,10 +134,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** layout id 초기화하는 공간 */
     private fun idInit(view: View) {
 
-        /** TEST START */
-        webSocketCloseBtn = view.findViewById(R.id.webSocketCloseBtn)
-        /** TEST END */
-
         pref = THIS_CONTEXT!!.getSharedPreferences("flowyToggleBtnStatus", Context.MODE_PRIVATE)
         prefEditor = pref.edit()
 
@@ -210,10 +203,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         defaultColorImgView.setOnClickListener(this)
         binaryToggleBtn.setOnClickListener(this)
         inverseToggleBtn.setOnClickListener(this)
-
-        /** TEST START */
-        webSocketCloseBtn.setOnClickListener(this)
-        /** TEST END */
     }
 
     override fun onResume() {
@@ -231,7 +220,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         /** 카메라 사용시작 로그를 서버에 보낸다. */
         sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, 1)
 
-        webSocketUtil = WebSocketUtil(activity!!.applicationContext)
+        try{
+            webSocketUtil = WebSocketUtil(context = activity!!.application)
+        }
+        catch (e : UninitializedPropertyAccessException){}
     }
 
     /** 기기의 방향 체크 - 카메라 프래그먼트에서 화면 방향에 따라서 UI 버튼도 회전이 되어야한다. */
@@ -574,14 +566,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             R.id.bannerVersaAD -> {
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://atoverflow.com/")))
             }
-
-            /** TEST START */
-
-            R.id.webSocketCloseBtn ->{
-                webSocketUtil.close()
-            }
-
-            /** TEST END */
         }
     }
 
@@ -941,6 +925,13 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     }
 
+    override fun onDestroyView() {
+        Log.d("web","onDestroyView 호출")
+        webSocketUtil!!.ws.socket.close()
+        webSocketUtil = null
+        super.onDestroyView()
+    }
+
     companion object {
         lateinit var blackScreen: ImageView
         var lensChangeFlag = false
@@ -953,7 +944,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         lateinit var luminanceToggleBtn: ToggleButton
 
         var touchDataUtil: TouchDataUtil = TouchDataUtil()
-        lateinit var webSocketUtil : WebSocketUtil
+        var webSocketUtil : WebSocketUtil? = null
     }
 
     //    /** 서버에 이미지를 올린다. */

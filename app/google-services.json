@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "840674950749",
+    "project_id": "flowyfcm",
+    "storage_bucket": "flowyfcm.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:840674950749:android:db7340b339d7a47ccd17b4",
+        "android_client_info": {
+          "package_name": "at.overflow.flowy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "840674950749-hli5t2f2a46pig3edd1danqj9ht0sq0o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "at.overflow.flowy",
+            "certificate_hash": "de9f4c4548186b17f6740fa0f80e427fefa38631"
+          }
+        },
+        {
+          "client_id": "840674950749-i0ik8890plrgps4b6s98g7a9jca2nkdg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6ItSiYNeO7l1fhmIZ__-_bCFmVJ-KBJM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "840674950749-i0ik8890plrgps4b6s98g7a9jca2nkdg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

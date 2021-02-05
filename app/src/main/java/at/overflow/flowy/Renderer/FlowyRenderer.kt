@@ -122,7 +122,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
             return
         }
         if (!mUpdateST) {
-            Log.d("updateAvailable", "$mUpdateST")
+//            Log.d("updateAvailable", "$mUpdateST")
         } else {
             // 텍스처가 업데이트 가능 할 때 업데이트한다.
             textureUpdate()
@@ -155,7 +155,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         // 화면의 사이즈 저장
         screenWidth = flowyGLTextureView.width
         screenHeight = flowyGLTextureView.height
-        Log.d("screenSize", "onSurfaceChanged: width : $width / height : $height")
+//        Log.d("screenSize", "onSurfaceChanged: width : $width / height : $height")
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
@@ -259,11 +259,11 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         val compiled = IntArray(1)
         GLES20.glGetShaderiv(vshader, GLES20.GL_COMPILE_STATUS, compiled, 0)
         if (compiled[0] == 0) {
-            Log.e("Shader", "Could not compile vshader")
-            Log.d(
-                "Shader",
-                "Could not compile vshader:" + GLES20.glGetShaderInfoLog(vshader)
-            )
+//            Log.e("Shader", "Could not compile vshader")
+//            Log.d(
+//                "Shader",
+//                "Could not compile vshader:" + GLES20.glGetShaderInfoLog(vshader)
+//            )
             GLES20.glDeleteShader(vshader)
             vshader = 0
         }
@@ -272,11 +272,11 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         GLES20.glCompileShader(fshader)
         GLES20.glGetShaderiv(fshader, GLES20.GL_COMPILE_STATUS, compiled, 0)
         if (compiled[0] == 0) {
-            Log.e("Shader", "Could not compile fshader")
-            Log.d(
-                "Shader",
-                "Could not compile fshader:" + GLES20.glGetShaderInfoLog(fshader)
-            )
+//            Log.e("Shader", "Could not compile fshader")
+//            Log.d(
+//                "Shader",
+//                "Could not compile fshader:" + GLES20.glGetShaderInfoLog(fshader)
+//            )
             GLES20.glDeleteShader(fshader)
             fshader = 0
         }

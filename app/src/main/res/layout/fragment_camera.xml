@@ -92,6 +92,7 @@
     </FrameLayout>
 
     <FrameLayout
+        android:id="@+id/frameLayout"
         android:layout_width="match_parent"
         android:layout_height="@dimen/ad_height"
         app:layout_constraintBottom_toTopOf="@+id/bottom_f_layout">
@@ -113,14 +114,5 @@
             android:scaleType="fitCenter" />
 
     </FrameLayout>
-
-    <Button
-        android:id="@+id/webSocketCloseBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:text="Socket Close"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:layout_editor_absoluteY="584dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
