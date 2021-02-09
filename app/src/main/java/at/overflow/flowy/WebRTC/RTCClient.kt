@@ -1,26 +1,32 @@
 package at.overflow.flowy.WebRTC
 
-import android.app.Application
 import android.content.Context
 import android.util.Base64
 import android.util.Log
+import com.bumptech.glide.load.resource.bitmap.VideoDecoder.byteBuffer
 import com.neovisionaries.ws.client.WebSocket
 import org.json.JSONObject
 import org.webrtc.*
 import org.webrtc.PeerConnection
 import org.webrtc.PeerConnection.IceServer
 import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 
 
 class RTCClient(
-    private val ws : WebSocket,
-    private val applicationContext : Context
-) : PeerConnection.Observer{
+    private val ws: WebSocket,
+    private val applicationContext: Context
+) : PeerConnection.Observer {
 
-    val TAG : String by lazy { "webRTCLog" }
-    lateinit var peerConnection : PeerConnection
+    val TAG: String by lazy { "webRTCLog" }
+    lateinit var peerConnection: PeerConnection
+    lateinit var dataChannel: DataChannel
     lateinit var factory: PeerConnectionFactory
-    val iceServers by lazy { listOf(PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()) }
+    private val iceServers by lazy {
+        listOf(
+            PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()
+        )
+    }
 
     init {
 
@@ -56,8 +62,8 @@ class RTCClient(
         initializePeerConnections()
     }
 
-    private fun initializePeerConnectionFactory(){
-        Log.d(TAG, "initializePeerConnectionFactory");
+    private fun initializePeerConnectionFactory() {
+        Log.d(TAG, "initializePeerConnectionFactory")
 
         PeerConnectionFactory.initialize(
             PeerConnectionFactory.InitializationOptions
@@ -67,74 +73,90 @@ class RTCClient(
         factory = PeerConnectionFactory.builder().createPeerConnectionFactory()
     }
 
-    private fun initializePeerConnections(){
+    private fun initializePeerConnections() {
 
-        Log.d(TAG, "initializePeerConnections");
+        Log.d(TAG, "initializePeerConnections")
 
         /** Local peer Connection Create */
         peerConnection = createPeerConnection(factory = factory)
 
-        connectToOtherPeer()
+        setDataChannel()
+
+//        connectToOtherPeer()
     }
 
-    private fun createPeerConnection(factory: PeerConnectionFactory) : PeerConnection {
+    private fun setDataChannel() {
+        dataChannel = peerConnection.createDataChannel("sendDataChannel", DataChannel.Init())
+        dataChannel.registerObserver(object : DataChannel.Observer {
+            override fun onMessage(p0: DataChannel.Buffer?) {
+                Log.d(TAG, "datachannel : onMessage")
+            }
+
+            override fun onBufferedAmountChange(p0: Long) {
+                Log.d(TAG, "datachannel : onBufferedAmountChange")
+            }
+
+            override fun onStateChange() {
+                Log.d(TAG, "datachannel : onStateChange : ${dataChannel.state().toString()}")
+            }
+
+        })
+    }
+
+    private fun createPeerConnection(factory: PeerConnectionFactory): PeerConnection {
 
         val rtcConfig = PeerConnection.RTCConfiguration(iceServers)
-
         return factory.createPeerConnection(rtcConfig, this)!!
     }
 
-    private fun connectToOtherPeer(){
+    fun doCall(){
         val sdpMediaConstraints = MediaConstraints()
         peerConnection.createOffer(object :AppSdpObserver(){
+            override fun onCreateFailure(p0: String?) {
+                super.onCreateFailure(p0)
+                Log.d("SSTSTS", "createOffer onCreateFailure : ${p0}")
+            }
 
             override fun onCreateSuccess(p0: SessionDescription?) {
                 super.onCreateSuccess(p0)
-                Log.d(TAG, "createOffer");
-
-                val encodeSDP = strToBase64(p0!!.description)
-
-                peerConnection.setLocalDescription(AppSdpObserver(), SessionDescription(SessionDescription.Type.OFFER, encodeSDP))
-                try{
-                    sendLocalSdp(encodeSDP)
-                    Log.d(TAG, "connectToOtherPeer createOffer send / ${strToBase64(p0.description)} ");
-                }
-                catch (e : Exception){
-                    Log.d(TAG, "connectToOtherPeer createOffer error : ${e.message} ");
-                }
+                peerConnection.setLocalDescription(AppSdpObserver(), p0)
+                sendLocalSdp(p0!!.description)
+                Log.d("SSTSTS", "제공자 콜 시도 및 sdp 정보 전달")
+                Log.d("SSTSTS", "제공자 local 저장 : ${peerConnection.localDescription}")
             }
-
-        },sdpMediaConstraints)
-
-        peerConnection.createAnswer(object :AppSdpObserver(){
-            override fun onCreateSuccess(p0: SessionDescription?) {
-                super.onCreateSuccess(p0)
-                Log.d(TAG, "createAnswer");
-
-                val encodeSDP = strToBase64(p0!!.description)
-
-                peerConnection.setRemoteDescription(AppSdpObserver(), SessionDescription(SessionDescription.Type.ANSWER, encodeSDP))
-
-                try{
-                    sendLocalSdp(encodeSDP)
-                    Log.d(TAG, "connectToOtherPeer createAnswer send ${strToBase64(p0.description)} ");
-                }
-                catch (e : Exception){
-                    Log.d(TAG, "connectToOtherPeer createAnswer error : ${e.message} ");
-                }
-            }
-        }, MediaConstraints())
+        }, sdpMediaConstraints)
     }
 
-    fun sendLocalSdp(encodeSdpStr : String?){
+    fun doAnswer(description: String){
+        Log.d("SSTSTS", "Answer 함수 들어옴 ")
+        peerConnection.setRemoteDescription(AppSdpObserver(), SessionDescription(SessionDescription.Type.OFFER, description))
+        Log.d("SSTSTS", "제공자 remote을 저장 : ${peerConnection.remoteDescription}")
+        val sdpMediaConstraints = MediaConstraints()
+        peerConnection.createAnswer(object : AppSdpObserver(){
+            override fun onCreateFailure(p0: String?) {
+                super.onCreateFailure(p0)
+                Log.d("SSTSTS", "createAnswer onCreateFailure : ${p0}")
+            }
+
+            override fun onCreateSuccess(p0: SessionDescription?) {
+                super.onCreateSuccess(p0)
+                peerConnection.setLocalDescription(AppSdpObserver(), p0)
+                sendLocalSdp(p0!!.description)
+                Log.d("SSTSTS", "수신자 local 저장 : ${peerConnection.remoteDescription}")
+            }
+        }, sdpMediaConstraints)
+    }
+
+    fun sendLocalSdp(sdpJson: String) {
         val jsonSDP = JSONObject()
         jsonSDP.put("msg_type", 1)
         jsonSDP.put("msg_code", 1)
         jsonSDP.put("task_id", "sendLocalSdp")
-        jsonSDP.put("str_val", encodeSdpStr)
+        jsonSDP.put("str_val", strToBase64(sdpJson))
         ws.sendText(jsonSDP.toString())
     }
-    fun requestRemoteSdp(){
+
+    fun requestRemoteSdp() {
         val jsonSDP = JSONObject()
         jsonSDP.put("msg_type", 1)
         jsonSDP.put("msg_code", 3)
@@ -142,78 +164,93 @@ class RTCClient(
         ws.sendText(jsonSDP.toString())
     }
 
-    fun sendIceCandidate(ice : IceCandidate?){
-        Log.d(TAG, "sendIceCandidateExchange / iceSdp : ${ice!!.sdp}");
+    fun requestRemoteIce() {
         val jsonSDP = JSONObject()
         jsonSDP.put("msg_type", 1)
-        jsonSDP.put("msg_code", 1)
-        jsonSDP.put("str_val", strToBase64(ice.sdp))
-        jsonSDP.put("task_id", "requestRemoteSdp")
+        jsonSDP.put("msg_code", 4)
+        jsonSDP.put("task_id", "requestRemoteIce")
         ws.sendText(jsonSDP.toString())
     }
 
-    private fun strToBase64(str : String): String? {
+    fun sendIceCandidate(iceInfo : String) {
+        val jsonSDP = JSONObject()
+        jsonSDP.put("msg_type", 1)
+        jsonSDP.put("msg_code", 2)
+        jsonSDP.put("str_val", strToBase64(iceInfo))
+        jsonSDP.put("task_id", "sendLocalIce")
+        ws.sendText(jsonSDP.toString())
+    }
+
+    fun strToBase64(str: String): String? {
         val base64 = str.toByteArray(Charset.forName("UTF-8"))
         return Base64.encodeToString(base64, Base64.DEFAULT)
     }
 
     override fun onIceCandidate(p0: IceCandidate?) {
-        Log.d(TAG, "createPeerConnection : onIceCandidate");
-        peerConnection.addIceCandidate(p0);
+
+        val ob = JSONObject()
+        ob.put("sdpMid", p0!!.sdpMid.toString())
+        ob.put("sdpMLineIndex", p0.sdpMLineIndex.toString())
+        ob.put("sdp", p0.sdp.toString())
+        ob.put("serverUrl", p0.serverUrl.toString())
+        ob.put("adapterType", p0.adapterType.toString())
+
+        sendIceCandidate(ob.toString())
+        Log.d("SSTSTS", "나의 onIceCandidate ice 저장 : ${p0.toString()}")
     }
 
     override fun onDataChannel(dataChannel: DataChannel?) {
-        dataChannel!!.registerObserver(object :DataChannel.Observer{
+        dataChannel!!.registerObserver(object : DataChannel.Observer {
             override fun onMessage(p0: DataChannel.Buffer?) {
-                Log.d(TAG, "onMessage");
+                val s: String = StandardCharsets.UTF_8.decode(p0!!.data).toString()
+                Log.d(TAG, "onDataChannel : onMessage ${s}")
             }
 
             override fun onBufferedAmountChange(p0: Long) {
-                Log.d(TAG, "onStateChange");
+                Log.d(TAG, "onDataChannel : onStateChange")
             }
 
             override fun onStateChange() {
-                Log.d(TAG, "onStateChange");
+                Log.d(TAG, "onDataChannel : onStateChange")
             }
 
         })
-        Log.d(TAG, "createPeerConnection : dataChannel");
     }
 
     override fun onIceConnectionReceivingChange(p0: Boolean) {
-        Log.d(TAG, "createPeerConnection : onIceConnectionReceivingChange: $p0");
+        Log.d(TAG, "createPeerConnection : onIceConnectionReceivingChange: $p0")
     }
 
     override fun onIceConnectionChange(p0: PeerConnection.IceConnectionState?) {
-        Log.d(TAG, "createPeerConnection : onIceConnectionChange: $p0");
+        Log.d(TAG, "createPeerConnection : onIceConnectionChange: $p0")
     }
 
     override fun onIceGatheringChange(p0: PeerConnection.IceGatheringState?) {
-        Log.d(TAG, "createPeerConnection : onIceGatheringChange: $p0");
+        Log.d(TAG, "createPeerConnection : onIceGatheringChange: $p0")
     }
 
     override fun onAddStream(p0: MediaStream?) {
-        Log.d(TAG, "createPeerConnection : onAddStream: $p0");
+        Log.d(TAG, "createPeerConnection : onAddStream: $p0")
     }
 
     override fun onSignalingChange(p0: PeerConnection.SignalingState?) {
-        Log.d(TAG, "createPeerConnection : onSignalingChange: $p0");
+        Log.d(TAG, "createPeerConnection : onSignalingChange: $p0")
     }
 
     override fun onIceCandidatesRemoved(p0: Array<out IceCandidate>?) {
-        Log.d(TAG, "createPeerConnection : onIceCandidatesRemoved: $p0");
+        Log.d(TAG, "createPeerConnection : onIceCandidatesRemoved: $p0")
     }
 
     override fun onRemoveStream(p0: MediaStream?) {
-        Log.d(TAG, "createPeerConnection : onRemoveStream: $p0");
+        Log.d(TAG, "createPeerConnection : onRemoveStream: $p0")
     }
 
     override fun onRenegotiationNeeded() {
-        Log.d(TAG, "createPeerConnection : onRenegotiationNeeded: ");
+        Log.d(TAG, "createPeerConnection : onRenegotiationNeeded: ")
     }
 
     override fun onAddTrack(p0: RtpReceiver?, p1: Array<out MediaStream>?) {
-        Log.d(TAG, "createPeerConnection : onAddTrack: $p0 / $p1");
+        Log.d(TAG, "createPeerConnection : onAddTrack: $p0 / $p1")
     }
 
 }

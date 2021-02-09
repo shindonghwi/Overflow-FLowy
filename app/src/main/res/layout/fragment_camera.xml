@@ -115,4 +115,13 @@
 
     </FrameLayout>
 
+    <Button
+        android:id="@+id/castBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cast"
+        app:layout_constraintBottom_toTopOf="@+id/frameLayout"
+        app:layout_constraintEnd_toEndOf="@+id/glSurfaceView"
+        app:layout_constraintTop_toBottomOf="@+id/top_f_layout" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

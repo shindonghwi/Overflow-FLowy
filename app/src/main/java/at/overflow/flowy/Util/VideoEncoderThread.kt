@@ -5,6 +5,11 @@ import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.os.Environment
 import android.util.Log
+import at.overflow.flowy.Fragment.FragmentCamera.Companion.webSocketUtil
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.webrtc.DataChannel
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 
@@ -39,57 +44,57 @@ class VideoEncoderThread(
             e.printStackTrace()
         }
     }
-//    var path = Environment.getExternalStorageDirectory().toString() + "/Flowy/encodingTest.txt"
-//    var fo = FileOutputStream(path)
-//    var gchannel = fo.channel
 
     fun encoderYUV420(input: ByteArray) {
-        Log.d("sdffdsdffd","input : ${input.toString()}")
-        Log.d("sdffdsdffd","input size : ${input.size}")
+        CoroutineScope(Dispatchers.Default).launch {
+            Log.d("sdffdsdffd","input : ${input.toString()}")
+            Log.d("sdffdsdffd","input size : ${input.size}")
 
-        try {
-            val inputBufferIndex = codec!!.dequeueInputBuffer(-1)
-            Log.d("sdffdsdffd","inputBufferIndex : ${inputBufferIndex}")
+            try {
+                val inputBufferIndex = codec!!.dequeueInputBuffer(-1)
+                Log.d("sdffdsdffd","inputBufferIndex : ${inputBufferIndex}")
 
-            if (inputBufferIndex >= 0) {
-                val inputBuffer = codec!!.getInputBuffer(inputBufferIndex)
-                inputBuffer!!.clear()
-                inputBuffer.put(input)
-                codec!!.queueInputBuffer(
-                    inputBufferIndex,
-                    0,
-                    input.size,
-                    System.currentTimeMillis(),
-                    0
-                )
-            }
-            val bufferInfo = MediaCodec.BufferInfo()
-            var outputBufferIndex = codec!!.dequeueOutputBuffer(bufferInfo, 0)
-            Log.d("sdffdsdffd","outputBufferIndex : ${outputBufferIndex}")
+                if (inputBufferIndex >= 0) {
+                    val inputBuffer = codec!!.getInputBuffer(inputBufferIndex)
+                    inputBuffer!!.clear()
+                    inputBuffer.put(input)
+                    codec!!.queueInputBuffer(
+                        inputBufferIndex,
+                        0,
+                        input.size,
+                        System.currentTimeMillis(),
+                        0
+                    )
+                }
+                val bufferInfo = MediaCodec.BufferInfo()
+                var outputBufferIndex = codec!!.dequeueOutputBuffer(bufferInfo, 0)
+                Log.d("sdffdsdffd","outputBufferIndex : ${outputBufferIndex}")
 
-            while (outputBufferIndex >= 0) {
-                val outputBuffer = codec!!.getOutputBuffer(outputBufferIndex)
-                val outData = ByteArray(outputBuffer!!.remaining())
-                outputBuffer[outData, 0, outData.size] as ByteBuffer
-                codec!!.releaseOutputBuffer(outputBufferIndex, false)
-                outputBufferIndex = codec!!.dequeueOutputBuffer(bufferInfo, 0)
-                Log.d("sdffdsdffda","outputBuffer0 $outputBuffer")
-            }
-            Log.d("sdffdsdffd","outputBuffers : ${codec!!.outputBuffers}")
-            Log.d("sdffdsdffd","outputBuffers.size : ${codec!!.outputBuffers.size}")
-            bufferCount += 1
-            if (bufferCount > 2){
-                Log.d("sdffdsdffd","정상적인 outputBuffers가 생김")
-            }
+                while (outputBufferIndex >= 0) {
+                    val outputBuffer = codec!!.getOutputBuffer(outputBufferIndex)
+                    val outData = ByteArray(outputBuffer!!.remaining())
+                    outputBuffer[outData, 0, outData.size] as ByteBuffer
+                    codec!!.releaseOutputBuffer(outputBufferIndex, false)
+                    outputBufferIndex = codec!!.dequeueOutputBuffer(bufferInfo, 0)
+                    Log.d("sdffdsdffda","outputBuffer0 $outputBuffer")
+                }
+                Log.d("sdffdsdffd","outputBuffers : ${codec!!.outputBuffers}")
+                Log.d("sdffdsdffd","outputBuffers.size : ${codec!!.outputBuffers.size}")
+
+                Log.d("sdffdsdffd","정상적인 outputBuffers가 생김 ${codec!!.outputBuffers}")
+
+
+                webSocketUtil!!.rtcClient.dataChannel.send(DataChannel.Buffer(codec!!.getOutputBuffer(0), false))
 
 //            wcontent.put(outputBuffer)
 //            wcontent.flip()
 //            if (fileSaveCount > 2)
 //                gchannel.write(codec!!.outputBuffers)
 
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Log.d("sdffdsdffd","e.message : ${e.message}")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Log.d("sdffdsdffd","e.message : ${e.message}")
+            }
         }
     }
 

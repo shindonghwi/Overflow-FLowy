@@ -14,6 +14,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.blackScreen
+import at.overflow.flowy.Fragment.FragmentCamera.Companion.encode
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceFlag
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceIndex
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.lensChangeFlag
@@ -111,6 +112,10 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
 
         if (!mGLInit) return
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+
+        if (castMode){
+            encode.encoderYUV420(BitmapUtil().bitmapToByteArray(flowyGLTextureView.bitmap))
+        }
 
         // 카메라 전환시에는 텍스처 업데이트를 중단한다.
         if (lensChangeFlag) {

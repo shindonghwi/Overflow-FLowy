@@ -50,6 +50,7 @@ import at.overflow.flowy.R
 /** 부가기능 : 플래시, 포커스, 프리즈 기능 등 */
 @JvmField var freezeMode : Boolean = false
 @JvmField var autoFocusMode : Boolean = true
+@JvmField var castMode : Boolean = false
 
 @JvmField var deviceRotationValue : Int = 0
 

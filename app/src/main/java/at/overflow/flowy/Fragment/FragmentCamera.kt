@@ -32,6 +32,7 @@ import at.overflow.flowy.MainActivity.Companion.pref
 import at.overflow.flowy.MainActivity.Companion.prefEditor
 import at.overflow.flowy.R
 import at.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
+import at.overflow.flowy.Renderer.VideoEncoderThread
 import at.overflow.flowy.Util.*
 import at.overflow.flowy.View.FlowyGLTextureView
 import com.bumptech.glide.Glide
@@ -44,11 +45,18 @@ import com.google.gson.JsonParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.webrtc.DataChannel
+import org.webrtc.PeerConnection
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
+import java.nio.ByteBuffer
 
 class FragmentCamera : Fragment(), View.OnClickListener {
+
+    /** test start */
+    private lateinit var castBtn : Button
+    /** test end */
 
     private lateinit var rootLayout: ConstraintLayout
     private lateinit var alertToast: Toast
@@ -134,6 +142,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** layout id 초기화하는 공간 */
     private fun idInit(view: View) {
 
+        /** test start */
+        castBtn = view.findViewById(R.id.castBtn)
+        /** test end */
+
         pref = THIS_CONTEXT!!.getSharedPreferences("flowyToggleBtnStatus", Context.MODE_PRIVATE)
         prefEditor = pref.edit()
 
@@ -187,6 +199,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     /** 클릭 리스너 관리 */
     private fun setClickListener() {
+        /** test start */
+        castBtn.setOnClickListener(this)
+        /** test end */
+
         focusToggleBtn.setOnClickListener(this)
         flashToggleBtn.setOnClickListener(this)
         lensChangeToggleBtn.setOnClickListener(this)
@@ -566,6 +582,28 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             R.id.bannerVersaAD -> {
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://atoverflow.com/")))
             }
+
+            /** test start */
+            R.id.castBtn -> {
+
+                if (!webSocketUtil!!.userIsCP){
+                    Toast.makeText(THIS_CONTEXT, "화면 송출 권한이 없습니다",Toast.LENGTH_SHORT).show()
+                    return
+                }
+
+                if (webSocketUtil!!.rtcClient.peerConnection.iceConnectionState() != PeerConnection.IceConnectionState.CONNECTED){
+                    Toast.makeText(THIS_CONTEXT, "상대방과 연결을 확인 해주세요",Toast.LENGTH_SHORT).show()
+                    return
+                }
+
+                encode = VideoEncoderThread(glTextureView.bitmap!!.width, glTextureView.bitmap!!.height, 8000 * 1000, 30)
+
+                /** 캐스트 모드 활성화 Flowy Render 에서 bitmap 을 캐스트 한다. */
+                castMode = true
+
+            }
+            /** test end */
+
         }
     }
 
@@ -945,6 +983,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         var touchDataUtil: TouchDataUtil = TouchDataUtil()
         var webSocketUtil : WebSocketUtil? = null
+        lateinit var encode: VideoEncoderThread
+
     }
 
     //    /** 서버에 이미지를 올린다. */
