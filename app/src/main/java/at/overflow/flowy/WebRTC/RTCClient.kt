@@ -93,7 +93,7 @@ class RTCClient(
             }
 
             override fun onBufferedAmountChange(p0: Long) {
-                Log.d(TAG, "datachannel : onBufferedAmountChange")
+                Log.d(TAG, "datachannel : onBufferedAmountChange + ${p0}")
             }
 
             override fun onStateChange() {
@@ -202,12 +202,11 @@ class RTCClient(
     override fun onDataChannel(dataChannel: DataChannel?) {
         dataChannel!!.registerObserver(object : DataChannel.Observer {
             override fun onMessage(p0: DataChannel.Buffer?) {
-                val s: String = StandardCharsets.UTF_8.decode(p0!!.data).toString()
-                Log.d(TAG, "onDataChannel : onMessage ${s}")
+                Log.d(TAG, "onDataChannel : onMessage data : ${p0!!.data}")
             }
 
             override fun onBufferedAmountChange(p0: Long) {
-                Log.d(TAG, "onDataChannel : onStateChange")
+                Log.d(TAG, "onDataChannel : onBufferedAmountChange : ${p0}")
             }
 
             override fun onStateChange() {

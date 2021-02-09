@@ -26,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView
 import at.overflow.flowy.Adapter.AdapterBrightShadeControl
 import at.overflow.flowy.DTO.ContrastData
 import at.overflow.flowy.FlowyApplication
+import at.overflow.flowy.Fragment.FragmentCamera.Companion.blackScreen
 import at.overflow.flowy.Interface.RetrofitAPI
 import at.overflow.flowy.MainActivity
 import at.overflow.flowy.MainActivity.Companion.pref
@@ -42,6 +43,7 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import com.google.gson.JsonParser
+import kotlinx.android.synthetic.main.fragment_camera.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
