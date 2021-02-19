@@ -12,9 +12,16 @@ import com.bumptech.glide.Glide
 import at.overflow.flowy.DTO.FlowyMenuData
 import at.overflow.flowy.R
 
-/** AdapterFlowyDescription :
- * 이 어댑터는 gif 이미지 경로를 받아서 생성이되고,
- * 화면에 보이는 아이템의 포지션이 바뀔때마다 캐치하고 gif 이미지를 보여주는 기능을 한다.*/
+/**
+ * AdapterFlowyMenu:
+ *
+ * 사용되는 위치 : AdapterFlowyMenu.kt / 화면 왼쪽 하단에 메뉴 버튼을 눌러서 나오는 화면이다.
+ *
+ * 현재는 [ 대비, 자습서, 정보에 대한 기능밖에없다.]
+ * 차후에 기능이 추가 될 수 도 있기에 recyclerview 로 제작함.
+ * 각 항목을 누르면 다른 화면으로 이동 할 수 있게 onItemClicked interface 를 구현하였다.
+ *
+ * */
 
 class AdapterFlowyMenu(val context: Context, private val menuData: Array<FlowyMenuData>) :
     RecyclerView.Adapter<AdapterFlowyMenu.menuViewHolder>() {
@@ -26,7 +33,6 @@ class AdapterFlowyMenu(val context: Context, private val menuData: Array<FlowyMe
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AdapterFlowyMenu.menuViewHolder {
-        Log.d("asdsadsadasd", menuData.toString())
         val view = LayoutInflater.from(parent.context).inflate(
             R.layout.menu_item_view,
             parent, false
@@ -47,6 +53,7 @@ class AdapterFlowyMenu(val context: Context, private val menuData: Array<FlowyMe
         val imageItem: ImageView = itemView.findViewById(R.id.menuImageItem)
         val textItem: TextView = itemView.findViewById(R.id.menuTextItem)
 
+        /** 각 항목을 눌렀을때 다른 화면으로 이동시켜주기 위하여 항목마다 클릭이벤트를 달아주었다. */
         init {
             itemView.setOnClickListener {
                 val pos = adapterPosition

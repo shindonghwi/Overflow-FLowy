@@ -1,4 +1,4 @@
-package at.overflow.flowy.Util
+package at.overflow.flowy.Disable
 
 import android.content.Context
 import android.content.res.Configuration

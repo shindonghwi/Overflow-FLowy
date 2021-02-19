@@ -1,17 +1,28 @@
 package at.overflow.flowy.View
 
 import android.content.Context
-import android.opengl.GLSurfaceView
+import android.graphics.*
 import android.util.AttributeSet
-import android.view.ScaleGestureDetector
-import android.view.ScaleGestureDetector.OnScaleGestureListener
+import android.util.Log
 import android.view.SurfaceHolder
+import android.view.TextureView
+import at.overflow.flowy.MainActivity
 import at.overflow.flowy.Renderer.FlowyRenderer
+import kotlinx.android.synthetic.main.activity_main.view.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.webrtc.VideoFrame
+import org.webrtc.VideoFrame.I420Buffer
+import org.webrtc.VideoSink
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+
 
 class FlowyGLTextureView(context: Context, attributeSet: AttributeSet) :
-    GLTextureView(context, attributeSet){
+    GLTextureView(context, attributeSet), VideoSink{
 
-    private var mRenderer: FlowyRenderer =
+    var mRenderer: FlowyRenderer =
         FlowyRenderer(this)
 
     init{
@@ -28,5 +39,9 @@ class FlowyGLTextureView(context: Context, attributeSet: AttributeSet) :
     override fun onPause() {
         mRenderer.onPause()
         super.onPause()
+    }
+
+    override fun onFrame(p0: VideoFrame?) {
+        Log.d("GlTextureView","$p0")
     }
 }

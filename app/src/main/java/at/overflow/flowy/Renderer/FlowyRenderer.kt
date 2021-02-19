@@ -1,8 +1,11 @@
 package at.overflow.flowy.Renderer
 
+//import at.overflow.flowy.Fragment.FragmentCamera.Companion.blackScreen
+import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
+import android.opengl.GLSurfaceView
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Size
@@ -14,10 +17,9 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.blackScreen
-import at.overflow.flowy.Fragment.FragmentCamera.Companion.encode
+import at.overflow.flowy.Fragment.FragmentCamera.Companion.lensChangeFlag
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceFlag
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.luminanceIndex
-import at.overflow.flowy.Fragment.FragmentCamera.Companion.lensChangeFlag
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.touchDataUtil
 import at.overflow.flowy.Fragment.FragmentCamera.Companion.userContrastData
 import at.overflow.flowy.Provider.SurfaceTextureProvider
@@ -40,7 +42,7 @@ import kotlin.math.min
 
 
 class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLTextureView.Renderer,
-    SurfaceTexture.OnFrameAvailableListener {
+    SurfaceTexture.OnFrameAvailableListener{
 
     private var pVertex: FloatBuffer =
         ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
@@ -112,10 +114,6 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
 
         if (!mGLInit) return
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
-
-        if (castMode){
-            encode.encoderYUV420(BitmapUtil().bitmapToByteArray(flowyGLTextureView.bitmap))
-        }
 
         // 카메라 전환시에는 텍스처 업데이트를 중단한다.
         if (lensChangeFlag) {
@@ -334,7 +332,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
                                 Log.d("onSafeToRelease", "onSafeToRelease")
                                 CoroutineScope(Dispatchers.Main).launch {
                                     delay(900)
-                                    blackScreen.visibility = View.GONE
+                                    blackScreen!!.visibility = View.GONE
                                 }
                             }
                         }
@@ -665,6 +663,8 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         GLES20.glFlush()
+
+
     }
 
     /** fragment Shader default : rgb 조작 */
@@ -739,7 +739,7 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         return floatArrayOf(red, green, blue, 1.0f)
     }
 
-    companion object {
+    companion object{
         var screenWidth: Int = 0
         var screenHeight: Int = 0
         var adjustWidth: Int = 0
@@ -751,5 +751,4 @@ class FlowyRenderer(private val flowyGLTextureView: FlowyGLTextureView) : GLText
         lateinit var cameraLifecycle: CustomLifecycle
         var mUpdateST = false
     }
-
 }

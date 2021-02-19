@@ -88,7 +88,7 @@ class FragmentMenuContrast : Fragment(){
             userContrastData.addAll(contrastInitData)
             flowyMenuContrastAdapter.notifyDataSetChanged()
 
-            if (alertToast != null) alertToast.cancel()
+            alertToast.cancel()
             alertToast = Toast.makeText(context, "기본값으로 복원되었습니다", Toast.LENGTH_SHORT)
             alertToast.show()
         }

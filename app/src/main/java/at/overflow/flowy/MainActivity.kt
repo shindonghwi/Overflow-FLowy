@@ -6,9 +6,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -19,14 +23,12 @@ import at.overflow.flowy.Fragment.FragmentCamera
 import at.overflow.flowy.Fragment.FragmentDescription
 import at.overflow.flowy.Renderer.FlowyRenderer.Companion.cameraLifecycle
 import at.overflow.flowy.Util.*
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.play.core.appupdate.AppUpdateInfo
 import com.google.android.play.core.appupdate.AppUpdateManager
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -35,7 +37,8 @@ class MainActivity : AppCompatActivity() {
     /** 요청할 권한들을 작성해준다. */
     private val requiredPermissions = arrayOf(
         Manifest.permission.CAMERA,
-        Manifest.permission.WRITE_EXTERNAL_STORAGE
+        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        Manifest.permission.ACCESS_FINE_LOCATION
     )
 
     private lateinit var appUpdateManager: AppUpdateManager
@@ -232,6 +235,13 @@ class MainActivity : AppCompatActivity() {
                             permissionCheckFlag = false
                             toastPermission.add("저장공간")
                         } else {
+                            permissionCheckFlag = true
+                        }
+
+                        if (permission == "android.permission.ACCESS_FINE_LOCATION" && grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+                            permissionCheckFlag = false
+                            toastPermission.add("위치정보")
+                       } else {
                             permissionCheckFlag = true
                         }
                     }

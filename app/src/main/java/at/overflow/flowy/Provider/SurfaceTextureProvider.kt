@@ -12,7 +12,11 @@ import androidx.core.util.Consumer
 import at.overflow.flowy.Util.textureArray
 
 /**
- * SurfaceTextureProvider는 미리 구성된 표면을 제공하는 Preview SurfaceProvider의 구현을 생성한다.
+ * CameraX를 통해 나온 카메라의 정보를 Surface에 표시하기 위해서 필요한 Provider
+ * 사용할 텍스처를 하나 만들고 -> textureArray[0]]
+ * surfaceTexture를 생성한다. -> val surfaceTexture = SurfaceTexture(textureArray[0])
+ * 생성된 surfaceTexture를 기반으로 surface를 생성한다.
+ * surface는 카메라로 부터 전달받은 정보를 표시하기 위해 필요하다.
  */
 class SurfaceTextureProvider : SurfaceTexture.OnFrameAvailableListener{
 

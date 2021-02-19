@@ -14,10 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import org.webrtc.DataChannel
-import org.webrtc.IceCandidate
-import org.webrtc.PeerConnection
-import org.webrtc.SessionDescription
+import org.webrtc.*
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
 
@@ -29,7 +26,7 @@ class WebSocketUtil(
     lateinit var rtcClient: RTCClient
 
     val TAG : String by lazy { "webSocketLog" }
-    val userIsCP : Boolean by lazy { true }
+    val userIsCP : Boolean by lazy { false }
 
     init {
 
@@ -92,7 +89,10 @@ class WebSocketUtil(
 
                 override fun handleCallbackError(websocket: WebSocket?, cause: Throwable?) {
                     super.handleCallbackError(websocket, cause)
-                    Log.d(TAG,"handleCallbackError : $cause")
+                    Log.d(TAG,"handleCallbackError : ${cause!!.message}")
+                    cause.stackTrace
+                    Log.d(TAG,"handleCallbackError : ${cause.localizedMessage}")
+                    Log.d(TAG,"handleCallbackError : ${cause.suppressed}")
                 }
 
                 override fun onBinaryFrame(websocket: WebSocket?, frame: WebSocketFrame?) {
@@ -140,7 +140,7 @@ class WebSocketUtil(
                     var str_array : JSONArray = JSONArray()
 
                     try{
-                        str_val = base64Decoding(responseData["str_val"])
+                        str_val = StringUtil().base64Decoding(responseData["str_val"])
                         Log.d("SSTSTS", "str_val 파싱 : ${str_val}")
                     }catch (e : Exception){}
 
@@ -159,7 +159,7 @@ class WebSocketUtil(
 
                                     if (task_id == "requestRemoteSdp" && str_val != ""){
                                         if (userIsCP){
-                                            rtcClient.peerConnection.setRemoteDescription(AppSdpObserver(), SessionDescription(SessionDescription.Type.ANSWER, base64Decoding(str_val)))
+                                            rtcClient.peerConnection.setRemoteDescription(AppSdpObserver(), SessionDescription(SessionDescription.Type.ANSWER, StringUtil().base64Decoding(str_val)))
                                             Log.d("SSTSTS", "최종 수신자 remote을 저장 : ${rtcClient.peerConnection.remoteDescription}")
                                             Log.d("SSTSTS", "SDP 교환 완료")
                                         }
@@ -170,7 +170,7 @@ class WebSocketUtil(
                                     }
                                     else if (task_id == "requestRemoteIce"){
                                         for ( i in 0 until str_array.length()){
-                                            val iceInfo = base64Decoding(str_array[i].toString())
+                                            val iceInfo = StringUtil().base64Decoding(str_array[i].toString())
 
                                             val jsonObject = JSONObject(iceInfo)
 
@@ -188,7 +188,7 @@ class WebSocketUtil(
                                                     "adapterType : ${adapterType}" + "\n"
                                             )
                                             var iceInstance : IceCandidate = IceCandidate(iceMid, iceIndex, iceSdp)
-                                            Log.d("SSTSTS", "제어 요청 작업 ICE 정보 : $iceInstance")
+                                            Log.d("SSTSTS", "상대방 ICE 저장 : $iceInstance")
                                             rtcClient.peerConnection.addIceCandidate(iceInstance)
                                         }
 
@@ -238,7 +238,7 @@ class WebSocketUtil(
                                             "adapterType : ${adapterType}" + "\n"
                                     )
                                     var iceInstance : IceCandidate = IceCandidate(iceMid, iceIndex, iceSdp)
-                                    Log.d("SSTSTS", "제어 요청 작업 ICE 정보 : $iceInstance")
+                                    Log.d("SSTSTS", "상대방 ICE 저장 : $iceInstance")
                                     rtcClient.peerConnection.addIceCandidate(iceInstance)
 
                                     CoroutineScope(Dispatchers.Default).launch {
@@ -434,8 +434,6 @@ class WebSocketUtil(
         return responseHashMap
     }
 
-    fun base64Decoding(str: String?): String {
-        return String(Base64.decode(str, Base64.DEFAULT), Charset.forName("UTF-8"))
-    }
+
 
 }

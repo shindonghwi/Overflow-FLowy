@@ -1,20 +1,18 @@
 package at.overflow.flowy.Fragment
 
 import android.annotation.SuppressLint
-import android.app.Application
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.hardware.SensorManager
-import android.hardware.usb.UsbDevice
-import android.hardware.usb.UsbManager
+import android.location.Address
+import android.location.Geocoder
+import android.location.Location
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.os.Parcelable
+import android.speech.tts.TextToSpeech
+import android.util.Base64
 import android.util.Log
 import android.view.*
 import android.widget.*
@@ -24,16 +22,16 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import at.overflow.flowy.Adapter.AdapterBrightShadeControl
+import at.overflow.flowy.DB.BusDataModel
+import at.overflow.flowy.DB.DataAdapter
+import at.overflow.flowy.DTO.BusResponseData
 import at.overflow.flowy.DTO.ContrastData
-import at.overflow.flowy.FlowyApplication
-import at.overflow.flowy.Fragment.FragmentCamera.Companion.blackScreen
 import at.overflow.flowy.Interface.RetrofitAPI
 import at.overflow.flowy.MainActivity
 import at.overflow.flowy.MainActivity.Companion.pref
 import at.overflow.flowy.MainActivity.Companion.prefEditor
 import at.overflow.flowy.R
 import at.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
-import at.overflow.flowy.Renderer.VideoEncoderThread
 import at.overflow.flowy.Util.*
 import at.overflow.flowy.View.FlowyGLTextureView
 import com.bumptech.glide.Glide
@@ -43,27 +41,26 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import com.google.gson.JsonParser
-import kotlinx.android.synthetic.main.fragment_camera.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.webrtc.DataChannel
-import org.webrtc.PeerConnection
-import java.io.File
-import java.io.FileNotFoundException
-import java.io.FileOutputStream
-import java.nio.ByteBuffer
+import org.json.JSONObject
+import retrofit2.Response
+import java.io.*
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class FragmentCamera : Fragment(), View.OnClickListener {
 
     /** test start */
-    private lateinit var castBtn : Button
+//    private lateinit var castBtn : Button
     /** test end */
 
     private lateinit var rootLayout: ConstraintLayout
     private lateinit var alertToast: Toast
 
-    private lateinit var glTextureView: FlowyGLTextureView // 카메라 미리보기가 나올 화면
     private var flowyZoomLongClickEvent: Boolean = false // 롱클릭 이벤트 콜백을 위한 변수, 이벤트 발생시 플로위 줌 시작
     private var pinchZoomFlag: Boolean = true
     private var pinchZoomFinishCallback: Boolean = false
@@ -109,6 +106,16 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private var deviceSensorDirection = 0f
     private var threePointClickFlag: Boolean = true
 
+    /** 버스인식 */
+    private var busApiRequestAvaiable = false // api 를 요청을 한 경우 true, 응답을 받은 경우엔 false이다.
+    private lateinit var tts: TextToSpeech
+    private var maxBusConf: Int = 0
+    private var busNearInfoList: ArrayList<BusResponseData> = ArrayList()
+    private var busResponseList: ArrayList<BusResponseData> = ArrayList()
+    private var gpsTracker: GpsTracker? = null
+    private val locationUtil by lazy { LocationUtil() }
+    private lateinit var dbHelper: DataAdapter
+
     /** 프래그먼트 인스턴스 */
     fun newInstance(): FragmentCamera {
         Log.d("newInstance", "카메라 인스턴스 생성")
@@ -144,9 +151,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** layout id 초기화하는 공간 */
     private fun idInit(view: View) {
 
-        /** test start */
-        castBtn = view.findViewById(R.id.castBtn)
-        /** test end */
+        gpsTracker = GpsTracker(THIS_CONTEXT!!)
+        busSQLiteInit()
 
         pref = THIS_CONTEXT!!.getSharedPreferences("flowyToggleBtnStatus", Context.MODE_PRIVATE)
         prefEditor = pref.edit()
@@ -197,12 +203,25 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         contrastItemRecyclerView = view.findViewById(R.id.contrastItemRecyclerView)
         brightShadeAdapter = AdapterBrightShadeControl(THIS_CONTEXT!!)
 
+        /** 버스 */
+        tts = TextToSpeech(THIS_CONTEXT) {
+            tts.language = Locale.KOREAN
+            tts.setPitch(0.8f)
+            tts.setSpeechRate(1.7f)
+        }
+
+    }
+
+    fun busSQLiteInit() {
+        dbHelper = DataAdapter(THIS_CONTEXT)
+        dbHelper.createDatabase()
+        dbHelper.open()
     }
 
     /** 클릭 리스너 관리 */
     private fun setClickListener() {
         /** test start */
-        castBtn.setOnClickListener(this)
+//        castBtn.setOnClickListener(this)
         /** test end */
 
         focusToggleBtn.setOnClickListener(this)
@@ -238,10 +257,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         /** 카메라 사용시작 로그를 서버에 보낸다. */
         sendFlowyDataToServer(OVERFLOW_TEST_API_BASE_URL, 1)
 
-        try{
-            webSocketUtil = WebSocketUtil(context = activity!!.application)
-        }
-        catch (e : UninitializedPropertyAccessException){}
     }
 
     /** 기기의 방향 체크 - 카메라 프래그먼트에서 화면 방향에 따라서 UI 버튼도 회전이 되어야한다. */
@@ -384,7 +399,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             R.id.lensChangeToggleBtn -> {
 
                 CoroutineScope(Dispatchers.Main).launch {
-                    blackScreen.visibility = View.VISIBLE
+                    blackScreen!!.visibility = View.VISIBLE
                 }
 
                 // 0 : 전면
@@ -437,9 +452,19 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 (activity as MainActivity).replaceFragment("add", FragmentMenu().newInstance())
             }
 
-            R.id.flowyCastToggleBtn ->{
-                alertToast = Toast.makeText(THIS_CONTEXT, "Flowy Cast 기능은 구독 사용자만 이용 가능합니다.", Toast.LENGTH_SHORT)
+            R.id.flowyCastToggleBtn -> {
+                alertToast = Toast.makeText(
+                    THIS_CONTEXT,
+                    "Flowy Cast 기능은 구독 사용자만 이용 가능합니다.",
+                    Toast.LENGTH_SHORT
+                )
                 alertToast.show()
+
+                return
+                //        try{
+                //            webSocketUtil = WebSocketUtil(context = activity!!.application)
+                //        }
+                //        catch (e : UninitializedPropertyAccessException){}
             }
 
             /** 화면 멈춤 기능 완료 */
@@ -482,7 +507,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 if (luminanceIndex >= userContrastData.size) {
                     luminanceIndex = 0
                     if (userContrastData.size == 0) {
-                        if (alertToast != null) alertToast.cancel()
+                        alertToast.cancel()
                         alertToast =
                             Toast.makeText(context, "[메뉴 - 대비] 값을 설정해주세요", Toast.LENGTH_SHORT)
                         alertToast.show()
@@ -568,7 +593,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 fragmentType = "default"
                 luminanceToggleBtn.isChecked = false
                 brightShadeAdapter.notifyDataSetChanged()
-                if (alertToast != null) alertToast.cancel()
+                alertToast.cancel()
                 alertToast = Toast.makeText(context, "기본색상으로 변경되었습니다", Toast.LENGTH_SHORT)
                 alertToast.show()
             }
@@ -584,28 +609,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             R.id.bannerVersaAD -> {
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://atoverflow.com/")))
             }
-
-            /** test start */
-            R.id.castBtn -> {
-
-                if (!webSocketUtil!!.userIsCP){
-                    Toast.makeText(THIS_CONTEXT, "화면 송출 권한이 없습니다",Toast.LENGTH_SHORT).show()
-                    return
-                }
-
-                if (webSocketUtil!!.rtcClient.peerConnection.iceConnectionState() != PeerConnection.IceConnectionState.CONNECTED){
-                    Toast.makeText(THIS_CONTEXT, "상대방과 연결을 확인 해주세요",Toast.LENGTH_SHORT).show()
-                    return
-                }
-
-                encode = VideoEncoderThread(glTextureView.bitmap!!.width, glTextureView.bitmap!!.height, 8000 * 1000, 30)
-
-                /** 캐스트 모드 활성화 Flowy Render 에서 bitmap 을 캐스트 한다. */
-                castMode = true
-
-            }
-            /** test end */
-
         }
     }
 
@@ -650,7 +653,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     /** 광고 로드 */
     private fun loadAdMob() {
-        MobileAds.initialize(THIS_CONTEXT, getString(R.string.admob_app_id))
+
+        MobileAds.initialize(THIS_CONTEXT) { getString(R.string.admob_app_id) }
         val adRequest = AdRequest.Builder().build()
         bannerAdView.loadAd(adRequest)
         bannerAdView.bringToFront()
@@ -805,7 +809,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                                 camera!!.cameraInfo.zoomState.value?.linearZoom ?: 0F
                             val delta = detector.scaleFactor
                             var scale = currentZoomRatio * delta
-                            Log.d("scaleValue123", "$currentZoomRatio : $currentZoomLinear : $scale")
+                            Log.d(
+                                "scaleValue123",
+                                "$currentZoomRatio : $currentZoomLinear : $scale"
+                            )
 
                             // 일반 확대를 사용하는 경우
                             if (cameraMode != "flowy") {
@@ -900,26 +907,55 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     threePointClick()
                 }
 
-                if (event.action == MotionEvent.ACTION_MOVE){
+                if (event.action == MotionEvent.ACTION_MOVE) {
                     /** flowy pinch zoom 포인트 */
-                    if (event.pointerCount == 1){
+                    if (event.pointerCount == 1) {
                         touchDataUtil.pinchFirstTouchX = event.getX(0)
                         touchDataUtil.pinchFirstTouchY = event.getY(0)
                         touchDataUtil.flowyPinchFlag = false
-                    }
-                    else if (event.pointerCount == 2){
+                    } else if (event.pointerCount == 2) {
                         touchDataUtil.pinchSecondTouchX = event.getX(1)
                         touchDataUtil.pinchSecondTouchY = event.getY(1)
                         touchDataUtil.flowyPinchFlag = true
                     }
 
-                    Log.d("asdasdadszxczvcxlkm",
+                    Log.d(
+                        "asdasdadszxczvcxlkm",
                         "pinchFirstTouchX : ${touchDataUtil.pinchFirstTouchX} / " +
                                 "pinchFirstTouchY : ${touchDataUtil.pinchFirstTouchY} / " +
                                 "pinchSecondTouchX : ${touchDataUtil.pinchSecondTouchX} / " +
                                 "pinchSecondTouchY : ${touchDataUtil.pinchSecondTouchY} / "
                     )
                 }
+                getAddress() // 사용자의 현재 위치를 가져온다.
+
+
+                if (busApiRequestAvaiable) {
+                    busApiRequestAvaiable = false // 버스 요청을 불가능 상태로 만든다.
+
+                    for (busImageNum in 0 until 3) {
+
+                        val busImageList = ArrayList<String>()
+                        CoroutineScope(Dispatchers.Default).launch {
+                            val byteArrayOutputStream = ByteArrayOutputStream()
+                            glTextureView.bitmap!!.compress(
+                                Bitmap.CompressFormat.JPEG,
+                                50,
+                                byteArrayOutputStream
+                            )
+                            val byteArray = byteArrayOutputStream.toByteArray()
+                            val busImageEncoding: String =
+                                Base64.encodeToString(byteArray, Base64.DEFAULT)
+                            busImageList.add(busImageEncoding)
+                            delay(100)
+                        }
+                        imageUpload(
+                            busImageList = busImageList,
+                            baseURL = OVERFLOW_TEST_API_IMAGE_UPLOAD
+                        )
+                    }
+                }
+
 
                 gestureDetector.onTouchEvent(event)
                 pinchZoomGesture.onTouchEvent(event)
@@ -966,14 +1002,15 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     }
 
     override fun onDestroyView() {
-        Log.d("web","onDestroyView 호출")
-        webSocketUtil!!.ws.socket.close()
-        webSocketUtil = null
+        Log.d("web", "onDestroyView 호출")
+        if (webSocketUtil != null) {
+            webSocketUtil!!.ws.socket.close()
+            webSocketUtil = null
+        }
         super.onDestroyView()
     }
 
     companion object {
-        lateinit var blackScreen: ImageView
         var lensChangeFlag = false
 
         /** 고대비 색상과 인덱스 */
@@ -984,80 +1021,134 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         lateinit var luminanceToggleBtn: ToggleButton
 
         var touchDataUtil: TouchDataUtil = TouchDataUtil()
-        var webSocketUtil : WebSocketUtil? = null
-        lateinit var encode: VideoEncoderThread
+        var webSocketUtil: WebSocketUtil? = null
 
+        lateinit var glTextureView: FlowyGLTextureView // 카메라 미리보기가 나올 화면
+        var blackScreen: ImageView? = null
     }
 
     //    /** 서버에 이미지를 올린다. */
-    private fun imageUpload(encodeBitmap: String, baseURL: String) {
+    private fun imageUpload(busImageList: ArrayList<String>, baseURL: String) {
 
         val sendLogData: HashMap<String, Any> = HashMap()
-        sendLogData["image_data"] = encodeBitmap
+        sendLogData["image_data"] = busImageList
 
         val retrofit = Retrofit2Util().getRetrofit2Builder(baseURL).create(RetrofitAPI::class.java)
 
         /** 동기 */
-        val responseData = retrofit.uploadImage(sendLogData).execute()
+        val responseData: Response<Any>
+
+        try {
+            responseData = retrofit.uploadImage(sendLogData).execute()
+
+            // 응답 결과가 있는 경우에 다시 버스 인식을 할 수 있도록 busApiRequestAvaiable true로 변경한다다
+            if (responseData != null) {
+                busApiRequestAvaiable = true
+            }
+
+            // 응답 결과가 없는 경우
+            else {
+                CoroutineScope(Dispatchers.Main).launch {
+                    tts.setPitch(0.8f)
+                    tts.setSpeechRate(1.7f)
+                    tts.speak("네트워크 연결을 확인해주세요", TextToSpeech.QUEUE_FLUSH, null)
+                }
+                return
+            }
+        }
+        // 네트워크 연결이 안된경우
+        catch (e: Exception) {
+            CoroutineScope(Dispatchers.Main).launch {
+                tts.setPitch(0.8f)
+                tts.setSpeechRate(1.7f)
+                tts.speak("네트워크 연결을 확인해주세요", TextToSpeech.QUEUE_FLUSH, null)
+            }
+            return
+        }
 
         val jsonData = JsonParser().parse(responseData.body().toString())
         val code = jsonData.asJsonObject["code"]
         val result = jsonData.asJsonObject["result"]
 
-        Log.d("uploadImageTest", "jsonData: $jsonData")
-        Log.d("uploadImageTest", "code: $code")
+        when (code.toString()) {
+            "0.0" -> {
+                for (i in 0 until result.asJsonArray.size()) {
+                    val jsonObject = JSONObject(result.asJsonArray[i].toString())
+                    val busNumber = jsonObject.getString("num")
+                    val busAc = jsonObject.getString("conf")
+                    val busRect = jsonObject.getString("rect")
+                    val busConf = (busAc.substring(0, 4).toFloat() * 100).toInt()
+                    Log.d("uploadImageTest", "busNumber: $busNumber")
+                    Log.d("uploadImageTest", "busAc: $busConf")
+                    Log.d("uploadImageTest", "busRect: $busRect")
 
-        /** 아래는 비동기 */
-//        retrofit.uploadImage(sendLogData).enqueue(object : Callback<Any> {
-//            override fun onFailure(call: Call<Any>, t: Throwable) {
-//                Log.d("uploadImageTest", "onFailure: ${t.message}")
-//                val end = System.currentTimeMillis()
-//                Log.d("timer", ((end - start) / 1000).toString())
-//            }
-//
-//            override fun onResponse(call: Call<Any>, response: Response<Any>) {
-//                val jsonData = JSONObject(response.body().toString())
-//
-//                try {
-//
-//                    val code = jsonData.getString("code");
-//                    Log.d("uploadImageTest", "onResponse: $code")
-//
-//                    CoroutineScope(Dispatchers.Main).launch {
-//                        busTextView.text = ""
-//                    }
-//
-//                    if (code == "0.0") {
-//                        Log.d("uploadImageTest", "그대로 출력 : $jsonData")
-//                        val result = jsonData.getJSONArray("result");
-//                        Log.d("uploadImageTest", "onResponse: ${result.toString()}")
-//                        for (i in 0 until result.length()) {
-//                            val jsonObject = result.getJSONObject(i)
-//                            val busNumber = jsonObject.getString("num")
-//                            val busAc = jsonObject.getString("conf")
-//                            val busRect = jsonObject.getString("rect")
-//                            Log.d("uploadImageTest", "width: ${glTextureView.width}")
-//                            Log.d("uploadImageTest", "height: ${glTextureView.height}")
-//                            Log.d("uploadImageTest", "busNumber: $busNumber")
-//                            Log.d("uploadImageTest", "busAc: $busAc")
-//                            Log.d("uploadImageTest", "busRect: $busRect")
-//
-//                            CoroutineScope(Dispatchers.Main).launch {
-//                                busTextView.append("버스번호 : $busNumber\n")
-//                            }
-//                        }
-//                    } else {
-//                        CoroutineScope(Dispatchers.Main).launch {
-//                            busTextView.text = "No Detect"
-//                        }
-//                        Log.d("uploadImageTest", jsonData.toString())
-//                    }
-//                } catch (e: Exception) {
-//
-//                }
-//            }
-//
-//        })
+                    if (busResponseList.size == 0) {
+                        maxBusConf = busConf
+                        busResponseList.add(
+                            BusResponseData(
+                                busNum = busNumber,
+                                busConf = busConf,
+                                busRect = busRect
+                            )
+                        )
+                    } else {
+                        // 새로 전달받은 버스의 정확도가 더 높다면, 제일 앞쪽에 배치한다.
+                        if (busConf >= maxBusConf) {
+                            maxBusConf = busConf
+                            busResponseList.add(
+                                0,
+                                BusResponseData(
+                                    busNum = busNumber,
+                                    busConf = busConf,
+                                    busRect = busRect
+                                )
+                            )
+                        } else {
+                            busResponseList.add(
+                                BusResponseData(
+                                    busNum = busNumber,
+                                    busConf = busConf,
+                                    busRect = busRect
+                                )
+                            )
+                        }
+                    }
+
+                }
+            }
+            "99.0" -> {
+                tts.speak("버스를 못찾았습니다", TextToSpeech.QUEUE_FLUSH, null)
+            }
+        }
     }
 
+    fun getAddress(): HashMap<String, String> {
+        val latitude = gpsTracker!!.getLatitude()
+        val longitude = gpsTracker!!.getLongitude()
+
+        val distance = 500
+        val diffLatitude = locationUtil.latitudeInDifference(distance) // 반경 500m 이내의 위도차 를 구한다.
+        val diffLongitude =
+            locationUtil.longitudeInDifference(latitude, distance) // 반경 500m 이내의 위도차 를 구한다.
+
+        // 위/경도 최소값, 최대값
+        val addressInfo = HashMap<String, String>()
+        addressInfo["latitude_min"] = (latitude - diffLatitude).toString()
+        addressInfo["longitude_min"] = (longitude - diffLongitude).toString()
+        addressInfo["latitude_max"] = (latitude + diffLatitude).toString()
+        addressInfo["longitude_max"] = (longitude + diffLongitude).toString()
+
+
+        val sqliteNearBusList: List<BusDataModel>
+        sqliteNearBusList = dbHelper.getTableData(
+            (latitude - diffLatitude).toString(),
+            (longitude - diffLongitude).toString(),
+            (latitude + diffLatitude).toString(),
+            (longitude + diffLongitude).toString()
+        )
+
+        dbHelper.close()
+
+        return addressInfo
+    }
 }

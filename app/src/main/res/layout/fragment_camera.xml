@@ -21,7 +21,8 @@
         android:background="@color/black"
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="@+id/glSurfaceView"
-        app:layout_constraintTop_toTopOf="@+id/glSurfaceView" />
+        app:layout_constraintTop_toTopOf="@+id/glSurfaceView"
+        tools:ignore="NotSibling"/>
 
     <FrameLayout
         android:id="@+id/top_f_layout"
@@ -115,13 +116,13 @@
 
     </FrameLayout>
 
-    <Button
-        android:id="@+id/castBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Cast"
-        app:layout_constraintBottom_toTopOf="@+id/frameLayout"
-        app:layout_constraintEnd_toEndOf="@+id/glSurfaceView"
-        app:layout_constraintTop_toBottomOf="@+id/top_f_layout" />
+    <!--    <Button-->
+    <!--        android:id="@+id/castBtn"-->
+    <!--        android:layout_width="wrap_content"-->
+    <!--        android:layout_height="wrap_content"-->
+    <!--        android:text="Cast"-->
+    <!--        app:layout_constraintBottom_toTopOf="@+id/frameLayout"-->
+    <!--        app:layout_constraintEnd_toEndOf="@+id/glSurfaceView"-->
+    <!--        app:layout_constraintTop_toBottomOf="@+id/top_f_layout" />-->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,8 +1,9 @@
 @file:JvmName("Constants")
-
 package at.overflow.flowy.Util
 
+
 import android.content.Context
+import android.widget.ImageView
 import androidx.camera.core.CameraSelector
 import at.overflow.flowy.DTO.ContrastData
 import at.overflow.flowy.R
@@ -50,7 +51,6 @@ import at.overflow.flowy.R
 /** 부가기능 : 플래시, 포커스, 프리즈 기능 등 */
 @JvmField var freezeMode : Boolean = false
 @JvmField var autoFocusMode : Boolean = true
-@JvmField var castMode : Boolean = false
 
 @JvmField var deviceRotationValue : Int = 0
 
