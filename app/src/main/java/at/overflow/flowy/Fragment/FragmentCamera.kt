@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Base64
 import android.util.Log
 import android.view.*
@@ -53,10 +54,6 @@ import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 class FragmentCamera : Fragment(), View.OnClickListener {
-
-    /** test start */
-//    private lateinit var castBtn : Button
-    /** test end */
 
     private lateinit var rootLayout: ConstraintLayout
     private lateinit var alertToast: Toast
@@ -107,7 +104,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private var threePointClickFlag: Boolean = true
 
     /** 버스인식 */
-    private var busApiRequestAvaiable = false // api 를 요청을 한 경우 true, 응답을 받은 경우엔 false이다.
+    private var busApiRequestAvailable = true // api요청이 가능한 경우에 true, 불가능한 경우에 false이다.
     private lateinit var tts: TextToSpeech
     private var maxBusConf: Int = 0
     private var busNearInfoList: ArrayList<BusResponseData> = ArrayList()
@@ -115,6 +112,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     private var gpsTracker: GpsTracker? = null
     private val locationUtil by lazy { LocationUtil() }
     private lateinit var dbHelper: DataAdapter
+    private lateinit var responseData: Response<Any>
 
     /** 프래그먼트 인스턴스 */
     fun newInstance(): FragmentCamera {
@@ -204,15 +202,15 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         brightShadeAdapter = AdapterBrightShadeControl(THIS_CONTEXT!!)
 
         /** 버스 */
-        tts = TextToSpeech(THIS_CONTEXT) {
+        tts = TextToSpeech(THIS_CONTEXT, TextToSpeech.OnInitListener {
             tts.language = Locale.KOREAN
             tts.setPitch(0.8f)
             tts.setSpeechRate(1.7f)
-        }
+        })
 
     }
 
-    fun busSQLiteInit() {
+    private fun busSQLiteInit() {
         dbHelper = DataAdapter(THIS_CONTEXT)
         dbHelper.createDatabase()
         dbHelper.open()
@@ -220,10 +218,6 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
     /** 클릭 리스너 관리 */
     private fun setClickListener() {
-        /** test start */
-//        castBtn.setOnClickListener(this)
-        /** test end */
-
         focusToggleBtn.setOnClickListener(this)
         flashToggleBtn.setOnClickListener(this)
         lensChangeToggleBtn.setOnClickListener(this)
@@ -927,11 +921,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                                 "pinchSecondTouchY : ${touchDataUtil.pinchSecondTouchY} / "
                     )
                 }
-                getAddress() // 사용자의 현재 위치를 가져온다.
 
-
-                if (busApiRequestAvaiable) {
-                    busApiRequestAvaiable = false // 버스 요청을 불가능 상태로 만든다.
+                if (busApiRequestAvailable) {
+                    getAddress() // 사용자의 현재 위치를 가져온다.
+                    busApiRequestAvailable = false // 버스 요청을 불가능 상태로 만든다.
 
                     for (busImageNum in 0 until 3) {
 
@@ -1036,24 +1029,97 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         val retrofit = Retrofit2Util().getRetrofit2Builder(baseURL).create(RetrofitAPI::class.java)
 
         /** 동기 */
-        val responseData: Response<Any>
-
         try {
+
             responseData = retrofit.uploadImage(sendLogData).execute()
 
-            // 응답 결과가 있는 경우에 다시 버스 인식을 할 수 있도록 busApiRequestAvaiable true로 변경한다다
-            if (responseData != null) {
-                busApiRequestAvaiable = true
+            // 요청 후 2초가 지난뒤에 다시 버스 api를 요청할 수 있도록 허용한다.
+            CoroutineScope(Dispatchers.Default).launch {
+                delay(2000)
+                busApiRequestAvailable = true
             }
 
-            // 응답 결과가 없는 경우
-            else {
-                CoroutineScope(Dispatchers.Main).launch {
-                    tts.setPitch(0.8f)
-                    tts.setSpeechRate(1.7f)
-                    tts.speak("네트워크 연결을 확인해주세요", TextToSpeech.QUEUE_FLUSH, null)
+            CoroutineScope(Dispatchers.Default).launch {
+
+                // 응답 결과가 있는 경우
+                if (responseData != null) {
+                    val jsonData = JsonParser().parse(responseData.body().toString())
+                    val code = jsonData.asJsonObject["code"]
+                    val result = jsonData.asJsonObject["result"]
+
+                    when (code.toString()) {
+                        "0.0" -> {
+                            for (i in 0 until result.asJsonArray.size()) {
+                                val jsonObject = JSONObject(result.asJsonArray[i].toString())
+                                val busNumber = jsonObject.getString("num")
+                                val busAc = jsonObject.getString("conf")
+                                val busRect = jsonObject.getString("rect")
+                                val busConf = (busAc.substring(0, 4).toFloat() * 100).toInt()
+                                Log.d("uploadImageTest", "busNumber: $busNumber")
+                                Log.d("uploadImageTest", "busAc: $busConf")
+                                Log.d("uploadImageTest", "busRect: $busRect")
+
+                                /** 버스 정확도 85% 이상만 타켓으로 정한다. */
+                                if (busConf < 85){
+                                    continue
+                                }
+
+                                if (busResponseList.size == 0) {
+                                    maxBusConf = busConf
+                                    busResponseList.add(BusResponseData(busNum = busNumber, busConf = busConf, busRect = busRect))
+                                } else {
+                                    // 새로 전달받은 버스의 정확도가 더 높다면, 제일 앞쪽에 배치한다.
+                                    if (busConf >= maxBusConf) {
+                                        maxBusConf = busConf
+                                        busResponseList.add(0, BusResponseData(busNum = busNumber, busConf = busConf, busRect = busRect)    )
+                                    } else {
+                                        busResponseList.add(BusResponseData(busNum = busNumber, busConf = busConf, busRect = busRect))
+                                    }
+                                }
+                            }
+
+                            /**
+                             * 서버에서 응답받기 전에는 버스 번호 DB를 조회한 상태이다.
+                             * 서버에서 응답받은 결과 중 DB에서 조회한 결과 값 중 일치하는 버스 번호가 있다면 해당 버스를 tts로 읽어준다.
+                             * "근처에 있는 ~~번 버스 정확도 ~~ % 입니다."
+                             * 만약 DB 조회 결과랑 비교해서 일치하는 버스가 없다면 정확도 검증을 시도한다.
+                             * 정확도가 85% 이상을 기준으로 한다.
+                             * 서버 응답 결과 가장 정확도가 높은 버스 번호를 tts로 읽어준다. [ 정확도가 가장 높은 버스는 0번 인덱스이다. ]
+                             * "근처에 없는 ~~번 버스 정확도 ~~ % 입니다."
+                             *  */
+
+                            for (busResponseIndex in busResponseList.indices){
+                                for (dbResponseIndex in busNearInfoList.indices){
+                                    if (busResponseList[busResponseIndex].busNum == busNearInfoList[dbResponseIndex].busNum){
+                                        tts.speak(
+                                            "근처에 있는 ${busResponseList[busResponseIndex].busNum}번 버스 " +
+                                                    "정확도 ${busResponseList[busResponseIndex].busConf}%입니다.",
+                                            TextToSpeech.QUEUE_FLUSH, null)
+                                        return@launch
+                                    }
+                                }
+                            }
+
+                            tts.speak(
+                                "근처에 없는 ${busResponseList[0].busNum}번 버스 " +
+                                        "정확도 ${busResponseList[0].busConf}%입니다.",
+                                TextToSpeech.QUEUE_FLUSH, null)
+
+                        }
+                        "99.0" -> {tts.speak("버스를 못찾았습니다", TextToSpeech.QUEUE_FLUSH, null)}
+                    }
+
                 }
-                return
+
+                // 응답 결과가 없는 경우
+                else {
+                    CoroutineScope(Dispatchers.Main).launch {
+                        tts.setPitch(0.8f)
+                        tts.setSpeechRate(1.7f)
+                        tts.speak("버스 인식에 실패하였습니다", TextToSpeech.QUEUE_FLUSH, null)
+                    }
+                    return@launch
+                }
             }
         }
         // 네트워크 연결이 안된경우
@@ -1062,67 +1128,16 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 tts.setPitch(0.8f)
                 tts.setSpeechRate(1.7f)
                 tts.speak("네트워크 연결을 확인해주세요", TextToSpeech.QUEUE_FLUSH, null)
-            }
-            return
-        }
-
-        val jsonData = JsonParser().parse(responseData.body().toString())
-        val code = jsonData.asJsonObject["code"]
-        val result = jsonData.asJsonObject["result"]
-
-        when (code.toString()) {
-            "0.0" -> {
-                for (i in 0 until result.asJsonArray.size()) {
-                    val jsonObject = JSONObject(result.asJsonArray[i].toString())
-                    val busNumber = jsonObject.getString("num")
-                    val busAc = jsonObject.getString("conf")
-                    val busRect = jsonObject.getString("rect")
-                    val busConf = (busAc.substring(0, 4).toFloat() * 100).toInt()
-                    Log.d("uploadImageTest", "busNumber: $busNumber")
-                    Log.d("uploadImageTest", "busAc: $busConf")
-                    Log.d("uploadImageTest", "busRect: $busRect")
-
-                    if (busResponseList.size == 0) {
-                        maxBusConf = busConf
-                        busResponseList.add(
-                            BusResponseData(
-                                busNum = busNumber,
-                                busConf = busConf,
-                                busRect = busRect
-                            )
-                        )
-                    } else {
-                        // 새로 전달받은 버스의 정확도가 더 높다면, 제일 앞쪽에 배치한다.
-                        if (busConf >= maxBusConf) {
-                            maxBusConf = busConf
-                            busResponseList.add(
-                                0,
-                                BusResponseData(
-                                    busNum = busNumber,
-                                    busConf = busConf,
-                                    busRect = busRect
-                                )
-                            )
-                        } else {
-                            busResponseList.add(
-                                BusResponseData(
-                                    busNum = busNumber,
-                                    busConf = busConf,
-                                    busRect = busRect
-                                )
-                            )
-                        }
-                    }
-
-                }
-            }
-            "99.0" -> {
-                tts.speak("버스를 못찾았습니다", TextToSpeech.QUEUE_FLUSH, null)
+                Toast.makeText(context, "err : ${e.message}",Toast.LENGTH_LONG).show()
+                delay(1000)
+                busApiRequestAvailable = true
             }
         }
     }
 
     fun getAddress(): HashMap<String, String> {
+        Log.d("sdffsdsdffsdsfddfdf", "getAddress ")
+
         val latitude = gpsTracker!!.getLatitude()
         val longitude = gpsTracker!!.getLongitude()
 
@@ -1134,8 +1149,8 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         // 위/경도 최소값, 최대값
         val addressInfo = HashMap<String, String>()
         addressInfo["latitude_min"] = (latitude - diffLatitude).toString()
-        addressInfo["longitude_min"] = (longitude - diffLongitude).toString()
         addressInfo["latitude_max"] = (latitude + diffLatitude).toString()
+        addressInfo["longitude_min"] = (longitude - diffLongitude).toString()
         addressInfo["longitude_max"] = (longitude + diffLongitude).toString()
 
 
@@ -1147,7 +1162,15 @@ class FragmentCamera : Fragment(), View.OnClickListener {
             (longitude + diffLongitude).toString()
         )
 
-        dbHelper.close()
+        Log.d("sdffsdsdffsdsfddfdf", "addressInfo : ${addressInfo.toString()}}")
+        Log.d("sdffsdsdffsdsfddfdf", "size : ${sqliteNearBusList.size}")
+
+        for (idx in sqliteNearBusList.indices){
+            busNearInfoList.add(BusResponseData(busNum = sqliteNearBusList[idx].routeName, busConf = 0, busRect = ""))
+            Log.d("sdffsdsdffsdsfddfdf", "data : ${sqliteNearBusList[idx].x}")
+        }
+
+//        dbHelper.close()
 
         return addressInfo
     }
