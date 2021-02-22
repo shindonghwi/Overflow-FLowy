@@ -8,7 +8,7 @@ class Retrofit2Util {
     fun getRetrofit2Builder(baseURL : String): Retrofit {
         return Retrofit.Builder()
             .baseUrl(baseURL)
-            .addConverterFactory(NullOnEmptyConverterFactory())
+//            .addConverterFactory(NullOnEmptyConverterFactory())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }

@@ -22,7 +22,7 @@
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="@+id/glSurfaceView"
         app:layout_constraintTop_toTopOf="@+id/glSurfaceView"
-        tools:ignore="NotSibling"/>
+        tools:ignore="NotSibling" />
 
     <FrameLayout
         android:id="@+id/top_f_layout"
@@ -115,6 +115,19 @@
             android:scaleType="fitCenter" />
 
     </FrameLayout>
+
+    <TextView
+        android:id="@+id/busNumTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="15dp"
+        android:layout_marginBottom="15dp"
+        android:text=""
+        android:textColor="@color/red"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/frameLayout"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <!--    <Button-->
     <!--        android:id="@+id/castBtn"-->

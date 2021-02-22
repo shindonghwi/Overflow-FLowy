@@ -225,11 +225,6 @@ class RTCClient(
         })
     }
 
-    override fun onTrack(transceiver: RtpTransceiver?) {
-        super.onTrack(transceiver)
-        Log.d(TAG, "createPeerConnection : onTrack: $transceiver")
-    }
-
     override fun onIceConnectionReceivingChange(p0: Boolean) {
         Log.d(TAG, "createPeerConnection : onIceConnectionReceivingChange: $p0")
     }
