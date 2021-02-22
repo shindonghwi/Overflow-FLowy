@@ -120,14 +120,15 @@
         android:id="@+id/busNumTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginRight="15dp"
-        android:layout_marginBottom="15dp"
+        android:background="@color/black"
         android:text=""
-        android:textColor="@color/red"
-        android:textSize="24sp"
+        android:textColor="@color/yellow"
+        android:textSize="50dp"
         android:textStyle="bold"
         app:layout_constraintBottom_toTopOf="@+id/frameLayout"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/top_f_layout" />
 
     <!--    <Button-->
     <!--        android:id="@+id/castBtn"-->

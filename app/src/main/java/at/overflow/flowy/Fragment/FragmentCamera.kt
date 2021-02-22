@@ -1,21 +1,22 @@
 package at.overflow.flowy.Fragment
 
-import android.R.attr.bitmap
-import android.R.attr.delay
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.hardware.SensorManager
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Base64
 import android.util.Log
 import android.view.*
 import android.widget.*
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -30,6 +31,7 @@ import at.overflow.flowy.MainActivity
 import at.overflow.flowy.MainActivity.Companion.pref
 import at.overflow.flowy.MainActivity.Companion.prefEditor
 import at.overflow.flowy.R
+import at.overflow.flowy.Renderer.FlowyRenderer
 import at.overflow.flowy.Renderer.FlowyRenderer.Companion.camera
 import at.overflow.flowy.Util.*
 import at.overflow.flowy.View.FlowyGLTextureView
@@ -42,11 +44,8 @@ import com.google.android.gms.ads.MobileAds
 import com.google.gson.JsonParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import retrofit2.Call
-import retrofit2.Callback
 import retrofit2.Response
 import java.io.*
 import java.util.*
@@ -54,7 +53,7 @@ import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 
-class FragmentCamera : Fragment(), View.OnClickListener {
+class FragmentCamera : Fragment(), View.OnClickListener{
 
     private lateinit var rootLayout: ConstraintLayout
     private lateinit var alertToast: Toast
@@ -107,9 +106,12 @@ class FragmentCamera : Fragment(), View.OnClickListener {
     /** 버스인식 */
     private var busApiRequestAvailable = true // api요청이 가능한 경우에 true, 불가능한 경우에 false이다.
     private lateinit var tts: TextToSpeech
+    private lateinit var ttsMessage: String
+    private lateinit var resultBusNum: String
     private var maxBusConf: Int = 0
     private lateinit var busNearInfoList: ArrayList<BusResponseData>
-//    private var busResponseList: ArrayList<BusResponseData> = ArrayList()
+
+    //    private var busResponseList: ArrayList<BusResponseData> = ArrayList()
     private var gpsTracker: GpsTracker? = null
     private val locationUtil by lazy { LocationUtil() }
     private lateinit var dbHelper: DataAdapter
@@ -206,11 +208,26 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         /** 버스 */
         busNumTextView = view.findViewById(R.id.busNumTextView)
         tts = TextToSpeech(THIS_CONTEXT, TextToSpeech.OnInitListener {
-            tts.language = Locale.KOREAN
-            tts.setPitch(0.8f)
-            tts.setSpeechRate(2.0f)
-        })
+            tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) {
+                    Log.d("ttttssss", "onStart: $utteranceId")
+                }
 
+                override fun onDone(utteranceId: String?) {
+                    Log.d("ttttssss", "onDone: $utteranceId")
+                    if (utteranceId == "foundBus") {
+                        CoroutineScope(Dispatchers.Main).launch {
+                            busNumTextView.text = ""
+                        }
+                    }
+                    busApiRequestAvailable = true
+                }
+
+                override fun onError(utteranceId: String?) {
+                    Log.d("ttttssss", "onError: $utteranceId")
+                }
+            })
+        })
     }
 
     private fun busSQLiteInit() {
@@ -757,8 +774,52 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                 GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
                     override fun onSingleTapUp(e: MotionEvent?): Boolean {
                         /** 터치를 하면 해당 위치에 포커스가 맞추어 지는 기능 */
+                        Log.d("ClickEvent", "onSingleTapUp: sdfs")
                         focusToggleBtn.isChecked = true // 포커스 버튼을 활성화 시킨다.
                         autoFocusMode = false // 자동 포커스 기능을 해제한다.
+
+                        val yMin = ((FlowyRenderer.screenHeight - FlowyRenderer.adjustHeight) / 2).toDouble()
+                        val yMax = (((FlowyRenderer.screenHeight - FlowyRenderer.adjustHeight) / 2) + FlowyRenderer.adjustHeight).toDouble()
+                        if (touchDataUtil.touchAlwaysTouchPointY in yMin..yMax && busApiRequestAvailable && !freezeMode) {
+                            Log.d("busApiRequestAvailable", "$busApiRequestAvailable")
+                            busApiRequestAvailable = false
+
+                            getAddress() // 사용자의 현재 위치를 가져온다.
+
+                            val busImageList = ArrayList<String>()
+
+                            val maxImage = 3
+
+                            for (busImageNum in 0 until maxImage) {
+                                CoroutineScope(Dispatchers.Default).launch {
+                                    val byteArrayOutputStream = ByteArrayOutputStream()
+
+                                    val resizeBitmap = resizeImageForImageView(glTextureView.bitmap!!)
+
+                                    resizeBitmap!!.compress(
+                                        Bitmap.CompressFormat.JPEG,
+                                        50,
+                                        byteArrayOutputStream
+                                    )
+                                    val busImageEncoding: String = Base64.encodeToString(
+                                        byteArrayOutputStream.toByteArray(),
+                                        Base64.DEFAULT
+                                    )
+                                    busImageList.add(busImageEncoding)
+                                    resizeBitmap.recycle()
+                                }
+                            }
+
+                            CoroutineScope(Dispatchers.Default).launch {
+                                while (true) {
+                                    if (busImageList.size == maxImage) {
+                                        imageUpload(busImageList, OVERFLOW_TEST_API_IMAGE_UPLOAD)
+                                        break
+                                    }
+                                }
+                            }
+                        }
+
                         return super.onSingleTapUp(e)
                     }
 
@@ -892,14 +953,15 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     touchDataUtil.setFocusTouchPoint(glTextureView, event.x, event.y)
                     touchDataUtil.isScreenPointSave = true // 더블탭 모드에 사용
                     touchDataUtil.flowyPinchFlag = false // 핀치줌
-
-                    Log.d("ClickEvent", "action up")
                     touchDataUtil.isTouching = false // 현재 상태를 터치중 아님으로 변경한다.
                     flowyZoomLongClickEvent = false // 플로위줌을 사용하기 다시 사용하기 위해 롱클릭 이벤트를 false로 만듦
                     CameraUtil().cameraTapFocus(glTextureView)
                 }
 
-                // 손가락 2개로 터치를 했을때, 메뉴를 보이게 / 안보이게 처리를 한다.
+                Log.d("ClickEvent", "action : ${event.action}")
+                Log.d("ClickEvent", "pointer count : ${event.pointerCount}")
+
+                // 손가락 3개로 터치를 했을때, 메뉴를 보이게 / 안보이게 처리를 한다.
                 if (event.action == MotionEvent.ACTION_POINTER_3_DOWN && event.pointerCount == 3) {
                     threePointClick()
                 }
@@ -915,57 +977,37 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                         touchDataUtil.pinchSecondTouchY = event.getY(1)
                         touchDataUtil.flowyPinchFlag = true
                     }
-
-                    Log.d(
-                        "pinch point",
-                        "pinchFirstTouchX : ${touchDataUtil.pinchFirstTouchX} / " +
-                                "pinchFirstTouchY : ${touchDataUtil.pinchFirstTouchY} / " +
-                                "pinchSecondTouchX : ${touchDataUtil.pinchSecondTouchX} / " +
-                                "pinchSecondTouchY : ${touchDataUtil.pinchSecondTouchY} / "
-                    )
                 }
-
-                if (busApiRequestAvailable && !freezeMode) {
-                    Log.d("busApiRequestAvailable", "$busApiRequestAvailable")
-                    busApiRequestAvailable = false
-
-                    getAddress() // 사용자의 현재 위치를 가져온다.
-
-                    val busImageList = ArrayList<String>()
-
-                    for (busImageNum in 0 until 3) {
-                        CoroutineScope(Dispatchers.Default).launch {
-                            val byteArrayOutputStream = ByteArrayOutputStream()
-                            glTextureView.bitmap!!.compress(
-                                Bitmap.CompressFormat.JPEG,
-                                50,
-                                byteArrayOutputStream
-                            )
-                            val busImageEncoding: String = Base64.encodeToString(
-                                byteArrayOutputStream.toByteArray(),
-                                Base64.DEFAULT
-                            )
-                            busImageList.add(busImageEncoding)
-                            delay(50)
-                        }
-                    }
-
-                    CoroutineScope(Dispatchers.Default).launch {
-                        while (true) {
-                            if (busImageList.size == 3) {
-                                imageUpload(busImageList, OVERFLOW_TEST_API_IMAGE_UPLOAD)
-                                break
-                            }
-                        }
-                    }
-                }
-
 
                 gestureDetector.onTouchEvent(event)
                 pinchZoomGesture.onTouchEvent(event)
                 return true
             }
         })
+    }
+
+    fun resizeImageForImageView(bitmap: Bitmap): Bitmap? {
+        var scaleSize = 1024
+        var resizedBitmap: Bitmap? = null
+        val originalWidth = bitmap.width
+        val originalHeight = bitmap.height
+        var newWidth = -1
+        var newHeight = -1
+        var multFactor = -1.0f
+        if (originalHeight > originalWidth) {
+            newHeight = scaleSize
+            multFactor = originalWidth.toFloat() / originalHeight.toFloat()
+            newWidth = (newHeight * multFactor).toInt()
+        } else if (originalWidth > originalHeight) {
+            newWidth = scaleSize
+            multFactor = originalHeight.toFloat() / originalWidth.toFloat()
+            newHeight = (newWidth * multFactor).toInt()
+        } else if (originalHeight == originalWidth) {
+            newHeight = scaleSize
+            newWidth = scaleSize
+        }
+        resizedBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, false)
+        return resizedBitmap
     }
 
     /** 화면을 손가락 3개 이상으로 터치했을때, 화면 상단, 하단에 있는 메뉴를 보임, 숨김 처리한다. */
@@ -1054,13 +1096,12 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                     Log.d("uploadImageTest", "code: $code")
                     Log.d("uploadImageTest", "result: $result")
 
-
                     when (code.toString()) {
                         "0.0" -> {
 
-                            if (maxBusConf != 0){
+                            if (maxBusConf != 0) {
                                 maxBusConf = 0
-                                if (busResponseList.size != 0){
+                                if (busResponseList.size != 0) {
                                     busResponseList = ArrayList()
                                 }
                             }
@@ -1075,17 +1116,29 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                                 Log.d("uploadImageTest", "busAc: $busConf")
                                 Log.d("uploadImageTest", "busRect: $busRect")
 
-                                /** 버스 정확도 85% 이상만 타켓으로 정한다. */
-                                if (busConf < 85){
-                                    continue
-                                }
+//                                /** 버스 정확도 85% 이상만 타켓으로 정한다. */
+//                                if (busConf < 85) {
+//                                    continue
+//                                }
 
                                 // 새로 전달받은 버스의 정확도가 더 높다면, 제일 앞쪽에 배치한다.
                                 if (busConf >= maxBusConf) {
                                     maxBusConf = busConf
-                                    busResponseList.add(0, BusResponseData(busNum = busNumber, busConf = busConf, busRect = busRect))
+                                    busResponseList.add(
+                                        0, BusResponseData(
+                                            busNum = busNumber,
+                                            busConf = busConf,
+                                            busRect = busRect
+                                        )
+                                    )
                                 } else {
-                                    busResponseList.add(BusResponseData(busNum = busNumber, busConf = busConf, busRect = busRect))
+                                    busResponseList.add(
+                                        BusResponseData(
+                                            busNum = busNumber,
+                                            busConf = busConf,
+                                            busRect = busRect
+                                        )
+                                    )
                                 }
                             }
 
@@ -1099,63 +1152,41 @@ class FragmentCamera : Fragment(), View.OnClickListener {
                              * "근처에 없는 ~~번 버스 정확도 ~~ % 입니다."
                              *  */
 
-                            // 한장의 결과를 받았는데 정확도가 85%가 넘지않는 경우에 리스트에 담긴게 없다.
-                            if (busResponseList.size == 0){
-                                tts.speak("버스를 못찾았습니다", TextToSpeech.QUEUE_FLUSH, null)
-                                busApiRequestAvailable = true
-                                CoroutineScope(Dispatchers.Main).launch {
-                                    busNumTextView.text = ""
-                                }
-                                return@launch
-                            }
+                            for (busResponseIndex in busResponseList.indices) {
+                                for (dbResponseIndex in busNearInfoList.indices) {
+                                    if (busResponseList[busResponseIndex].busNum == busNearInfoList[dbResponseIndex].busNum) {
+                                        resultBusNum = busResponseList[busResponseIndex].busNum
 
-                            for (busResponseIndex in busResponseList.indices){
-                                for (dbResponseIndex in busNearInfoList.indices){
-                                    if (busResponseList[busResponseIndex].busNum == busNearInfoList[dbResponseIndex].busNum){
-                                        CoroutineScope(Dispatchers.Main).launch {
-                                            busNumTextView.text = "버스번호 : ${busResponseList[busResponseIndex].busNum}"
-                                            tts.speak(
-                                                "근처에 있는 ${busResponseList[busResponseIndex].busNum}번 버스 " +
-                                                        "정확도 ${busResponseList[busResponseIndex].busConf}%입니다.", TextToSpeech.QUEUE_FLUSH, null)
-                                            CoroutineScope(Dispatchers.Default).launch {
-                                                delay(4000)
-                                                busApiRequestAvailable = true
-                                                CoroutineScope(Dispatchers.Main).launch {
-                                                    busNumTextView.text = ""
-                                                }
-                                            }
+                                        if (busResponseList[busResponseIndex].busConf.toInt() < 85){
+                                            ttsMessage = "${resultBusNum}번 버스 정확도 ${busResponseList[busResponseIndex].busConf}% 입니다."
+                                        }
+                                        else{
+                                            ttsMessage = "${resultBusNum}번 버스입니다."
                                         }
 
+                                        speak(ttsMessage, "foundBus")
+                                        CoroutineScope(Dispatchers.Main).launch {
+                                            busNumTextView.text = "번호 : $resultBusNum"
+                                        }
                                         return@launch
                                     }
                                 }
                             }
 
+                            resultBusNum = busResponseList[0].busNum
+                            ttsMessage = if (busResponseList[0].busConf.toInt() < 85){
+                                "근처에 없는 ${resultBusNum}번 버스 정확도 ${busResponseList[0].busConf}% 입니다."
+                            } else{
+                                "근처에 없는 ${resultBusNum}번 버스입니다"
+                            }
+                            speak(ttsMessage, "foundBus")
                             CoroutineScope(Dispatchers.Main).launch {
-                                busNumTextView.text = "버스번호 : ${busResponseList[0].busNum}"
-                                tts.speak(
-                                    "근처에 없는 ${busResponseList[0].busNum}번 버스 " +
-                                            "정확도 ${busResponseList[0].busConf}%입니다.",
-                                    TextToSpeech.QUEUE_FLUSH, null)
-                                CoroutineScope(Dispatchers.Default).launch {
-                                    delay(4000)
-                                    busApiRequestAvailable = true
-                                    CoroutineScope(Dispatchers.Main).launch {
-                                        busNumTextView.text = ""
-                                    }
-                                }
+                                busNumTextView.text = "번호 : $resultBusNum"
                             }
                         }
                         "99.0" -> {
-                            CoroutineScope(Dispatchers.Main).launch {
-                                busNumTextView.text = ""
-                                tts.speak("버스를 못찾았습니다", TextToSpeech.QUEUE_FLUSH, null)
-                                CoroutineScope(Dispatchers.Default).launch {
-                                    delay(1000)
-                                    busApiRequestAvailable = true
-                                }
-                            }
-
+                            ttsMessage = "버스를 못찾았습니다"
+                            speak(ttsMessage, "notFoundBus")
                         }
                     }
 
@@ -1163,26 +1194,16 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
                 // 응답 결과가 없는 경우
                 else {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        busNumTextView.text = ""
-                        tts.speak("버스 인식에 실패하였습니다", TextToSpeech.QUEUE_FLUSH, null)
-                        CoroutineScope(Dispatchers.Default).launch {
-                            delay(1000)
-                            busApiRequestAvailable = true
-                        }                    }
+                    ttsMessage = "버스를 못찾았습니다"
+                    speak(ttsMessage, "notFoundBus")
                     return@launch
                 }
 
             }
             // 네트워크 연결이 안된경우
             catch (e: Exception) {
-                CoroutineScope(Dispatchers.Main).launch {
-                    tts.speak("네트워크 연결을 확인해주세요", TextToSpeech.QUEUE_FLUSH, null)
-                    CoroutineScope(Dispatchers.Default).launch {
-                        delay(1000)
-                        busApiRequestAvailable = true
-                    }
-                }
+                ttsMessage = "네트워크 연결을 확인해주세요"
+                speak(ttsMessage, "networkError")
             }
         }
     }
@@ -1192,9 +1213,10 @@ class FragmentCamera : Fragment(), View.OnClickListener {
         val latitude = gpsTracker!!.getLatitude()
         val longitude = gpsTracker!!.getLongitude()
 
-        val distance = 1000
-        val diffLatitude = locationUtil.latitudeInDifference(distance) // 반경 1000m 이내의 위도차 를 구한다.
-        val diffLongitude = locationUtil.longitudeInDifference(latitude, distance) // 반경 1000m 이내의 위도차 를 구한다.
+        val distance = 500
+        val diffLatitude = locationUtil.latitudeInDifference(distance) // 반경 500m 이내의 위도차 를 구한다.
+        val diffLongitude =
+            locationUtil.longitudeInDifference(latitude, distance) // 반경 500m 이내의 위도차 를 구한다.
 
         // 위/경도 최소값, 최대값
         val addressInfo = HashMap<String, String>()
@@ -1214,7 +1236,7 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 
         busNearInfoList = ArrayList()
 
-        for (idx in sqliteNearBusList.indices){
+        for (idx in sqliteNearBusList.indices) {
             busNearInfoList.add(
                 BusResponseData(
                     busNum = sqliteNearBusList[idx].routeName,
@@ -1227,5 +1249,23 @@ class FragmentCamera : Fragment(), View.OnClickListener {
 //        dbHelper.close()
 
         return addressInfo
+    }
+
+    private fun speak(text: String?, utteranceID: String) {
+        if (text != null) {
+            val audioManager = THIS_CONTEXT!!.getSystemService(Context.AUDIO_SERVICE) as (AudioManager)
+            val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolume, 0)
+
+            tts.language = Locale.KOREAN
+            tts.setPitch(1.0f)
+            tts.setSpeechRate(1.2f)
+            val myHashAlarm = HashMap<String, String>()
+            myHashAlarm[TextToSpeech.Engine.KEY_PARAM_STREAM] = AudioManager.STREAM_ALARM.toString()
+            myHashAlarm[TextToSpeech.Engine.KEY_PARAM_VOLUME] = "0.1"
+            myHashAlarm[TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID] = utteranceID
+
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, myHashAlarm)
+        }
     }
 }

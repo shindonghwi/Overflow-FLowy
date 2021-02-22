@@ -65,11 +65,11 @@ public class DataAdapter
     public List<BusDataModel> getTableData(String latitudeMin, String longitudeMin, String latitudeMax, String longitudeMax)
     {
         // Table 이름 -> antpool_bitcoin 불러오기
-        String sql ="SELECT * FROM `FlowyBus_Sheet0` WHERE " +
+        String sql ="SELECT `routeName` FROM `FlowyBus_Sheet0` WHERE " +
                 "`x` >= '" + longitudeMin + "' " + " AND " +
                 "`x` <= '" + longitudeMax + "' " + " AND " +
                 "`Y` >= '" + latitudeMin + "' " + " AND " +
-                "`Y` <= '" + latitudeMax + "' ";
+                "`Y` <= '" + latitudeMax + "' group by routeName";
 
         // 모델 넣을 리스트 생성
         List<BusDataModel> busDataModelList = new ArrayList<BusDataModel>();
@@ -85,12 +85,12 @@ public class DataAdapter
 
                 // TODO : 커스텀 모델 생성
                 busDataModel = new BusDataModel(
+                        "",
                         mCur.getString(0),
-                        mCur.getString(1),
-                        mCur.getString(2),
-                        mCur.getString(3),
-                        mCur.getString(4),
-                        mCur.getString(5)
+                        "",
+                        "",
+                        "",
+                        ""
                 );
 
                 // 리스트에 넣기
